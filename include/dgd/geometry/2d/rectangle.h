@@ -1,7 +1,6 @@
 #ifndef DGD_GEOMETRY_2D_RECTANGLE_H_
 #define DGD_GEOMETRY_2D_RECTANGLE_H_
 
-#include <Eigen/Core>
 #include <cassert>
 #include <cmath>
 
@@ -19,7 +18,7 @@ class Rectangle : public ConvexSet<2> {
   Real SupportFunction(const Vec2f& n, Vec2f& sp) const final;
 
   template <typename Derived>
-  Real SupportFunction(const Eigen::MatrixBase<Derived>& n, Vec2f& sp) const;
+  Real SupportFunction(const MatrixBase<Derived>& n, Vec2f& sp) const;
 
  private:
   const Real hlx_;
@@ -29,10 +28,11 @@ class Rectangle : public ConvexSet<2> {
 inline Rectangle::Rectangle(Real hlx, Real hly, Real margin)
     : ConvexSet<2>(margin), hlx_(hlx), hly_(hly) {
   assert((hlx > Real(0.0)) && (hly > Real(0.0)));
+  SetInradius(std::min(hlx, hly));
 }
 
 template <typename Derived>
-inline Real Rectangle::SupportFunction(const Eigen::MatrixBase<Derived>& n,
+inline Real Rectangle::SupportFunction(const MatrixBase<Derived>& n,
                                        Vec2f& sp) const {
   static_assert(Derived::RowsAtCompileTime == 2, "Size of normal is not 2!");
 
