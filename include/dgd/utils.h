@@ -71,8 +71,8 @@ inline void RotationToZAxis(const Vec2f& n, Rot2f& rot) {
 }
 
 inline void RotationToZAxis(const Vec3f& n, Rot3f& rot) {
-  Vec3f axis = n + Vec3f::UnitZ();
-  const Real norm = axis.norm();
+  Vec3f axis{n + Vec3f::UnitZ()};
+  const Real norm{axis.norm()};
   if (norm > kEps) {
     axis = axis / norm;
     rot = Real(2.0) * axis * axis.transpose() - Rot3f::Identity();
@@ -102,7 +102,7 @@ inline void EulerToRotation(const Vec3f& euler, Rot3f& rot) {
  */
 ///@{
 inline void RandomRotation(Rot2f& rot) {
-  const Real angle = Random(kPi);
+  const Real angle{Random(kPi)};
   rot(0, 0) = std::cos(angle);
   rot(1, 0) = std::sin(angle);
   rot(0, 1) = -rot(1, 0);
