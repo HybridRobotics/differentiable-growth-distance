@@ -72,10 +72,10 @@ struct SolverOutput {
    * corresponding to the optimal simplex tableau for the Minkowski difference
    * set.
    *
-   * @attention When the simplex vertices from the previous time step are
+   * @attention When the simplex points from the previous time step are
    * available, they can be used to warm start the growth distance algorithm.
    *
-   * @note The simplex vertices are stored in the untransformed reference frame
+   * @note The simplex points are stored in the untransformed reference frame
    * of the convex set, i.e., the support points returned by the support
    * function are directly stored.
    */
