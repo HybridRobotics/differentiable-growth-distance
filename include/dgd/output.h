@@ -58,19 +58,14 @@ enum class SolutionStatus : uint8_t {
 /**
  * @brief Solver output struct.
  *
- * @note A simplex tableau of size \f$= 2\f$ is sufficient to guarantee
- * exponential convergence for two-dimensional sets.
- *
- * @tparam dim          Dimension of the convex sets.
- * @tparam simplex_size Maximum number of points in the simplex tableau.
+ * @tparam dim Dimension of the convex sets.
  */
-template <int dim, int simplex_size>
+template <int dim>
 struct SolverOutput {
   /**
    * @name Convex set simplex vertices
    * @brief Support points for convex set \f$i\f$, \f$(i = 1, 2)\f$,
-   * corresponding to the optimal simplex tableau for the Minkowski difference
-   * set.
+   * corresponding to the optimal simplex for the Minkowski difference set.
    *
    * @attention When the simplex points from the previous time step are
    * available, they can be used to warm start the growth distance algorithm.
@@ -80,29 +75,28 @@ struct SolverOutput {
    * function are directly stored.
    */
   ///@{
-  Matf<dim, simplex_size> s1;
-  Matf<dim, simplex_size> s2;
+  Matf<dim, dim> s1{Matf<dim, dim>::Zero()};
+  Matf<dim, dim> s2{Matf<dim, dim>::Zero()};
   ///@}
 
   /**
-   * @brief Barycentric coordinates corresponding to the optimal simplex
-   * tableau.
+   * @brief Barycentric coordinates corresponding to the optimal simplex.
    */
-  Vecf<dim> bc;
+  Vecf<dim> bc{Vecf<dim>::Zero()};
 
   /**
    * @brief The normal vector of an optimal hyperplane.
    *
    * @attention The normal vector is in the transformed frame of reference.
    */
-  Vecf<dim> normal;
+  Vecf<dim> normal{Vecf<dim>::Zero()};
 
   /**
    * @brief Lower bound on the growth distance.
    *
    * The lower bound corresponds to the optimal hyperplane.
    */
-  Real growth_dist_lb;
+  Real growth_dist_lb{0.0};
 
   /**
    * @brief Upper bound on the growth distance.
@@ -110,26 +104,23 @@ struct SolverOutput {
    * The upper bound corresponds to the ray intersection point on the Minkowski
    * difference set.
    */
-  Real growth_dist_ub;
+  Real growth_dist_ub{0.0};
 
   /**
    * @brief Inradius of the Minkowski difference set.
    */
-  Real inradius;
+  Real inradius{kEps};
 
   /**
    * @brief Number of solver iterations.
    */
-  int iter;
+  int iter{0};
 
   /**
    * @brief Solution status.
    */
-  SolutionStatus status;
+  SolutionStatus status{SolutionStatus::kMaxIterReached};
 };
-
-template <int dim>
-using SolutionOutput = SolutionOutput<dim, dim>;
 
 }  // namespace dgd
 

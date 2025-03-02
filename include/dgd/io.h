@@ -38,19 +38,17 @@ namespace io {
 /**
  * @brief Prints diagnostic information at any iteration of the algorithm.
  *
- * @tparam dim          Dimension of the convex sets.
- * @tparam simplex_size Maximum number of points in the simplex tableau.
- * @param[in] lb        Growth distance lower bound.
- * @param[in] ub        Growth distance upper bound.
- * @param[in] simplex   Simplex tableau.
- * @param[in] settings  Solver settings.
- * @param[in] out       Solver output.
+ * @tparam    dim      Dimension of the convex sets.
+ * @param[in] lb       Growth distance lower bound.
+ * @param[in] ub       Growth distance upper bound.
+ * @param[in] simplex  Simplex.
+ * @param[in] settings Solver settings.
+ * @param[in] out      Solver output.
  */
-template <int dim, int simplex_size>
-void PrintSolutionDiagnostics(Real lb, Real ub,
-                              const Matf<dim, simplex_size>& simplex,
+template <int dim>
+void PrintSolutionDiagnostics(Real lb, Real ub, const Matf<dim, dim>& simplex,
                               const SolverSettings& settings,
-                              const SolverOutput<dim, simplex_size>& out) {
+                              const SolverOutput<dim>& out) {
   const int iter{out.iter};
   const Real primal{std::abs(Real(1.0) / ub)};
   const Real dual{std::abs(Real(1.0) / lb)};
@@ -72,19 +70,17 @@ void PrintSolutionDiagnostics(Real lb, Real ub,
 /**
  * @brief Sets ostream properties and prints diagnostics header.
  *
- * @tparam dim          Dimension of the convex sets.
- * @tparam simplex_size Maximum number of points in the simplex tableau.
- * @param[in] lb        Growth distance lower bound.
- * @param[in] ub        Growth distance upper bound.
- * @param[in] simplex   Simplex tableau.
- * @param[in] settings  Solver settings.
- * @param[in] out       Solver output.
+ * @tparam    dim      Dimension of the convex sets.
+ * @param[in] lb       Growth distance lower bound.
+ * @param[in] ub       Growth distance upper bound.
+ * @param[in] simplex  Simplex.
+ * @param[in] settings Solver settings.
+ * @param[in] out      Solver output.
  */
-template <int dim, int simplex_size>
-void PrintDiagnosticsHeader(Real lb, Real ub,
-                            const Matf<dim, simplex_size>& simplex,
+template <int dim>
+void PrintDiagnosticsHeader(Real lb, Real ub, const Matf<dim, dim>& simplex,
                             const SolverSettings& settings,
-                            const SolverOutput<dim, simplex_size>& out) {
+                            const SolverOutput<dim>& out) {
   std::cout << std::left;
   std::cout << std::scientific;
   const int line_len{6 + 15 * 4 + 13 + 21};
