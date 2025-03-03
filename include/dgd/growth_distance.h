@@ -33,9 +33,9 @@
 
 namespace dgd {
 
-/*
- * GROWTH DISTANCE ALGORITHM FOR 2D CONVEX SETS.
- */
+/**********************************************************
+ * GROWTH DISTANCE ALGORITHM FOR 2D CONVEX SETS           *
+ **********************************************************/
 
 namespace {
 
@@ -152,15 +152,14 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
   // Normal vector, suppport points, and the simplex matrix.
   Vec2f normal, sp1, sp2, sp;
   Matf<2, 2> simplex;
-  // Initialize simplex.
+
   InitializeSimplex(normal, simplex, out);
-  // Warm start.
   if (warm_start && (out.status == SolutionStatus::kOptimal)) {
     const Matf<2, 2> s1_{out.s1};
     const Matf<2, 2> s2_{out.s2};
     for (int i = 0; i < 2; ++i)
       if (out.bc(i) > kEps) {
-        sp.noalias() = rot1 * s1_.col(i) + rot2 * s2_.col(i);
+        sp.noalias() = rot1 * s1_.col(i) - rot2 * s2_.col(i);
         if (normal.dot(sp - simplex.col(0)) > Real(0.0)) {
           ub = UpdateSimplex(sp, s1_.col(i), s2_.col(i), simplex, out);
           UpdateNormal(simplex, normal);
@@ -180,15 +179,14 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
   while (true) {
     // Compute support point for the Minkowski difference set along the normal.
     const Real sv1{set1->SupportFunction(rot1.transpose() * normal, sp1)};
-    const Real sv2{set2->SupportFunction(rot2.transpose() * normal, sp2)};
-    sp.noalias() = rot1 * sp1 + rot2 * sp2;
+    const Real sv2{set2->SupportFunction(-rot2.transpose() * normal, sp2)};
+    sp.noalias() = rot1 * sp1 - rot2 * sp2;
     // Update the lower bound and the current best normal vector.
     const Real lb_{(sv1 + sv2) / normal(1)};
     if (lb_ > lb) {
       lb = lb_;
       out.normal = normal;
     }
-    // Update simplices, barycentric coordinates, and the upper bound.
     ub = UpdateSimplex(sp, sp1, sp2, simplex, out);
     ++out.iter;
 
@@ -204,11 +202,9 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
       out.status = SolutionStatus::kMaxIterReached;
       break;
     }
-    // Update normal for next iteration.
     UpdateNormal(simplex, normal);
   }
 
-  // Compute the growth distance bounds using the ray intersection bounds.
   out.growth_dist_lb = -cdist / lb;
   out.growth_dist_ub = -cdist / ub;
   // Transform normal vector.
@@ -221,9 +217,9 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
   return out.growth_dist_lb;
 }
 
-/*
- * GROWTH DISTANCE ALGORITHM FOR 3D CONVEX SETS.
- */
+/**********************************************************
+ * GROWTH DISTANCE ALGORITHM FOR 3D CONVEX SETS           *
+ **********************************************************/
 
 namespace {
 
@@ -341,7 +337,6 @@ inline Real UpdateSimplex(Simplex& sx, SolverOutput<3>& out) {
   sx.s.col(exiting_idx) = sx.sp;
   out.s1.col(exiting_idx) = sx.sp1;
   out.s2.col(exiting_idx) = sx.sp2;
-  // Update barycentric coordinates of the origin and return the upper bound.
   return UpdateOriginCoordinates(sx, out);
 }
 
@@ -401,18 +396,18 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
 
   // Growth distance bounds.
   Real lb{-kInf}, ub{0.0};
-  // Simplex struct.
   Simplex sx;
-  // Initialize simplex.
+
   InitializeSimplex(sx, out);
-  // Warm start.
   if (warm_start && (out.status == SolutionStatus::kOptimal)) {
     const Matf<3, 3> s1_{out.s1};
     const Matf<3, 3> s2_{out.s2};
     for (int i = 0; i < 3; ++i)
       if (out.bc(i) > kEps) {
-        sx.sp.noalias() = rot1 * s1_.col(i) + rot2 * s2_.col(i);
+        sx.sp.noalias() = rot1 * s1_.col(i) - rot2 * s2_.col(i);
         if (sx.n.dot(sx.sp - sx.s.col(0)) > Real(0.0)) {
+          sx.sp1 = s1_.col(i);
+          sx.sp2 = s2_.col(i);
           ub = UpdateSimplex(sx, out);
           UpdateNormal(sx);
         }
@@ -431,15 +426,14 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
   while (true) {
     // Compute support point for the Minkowski difference set along the normal.
     const Real sv1{set1->SupportFunction(rot1.transpose() * sx.n, sx.sp1)};
-    const Real sv2{set2->SupportFunction(rot2.transpose() * sx.n, sx.sp2)};
-    sx.sp.noalias() = rot1 * sx.sp1 + rot2 * sx.sp2;
+    const Real sv2{set2->SupportFunction(-rot2.transpose() * sx.n, sx.sp2)};
+    sx.sp.noalias() = rot1 * sx.sp1 - rot2 * sx.sp2;
     // Update the lower bound and the current best normal vector.
     const Real lb_{(sv1 + sv2) / sx.n(2)};
     if (lb_ > lb) {
       lb = lb_;
       out.normal = sx.n;
     }
-    // Update simplices, barycentric coordinates, and the upper bound.
     ub = UpdateSimplex(sx, out);
     ++out.iter;
 
@@ -455,11 +449,9 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
       out.status = SolutionStatus::kMaxIterReached;
       break;
     }
-    // Update normal for next iteration.
     UpdateNormal(sx);
   }
 
-  // Compute the growth distance bounds using the ray intersection bounds.
   out.growth_dist_lb = -cdist / lb;
   out.growth_dist_ub = -cdist / ub;
   // Transform the normal vector.
@@ -470,6 +462,28 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
 #endif
 
   return out.growth_dist_lb;
+}
+
+/**********************************************************
+ * ADDITIONAL UTILITY FUNCTIONS                           *
+ **********************************************************/
+
+template <int dim>
+SolutionError GetSolutionError(const Transformf<dim>& tf1,
+                               const Transformf<dim>& tf2,
+                               SolverOutput<dim>& out) {
+  SolutionError err;
+
+  const Vecf<dim> p12{tf1.template block<dim, 1>(0, dim) -
+                      tf2.template block<dim, 1>(0, dim)};
+  const Rotf<dim> rot1{tf1.template block<dim, dim>(0, 0)};
+  const Rotf<dim> rot2{tf2.template block<dim, dim>(0, 0)};
+  const Vecf<dim> cp12{(rot1 * out.s1 - rot2 * out.s2) * out.bc};
+
+  err.primal_dual_rel_gap =
+      std::abs(out.growth_dist_ub / out.growth_dist_lb - Real(1.0));
+  err.primal_feas_err = (p12 + cp12 * out.growth_dist_ub).norm();
+  return err;
 }
 
 }  // namespace dgd
