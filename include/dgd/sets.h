@@ -32,6 +32,7 @@
 // 3D convex sets.
 #include "dgd/geometry/3d/cone.h"
 #include "dgd/geometry/3d/cuboid.h"
+#include "dgd/geometry/3d/cylinder.h"
 #include "dgd/geometry/3d/ellipsoid.h"
 
 // 2D/3D convex sets.

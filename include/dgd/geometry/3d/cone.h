@@ -55,6 +55,8 @@ class Cone : public ConvexSet<3> {
 
   Real SupportFunction(const Vec3f& n, Vec3f& sp) const final;
 
+  Real GetOffset() const;
+
  private:
   const Real r_;      /**< Radius. */
   const Real h_;      /**< Height. */
@@ -86,6 +88,8 @@ inline Real Cone::SupportFunction(const Vec3f& n, Vec3f& sp) const {
     return sp.dot(n);
   }
 }
+
+inline Real Cone::GetOffset() const { return rho_; }
 
 }  // namespace dgd
 

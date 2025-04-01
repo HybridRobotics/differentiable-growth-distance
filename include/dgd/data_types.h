@@ -45,6 +45,11 @@ constexpr Real kEpsSqrt{
 constexpr Real kPi{static_cast<Real>(EIGEN_PI)}; /**< \f$\pi\f$. */
 
 /**
+ * @brief Dynamic size vector.
+ */
+using VecXf = Eigen::Vector<Real, -1>;
+
+/**
  * @brief Fixed dimension vector.
  *
  * @tparam dim Dimension of the vector.

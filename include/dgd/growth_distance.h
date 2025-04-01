@@ -120,13 +120,13 @@ inline void InitializeSimplex(Vec2f& normal, Matf<2, 2>& simplex,
  * @param[in]     settings   Solver settings.
  * @param[in,out] out        Solver output.
  * @param         warm_start Use previous solver output to warm start current
- *                           solution.
+ *                           solution (default = false).
  * @return        (lower bound of) the growth distance.
  */
 template <class C1, class C2>
 Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
                     const Transform2f& tf2, const SolverSettings& settings,
-                    SolverOutput<2>& out, bool warm_start) {
+                    SolverOutput<2>& out, bool warm_start = false) {
   static_assert((C1::Dimension() == 2) && (C2::Dimension() == 2),
                 "Convex sets are not two-dimensional!");
 
@@ -367,13 +367,13 @@ inline void InitializeSimplex(Simplex& sx, SolverOutput<3>& out) {
  * @param[in]     settings   Solver settings.
  * @param[in,out] out        Solver output.
  * @param         warm_start Use previous solver output to warm start current
- *                           solution.
+ *                           solution (default = false).
  * @return        (lower bound of) the growth distance.
  */
 template <class C1, class C2>
 Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
                     const Transform3f& tf2, const SolverSettings& settings,
-                    SolverOutput<3>& out, bool warm_start) {
+                    SolverOutput<3>& out, bool warm_start = false) {
   static_assert((C1::Dimension() == 3) && (C2::Dimension() == 3),
                 "Convex sets are not three-dimensional!");
 
