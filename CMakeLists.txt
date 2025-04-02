@@ -9,7 +9,7 @@ option(BUILD_BENCHMARKS
   "Build benchmarks (only built if BUILD_TESTS is enabled)"
   ON
 )
-option(BUILD_APPS "Build examples" ON)
+option(BUILD_APPS "Build examples" OFF)
 option(BUILD_DOCS "Add documentation" OFF)
 #   Compile flags
 option(USE_FFAST_MATH "Add -ffast-math compile option" OFF)
@@ -57,9 +57,11 @@ endif()
 
 
 ## Packages
+list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 include(FetchContent)
 
 find_package(Eigen3 3.4.90 REQUIRED NO_MODULE)
+find_package(Qhull 2020.2 REQUIRED)
 
 
 ## DGD subdirectories
@@ -69,16 +71,7 @@ if (NOT ENABLE_DIAGNOSTICS)
   add_compile_definitions(DONOT_PRINT_DIAGNOSTICS)
 endif()
 
-#   DGD interface library
-add_library(${LIB_CORE} INTERFACE)
-target_include_directories(${LIB_CORE}
-  INTERFACE
-    "${PROJECT_SOURCE_DIR}/include/"
-)
-target_link_libraries(${LIB_CORE}
-  INTERFACE
-    Eigen3::Eigen
-)
+add_subdirectory(src)
 
 
 ## Tests

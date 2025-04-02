@@ -97,7 +97,7 @@ TEST(RectangleTest, SupportFunction) {
 TEST(ConeTest, SupportFunction) {
   const Real ha{kPi / 6.0}, radius{1.0}, margin{0.1};
   const Real height{radius / std::tan(ha)};
-  const Real rho{height / (1.0 + 1.0 / std::sin(ha))};
+  const Real rho{height / (Real(1.0) + Real(1.0) / std::sin(ha))};
   auto set{Cone(radius, height, margin)};
 
   EXPECT_EQ(set.GetInradius(), rho + margin);
@@ -215,7 +215,7 @@ TYPED_TEST(CapsuleTest, SupportFunction) {
   // Even number of points avoids zero x-component of normal.
   const int xy_size{18};
   UniformSpherePoints(pts, xy_size, 9);
-  const int size = (dim == 2) ? xy_size : pts.cols();
+  const int size = (dim == 2) ? xy_size : static_cast<int>(pts.cols());
 
   Real sv;
   Vecf<dim> sp, sp_, n;

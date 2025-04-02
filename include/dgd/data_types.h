@@ -52,10 +52,13 @@ using VecXf = Eigen::Vector<Real, -1>;
 /**
  * @brief Fixed dimension vector.
  *
+ * @tparam T   Floating-point type.
  * @tparam dim Dimension of the vector.
  */
+template <typename T, int dim>
+using Vec = Eigen::Vector<T, dim>;
 template <int dim>
-using Vecf = Eigen::Vector<Real, dim>;
+using Vecf = Vec<Real, dim>;
 typedef Vecf<2> Vec2f;
 typedef Vecf<3> Vec3f;
 
