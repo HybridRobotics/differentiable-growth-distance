@@ -1,4 +1,8 @@
+// Copyright 2021 DeepMind Technologies Limited
 // Copyright 2025 Akshay Thirugnanam
+//
+// Copied and adapted from MuJoCo
+// (https://github.com/google-deepmind/mujoco/blob/main/src/user/user_mesh.cc)
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,7 +20,7 @@
  * @file mesh_loader.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
  * @date 2025-04-01
- * @brief Mesh loader class.
+ * @brief 3D mesh loader class.
  */
 
 #ifndef DGD_MESH_LOADER_H_
@@ -35,29 +39,87 @@
 
 namespace dgd {
 
+/**
+ * @brief Class for loading 3D meshes and computing the vertex adjacency graph.
+ */
 class MeshLoader {
  public:
+  /**
+   * @brief Construct a new Mesh Loader object.
+   *
+   * @param maxhullvert Maximum number of mesh vertices (default = 10000).
+   */
   explicit MeshLoader(int maxhullvert = 10000);
 
+  /**
+   * @brief Convert vertices to double precision and remove duplicates.
+   *
+   * @tparam T    Floating-point type (float or double).
+   * @param  vert Vector of 3D vertex coordinates as a 1D array.
+   */
   template <typename T>
   void ProcessVertices(const std::vector<T>& vert);
 
+  /**
+   * @brief Convert vertices to double precision and remove duplicates.
+   *
+   * @param vert Vector of 3D vertex coordinates.
+   */
   void ProcessVertices(const std::vector<Vec3f>& vert);
 
+  /**
+   * @brief Load mesh object from file or parse from string.
+   *
+   * See
+   * https://github.com/tinyobjloader/tinyobjloader/blob/release/loader_example.cc
+   *
+   * @param input   Mesh wavefront filename (.obj) or object string.
+   * @param is_file Whether input is a filename or an object string
+   *                (default = true).
+   */
   void LoadOBJ(const std::string& input, bool is_file = true);
 
+  /**
+   * @brief Construct convex hull and vertex adjacency graph from stored vertex
+   * list.
+   *
+   * graph is a vector of size (2 + 2*numvert + 3*numface) containing:
+   * numvert
+   *    Number of convex hull vertices.
+   * numface
+   *    Number of convex hull faces.
+   * vert_edgeadr[numvert]
+   *    For each vertex in the convex hull, this is the offset of the edge
+   *    record for that vertex in edge_localid.
+   * edge_localid[numvert+3*numface]
+   *    This contains a sequence of edge records, one for each vertex in the
+   *    convex hull. Each edge record is an array of vertex indices (in localid
+   *    format) terminated with -1. For example, say the record for vertex 7 is:
+   *    3, 4, 5, 9, -1. This means that vertex 7 belongs to 4 edges, and the
+   *    other ends of these edges are vertices 3, 4, 5, 9. In this way every
+   *    edge is represented twice, in the edge records of its two vertices.
+   *    Note that for a closed triangular mesh (such as the convex hulls used
+   *    here), the number of edges is 3*numface/2.
+   *
+   * @param[out] vert  Convex hull vertices.
+   * @param[out] graph Vertex adjacency graph.
+   * @return     true (success) or false (failure).
+   */
   bool MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph);
 
+  /**
+   * @brief Number of mesh vertices.
+   */
   int nvert() const;
 
   ~MeshLoader() {};
 
  private:
-  const int maxhullvert_;      // maximum number of vertices in the convex hull
-  std::vector<double> vert_;   // vertex data
-  std::vector<float> normal_;  // normal data
-  std::vector<int> face_;      // vertex indices
-  std::vector<int> facenormal_;  // normal indices
+  const int maxhullvert_; /**< Maximum number of vertices in the convex hull. */
+  std::vector<double> vert_;    /**< Vertex data. */
+  std::vector<float> normal_;   /**< Normal data. */
+  std::vector<int> face_;       /**< Vertex indices. */
+  std::vector<int> facenormal_; /**< Normal indices. */
 };
 
 inline MeshLoader::MeshLoader(int maxhullvert)
@@ -66,11 +128,6 @@ inline MeshLoader::MeshLoader(int maxhullvert)
       normal_(0),
       face_(0),
       facenormal_(0) {}
-
-/**
- * The implementation below is adapted from MuJoCo:
- * https://github.com/google-deepmind/mujoco/blob/main/src/user/user_mesh.cc
- */
 
 // vertex key for hash map
 template <typename T>
@@ -116,7 +173,7 @@ void MeshLoader::ProcessVertices(const std::vector<T>& vert) {
     if (!std::isfinite(v[0]) || !std::isfinite(v[1]) || !std::isfinite(v[2])) {
       std::string err = std::string("vertex coordinate ") + std::to_string(i) +
                         std::string(" is not finite");
-      throw std::overflow_error(err);
+      throw std::runtime_error(err);
     }
 
     VertexKey<T> key = {v[0], v[1], v[2]};

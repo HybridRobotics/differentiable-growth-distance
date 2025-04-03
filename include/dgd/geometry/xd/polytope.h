@@ -83,7 +83,7 @@ inline Real Polytope<dim>::SupportFunction(const Vecf<dim>& n,
                                            Vecf<dim>& sp) const {
   int idx{0};
   Real s{0.0}, sv{n.dot(pts_[0])};
-  for (int i = 1; i < pts_.size(); ++i) {
+  for (int i = 1; i < static_cast<int>(pts_.size()); ++i) {
     s = n.dot(pts_[i]);
     if (s > sv) {
       idx = i;

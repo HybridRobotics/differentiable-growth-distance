@@ -1,3 +1,28 @@
+// Copyright 2021 DeepMind Technologies Limited
+// Copyright 2025 Akshay Thirugnanam
+//
+// Copied and adapted from MuJoCo
+// (https://github.com/google-deepmind/mujoco/blob/main/src/user/user_mesh.cc)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * @file mesh_loader.cc
+ * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
+ * @date 2025-04-01
+ * @brief 3D mesh loader class implementation.
+ */
+
 #include "dgd/mesh_loader.h"
 
 #include <cmath>
@@ -6,23 +31,16 @@
 #define TINYOBJLOADER_IMPLEMENTATION  // define this in only *one* .cc
 // Optional. define TINYOBJLOADER_USE_MAPBOX_EARCUT gives robust triangulation.
 // Requires C++11
-// #define TINYOBJLOADER_USE_MAPBOX_EARCUT
+#define TINYOBJLOADER_USE_MAPBOX_EARCUT
 #include "tiny_obj_loader.h"
 
 extern "C" {
 #include "libqhull_r/qhull_ra.h"
 }
 
-/**
- * The implementation below is adapted from MuJoCo:
- * https://github.com/google-deepmind/mujoco/blob/main/src/user/user_mesh.cc
- */
-
 namespace dgd {
 
-// load OBJ mesh (from file if is_file = true, from text string otherwise)
-// See
-// https://github.com/tinyobjloader/tinyobjloader/blob/release/loader_example.cc
+// load OBJ mesh
 void MeshLoader::LoadOBJ(const std::string& input, bool is_file) {
   tinyobj::ObjReader objReader;
 
