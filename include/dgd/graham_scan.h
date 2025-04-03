@@ -23,6 +23,7 @@
 #define DGD_GRAHAM_SCAN_H_
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
 #include <vector>
 
@@ -32,6 +33,8 @@ namespace dgd {
 
 /**
  * @brief Convex hull of points in the 2D plane using Graham scan algorithm.
+ *
+ * See https://en.wikipedia.org/wiki/Graham_scan#Pseudocode
  *
  * @param[in]  pts  Points in the 2D plane.
  * @param[out] vert CCW sorted convex hull vertex vector.
@@ -76,20 +79,19 @@ inline int GrahamScan(const std::vector<Vec2f>& pts, std::vector<Vec2f>& vert) {
     if (ccw(p0, pts_[idx], pts_[i]) > kEps)
       pts_[++idx] = pts_[i];
     else
-      pts[idx] = pts_[i];
+      pts_[idx] = pts_[i];
   }
   pts_.resize(++idx);
 
   // Find convex hull based on turning direction.
   vert.clear();
-  int numvert{0};
   for (const auto& p : pts_) {
-    while (numvert > 1 && ccw(vert[numvert - 2], vert[numvert - 1], p) <= 0.0)
+    while (vert.size() > 1 && ccw(vert.end()[-2], vert.end()[-1], p) <= 0.0)
       vert.pop_back();
     vert.push_back(p);
   }
-  assert(numvert >= 2);
-  return numvert;
+  assert(vert.size() >= 2);
+  return vert.size();
 }
 
 }  // namespace dgd

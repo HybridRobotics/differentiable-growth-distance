@@ -22,7 +22,6 @@
 #ifndef DGD_UTILS_H_
 #define DGD_UTILS_H_
 
-#include <Eigen/Geometry>
 #include <cassert>
 #include <cmath>
 #include <random>
@@ -30,6 +29,21 @@
 #include "dgd/data_types.h"
 
 namespace dgd {
+
+namespace {
+std::random_device rd;
+std::mt19937 gen{rd()};
+}  // namespace
+
+/**
+ * @brief Sets default seed for the RNG.
+ */
+inline void SetDefaultSeed() { gen.seed(5489u); }
+
+/**
+ * @brief Sets random seed for the RNG.
+ */
+inline void SetRandomSeed() { gen.seed(rd()); }
 
 /**
  * @brief Returns a uniform random real number.
@@ -40,8 +54,6 @@ namespace dgd {
  */
 inline Real Random(Real range_from, Real range_to) {
   assert(range_from < range_to);
-  std::random_device rd;
-  std::mt19937 gen(rd());
   std::uniform_real_distribution<Real> dis(range_from, range_to);
   return dis(gen);
 }

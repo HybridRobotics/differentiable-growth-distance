@@ -11,6 +11,8 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(${LIB_CORE}_test
   "${PROJECT_SOURCE_DIR}/tests/geometry_test.cc"
+  "${PROJECT_SOURCE_DIR}/tests/utils_test.cc"
+  "${PROJECT_SOURCE_DIR}/tests/graham_scan_test.cc"
 )
 
 target_link_libraries(${LIB_CORE}_test

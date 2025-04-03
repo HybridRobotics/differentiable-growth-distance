@@ -23,6 +23,7 @@
 #define DGD_DATA_TYPES_H_
 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <cmath>
 #include <limits>
 
