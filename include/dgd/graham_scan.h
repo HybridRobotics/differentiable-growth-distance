@@ -41,7 +41,8 @@ namespace dgd {
  * @return     Number of points in the convex hull.
  */
 inline int GrahamScan(const std::vector<Vec2f>& pts, std::vector<Vec2f>& vert) {
-  assert(!pts.empty());
+  vert.clear();
+  if (pts.empty()) return 0;
 
   // Find points with the least y-coordinate, and among those, the one with the
   // least x-coordinate.
@@ -84,7 +85,6 @@ inline int GrahamScan(const std::vector<Vec2f>& pts, std::vector<Vec2f>& vert) {
   pts_.resize(++idx);
 
   // Find convex hull based on turning direction.
-  vert.clear();
   for (const auto& p : pts_) {
     while (vert.size() > 1 && ccw(vert.end()[-2], vert.end()[-1], p) <= 0.0)
       vert.pop_back();
