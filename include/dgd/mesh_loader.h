@@ -28,8 +28,8 @@
 
 #include <cassert>
 #include <cstddef>
-#include <exception>
 #include <functional>
+#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -40,190 +40,225 @@
 namespace dgd {
 
 /**
- * @brief Class for loading 3D meshes and computing the vertex adjacency graph.
+ * @brief Class for loading 3D meshes and computing the vertex and facet
+ * adjacency graphs of the convex hull.
  */
 class MeshLoader {
  public:
   /**
-   * @brief Construct a new Mesh Loader object.
+   * @brief Constructs a new Mesh Loader object.
    *
-   * @param maxhullvert Maximum number of mesh vertices (default = 10000).
+   * @param maxhullvert Maximum number of convex hull vertices (default = 1e4).
    */
   explicit MeshLoader(int maxhullvert = 10000);
 
   /**
-   * @brief Convert vertices to double precision and remove duplicates.
-   *
-   * @tparam T    Floating-point type (float or double).
-   * @param  vert Vector of 3D vertex coordinates as a 1D array.
-   */
-  template <typename T>
-  void ProcessVertices(const std::vector<T>& vert);
-
-  /**
-   * @brief Convert vertices to double precision and remove duplicates.
-   *
-   * @param vert Vector of 3D vertex coordinates.
-   */
-  void ProcessVertices(const std::vector<Vec3f>& vert);
-
-  /**
-   * @brief Load mesh object from file or parse from string.
+   * @brief Loads a mesh object from file or parses from string.
    *
    * See
    * https://github.com/tinyobjloader/tinyobjloader/blob/release/loader_example.cc
    *
-   * @param input   Mesh wavefront filename (.obj) or object string.
+   * @param input   Mesh wavefront filename (*.obj) or object string.
    * @param is_file Whether input is a filename or an object string
    *                (default = true).
    */
   void LoadOBJ(const std::string& input, bool is_file = true);
 
   /**
-   * @brief Construct convex hull and vertex adjacency graph from stored vertex
-   * list.
+   * @brief Converts points to double precision and removes duplicates.
    *
-   * graph is a vector of size (2 + 2*numvert + 3*numface) containing:
-   * numvert
+   * @tparam T   Floating-point type (float or double).
+   * @param  pts Vector of 3D point coordinates as a 1D array.
+   */
+  template <typename T>
+  void ProcessPoints(const std::vector<T>& pts);
+
+  /**
+   * @brief Converts points to double precision and removes duplicates.
+   *
+   * @param pts Vector of 3D point coordinates.
+   */
+  void ProcessPoints(const std::vector<Vec3f>& pts);
+
+  /**
+   * @brief Constructs convex hull (in V-rep) and vertex adjacency graph from
+   * the stored vector of points.
+   *
+   * graph is a vector of size (2 + 2*nvert + 3*nface) containing (in order):
+   * nvert: int
    *    Number of convex hull vertices.
-   * numface
-   *    Number of convex hull faces.
-   * vert_edgeadr[numvert]
+   * nface: int
+   *    Number of triangulated convex hull faces.
+   * vert_edgeadr: int[nvert]
    *    For each vertex in the convex hull, this is the offset of the edge
-   *    record for that vertex in edge_localid.
-   * edge_localid[numvert+3*numface]
+   *    record for that vertex in edge_localid (starts from zero).
+   * edge_localid: int[nvert + 3*nface]
    *    This contains a sequence of edge records, one for each vertex in the
-   *    convex hull. Each edge record is an array of vertex indices (in localid
-   *    format) terminated with -1. For example, say the record for vertex 7 is:
-   *    3, 4, 5, 9, -1. This means that vertex 7 belongs to 4 edges, and the
-   *    other ends of these edges are vertices 3, 4, 5, 9. In this way every
-   *    edge is represented twice, in the edge records of its two vertices.
-   *    Note that for a closed triangular mesh (such as the convex hulls used
-   *    here), the number of edges is 3*numface/2.
+   *    convex hull. Each edge record is an array of vertex indices terminated
+   *    with -1. For example, say the record for vertex 7 is: 3, 4, 5, 9, -1.
+   *    This means that vertex 7 belongs to 4 edges, and the other ends of
+   *    these edges are vertices 3, 4, 5, 9. In this way every edge is
+   *    represented twice, in the edge records of its two vertices. Note that
+   *    for a closed triangular mesh (such as the convex hulls used here), the
+   *    number of edges is 3*nface/2.
    *
    * @param[out] vert  Convex hull vertices.
    * @param[out] graph Vertex adjacency graph.
    * @return     true (success) or false (failure).
    */
-  bool MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph);
+  bool MakeVertexGraph(std::vector<Vec3f>& vert, std::vector<int>& graph);
+
+  //  nfacet, nridge, facet_ridgeadr[nfacet],
+  //  facet_localid[nfacet + 2*nridge]
 
   /**
-   * @brief Number of mesh vertices.
+   * @brief Constructs convex hull (in H-rep) and facet adjacency graph from
+   * the stored vector of points.
+   *
+   * The convex hull is given by the set of inequalities:
+   *    normal[i] * z + offset[i] <= 0    for 0 <= i < nfacet,
+   * where normal[i] has unit 2-norm.
+   *
+   * graph is a vector of size (2 + 2*nfacet + 2*nridge) containing (in order):
+   * nfacet: int
+   *    Number of convex hull facets.
+   * nridge: int
+   *    Number of convex hull ridges (facet edges).
+   * facet_ridgeadr: int[nfacet]
+   *    For each facet in the convex hull, this is the offset of the ridge
+   *    record for that facet in ridge_localid (starts from zero).
+   * ridge_localid: int[nfacet + 2*nridge]
+   *    This contains a sequence of ridge records, one for each facet in the
+   *    convex hull. Each ridge record is an array of facet indices terminated
+   *    with -1. For example, say the record for facet 7 is: 3, 4, 5, 9, -1.
+   *    This means that facet 7 belongs to 4 ridges, and the other ends of
+   *    these ridges are facets 3, 4, 5, 9 (in CCW order). In this way every
+   *    ridge is represented twice, in the ridge records of its two facets.
+   *    Note that for a polytope, the nfacet + nvert = nridge + 2.
+   *
+   * @param[out] normal Facet normals of the convex hull.
+   * @param[out] offset Facet offsets of the convex hull.
+   * @param[out] graph  Facet adjacency graph.
+   * @return     true (success) or false (failure).
    */
-  int nvert() const;
+  bool MakeFacetGraph(std::vector<Vec3f>& normal, std::vector<Real>& offset,
+                      std::vector<int>& graph);
+
+  /**
+   * @brief Number of points in the mesh.
+   */
+  int npts() const;
 
   ~MeshLoader() {};
 
  private:
-  const int maxhullvert_; /**< Maximum number of vertices in the convex hull. */
-  std::vector<double> vert_;    /**< Vertex data. */
-  std::vector<float> normal_;   /**< Normal data. */
-  std::vector<int> face_;       /**< Vertex indices. */
-  std::vector<int> facenormal_; /**< Normal indices. */
+  const int maxhullvert_;       /**< Maximum number of convex hull vertices. */
+  std::vector<double> pts_;     /**< Mesh point data. */
+  std::vector<float> normal_;   /**< Mesh normal vector data. */
+  std::vector<int> face_;       /**< Mesh face vertex indices. */
+  std::vector<int> facenormal_; /**< Mesh face normal vector indices. */
 };
 
 inline MeshLoader::MeshLoader(int maxhullvert)
     : maxhullvert_(maxhullvert),
-      vert_(0),
+      pts_(0),
       normal_(0),
       face_(0),
       facenormal_(0) {}
 
-// vertex key for hash map
+// point key for hash map
 template <typename T>
-struct VertexKey {
-  T v[3];
+struct PointKey {
+  T p[3];
 
-  bool operator==(const VertexKey<T>& other) const {
-    return (v[0] == other.v[0] && v[1] == other.v[1] && v[2] == other.v[2]);
+  bool operator==(const PointKey<T>& other) const {
+    return (p[0] == other.p[0] && p[1] == other.p[1] && p[2] == other.p[2]);
   }
 
-  std::size_t operator()(const VertexKey<T>& vertex) const {
+  std::size_t operator()(const PointKey<T>& ptk) const {
     // combine all three hash values into a single hash value
-    return ((std::hash<T>()(vertex.v[0]) ^
-             (std::hash<T>()(vertex.v[1]) << 1)) >>
-            1) ^
-           (std::hash<T>()(vertex.v[2]) << 1);
+    return ((std::hash<T>()(ptk.p[0]) ^ (std::hash<T>()(ptk.p[1]) << 1)) >> 1) ^
+           (std::hash<T>()(ptk.p[2]) << 1);
   }
 };
 
-// convert vertices to double precision (if needed) and remove repeated vertices
+// converts points to double precision and removes repeated points
 template <typename T>
-void MeshLoader::ProcessVertices(const std::vector<T>& vert) {
+void MeshLoader::ProcessPoints(const std::vector<T>& pts) {
   static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value,
-                "vertices should be of float or double types");
+                "points should be of float or double types");
 
-  vert_.clear();
-  int nvert = static_cast<int>(vert.size());
+  pts_.clear();
+  int npts = static_cast<int>(pts.size());
 
-  if (nvert % 3) {
-    throw std::length_error("vertex data must be a multiple of 3");
+  if (npts % 3) {
+    throw std::length_error("point data must be a multiple of 3");
   }
   if (face_.size() % 3) {
     throw std::length_error("face data must be a multiple of 3");
   }
 
   int index = 0;
-  std::unordered_map<VertexKey<T>, int, VertexKey<T>> vertex_map;
+  std::unordered_map<PointKey<T>, int, PointKey<T>> point_map;
 
-  // populate vertex map with new vertex indices
-  for (int i = 0; i < nvert; i += 3) {
-    const T* v = &vert[i];
+  // populate point map with new point indices
+  for (int i = 0; i < npts; i += 3) {
+    const T* p = &pts[i];
 
-    if (!std::isfinite(v[0]) || !std::isfinite(v[1]) || !std::isfinite(v[2])) {
-      std::string err = std::string("vertex coordinate ") + std::to_string(i) +
+    if (!std::isfinite(p[0]) || !std::isfinite(p[1]) || !std::isfinite(p[2])) {
+      std::string err = std::string("point coordinate ") + std::to_string(i) +
                         std::string(" is not finite");
       throw std::runtime_error(err);
     }
 
-    VertexKey<T> key = {v[0], v[1], v[2]};
-    if (vertex_map.find(key) == vertex_map.end()) {
-      vertex_map.insert({key, index});
+    PointKey<T> key = {p[0], p[1], p[2]};
+    if (point_map.find(key) == point_map.end()) {
+      point_map.insert({key, index});
       ++index;
     }
   }
 
-  // no repeated vertices (just copy vertex data)
-  if (3 * index == nvert) {
-    vert_.reserve(nvert);
-    for (T v : vert) {
-      vert_.push_back(v);
+  // no repeated points (just copy point data)
+  if (3 * index == npts) {
+    pts_.reserve(npts);
+    for (T p : pts) {
+      pts_.push_back(p);
     }
     return;
   }
 
-  // update face vertex indices
+  // update face point indices
   for (int i = 0; i < static_cast<int>(face_.size()); ++i) {
-    VertexKey<T> key = {vert[3 * face_[i]], vert[3 * face_[i] + 1],
-                        vert[3 * face_[i] + 2]};
-    face_[i] = vertex_map[key];
+    PointKey<T> key = {pts[3 * face_[i]], pts[3 * face_[i] + 1],
+                       pts[3 * face_[i] + 2]};
+    face_[i] = point_map[key];
   }
 
-  // repopulate vertex data
-  vert_.resize(3 * index);
-  for (const auto& pair : vertex_map) {
-    const VertexKey<T>& key = pair.first;
+  // repopulate point data
+  pts_.resize(3 * index);
+  for (const auto& pair : point_map) {
+    const PointKey<T>& key = pair.first;
     int index = pair.second;
 
     // double precision
-    vert_[3 * index + 0] = key.v[0];
-    vert_[3 * index + 1] = key.v[1];
-    vert_[3 * index + 2] = key.v[2];
+    pts_[3 * index + 0] = key.p[0];
+    pts_[3 * index + 1] = key.p[1];
+    pts_[3 * index + 2] = key.p[2];
   }
 }
 
-void MeshLoader::ProcessVertices(const std::vector<Vec3f>& vert) {
-  std::vector<Real> v(3 * vert.size());
-  for (int i = 0; i < static_cast<int>(vert.size()); ++i) {
-    v[3 * i] = vert[i](0);
-    v[3 * i + 1] = vert[i](1);
-    v[3 * i + 2] = vert[i](2);
+inline void MeshLoader::ProcessPoints(const std::vector<Vec3f>& pts) {
+  std::vector<Real> p(3 * pts.size());
+  for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
+    p[3 * i] = pts[i](0);
+    p[3 * i + 1] = pts[i](1);
+    p[3 * i + 2] = pts[i](2);
   }
-  ProcessVertices<Real>(v);
+  ProcessPoints<Real>(p);
 }
 
-inline int MeshLoader::nvert() const {
-  return static_cast<int>(vert_.size()) / 3;
+inline int MeshLoader::npts() const {
+  return static_cast<int>(pts_.size()) / 3;
 }
 
 }  // namespace dgd

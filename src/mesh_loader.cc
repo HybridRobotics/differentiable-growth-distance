@@ -31,7 +31,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION  // define this in only *one* .cc
 // Optional. define TINYOBJLOADER_USE_MAPBOX_EARCUT gives robust triangulation.
 // Requires C++11
-#define TINYOBJLOADER_USE_MAPBOX_EARCUT
+// #define TINYOBJLOADER_USE_MAPBOX_EARCUT
 #include "tiny_obj_loader.h"
 
 extern "C" {
@@ -95,12 +95,13 @@ void MeshLoader::LoadOBJ(const std::string& input, bool is_file) {
     }
   }
 
-  // copy vertex data
-  ProcessVertices(attrib.vertices);
+  // copy vertex (point) data
+  ProcessPoints(attrib.vertices);
 }
 
-// make graph describing convex hull
-bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
+// make vertex graph describing convex hull
+bool MeshLoader::MakeVertexGraph(std::vector<Vec3f>& vert,
+                                 std::vector<int>& graph) {
   vert.clear();
   graph.clear();
 
@@ -116,7 +117,7 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
   }
 
   // graph not needed for small meshes
-  if (nvert() < 4) {
+  if (npts() < 4) {
     return false;
   }
 
@@ -133,8 +134,8 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
   if (!exitcode) {
     // actual init
     qh_initflags(qh, const_cast<char*>(qhopt.c_str()));
-    double* data = this->vert_.data();
-    qh_init_B(qh, data, nvert(), 3, False);
+    double* data = this->pts_.data();
+    qh_init_B(qh, data, npts(), 3, False);
 
     // construct convex hull
     qh_qhull(qh);
@@ -142,21 +143,21 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
     qh_vertexneighbors(qh);
 
     // allocate graph:
-    //  numvert, numface, vert_edgeadr[numvert],
-    //  edge_localid[numvert+3*numface]
-    int numvert = qh->num_vertices;
-    int numface = qh->num_facets;
-    int szgraph = 2 + 2 * numvert + 3 * numface;
-    vert.reserve(numvert);
-    graph.reserve(szgraph);
-    graph[0] = numvert;
-    graph[1] = numface;
+    //  nvert, nface, vert_edgeadr[nvert],
+    //  edge_localid[nvert + 3*nface]
+    int nvert = qh->num_vertices;
+    int nface = qh->num_facets;
+    int szgraph = 2 + 2 * nvert + 3 * nface;
+    vert.resize(nvert);
+    graph.resize(szgraph);
+    graph[0] = nvert;
+    graph[1] = nface;
 
-    std::vector<int> vert_globalid(numvert);
+    std::vector<int> vert_globalid(nvert);
 
     // indices for convenience
     int vert_edgeadr = 2;
-    int edge_localid = 2 + numvert;
+    int edge_localid = 2 + nvert;
 
     // fill in graph data
     int i = adr = 0;
@@ -164,7 +165,7 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
     FORALLvertices {
       // point id of this vertex, check
       int pid = qh_pointid(qh, vertex->point);
-      if (pid < 0 || pid >= nvert()) {
+      if (pid < 0 || pid >= npts()) {
         ok = 0;
         break;
       }
@@ -172,7 +173,8 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
       // save edge address and global id of this vertex
       graph[vert_edgeadr + i] = adr;
       vert_globalid[i] = pid;
-      vert[i] = Vec3f(vert_[3 * pid], vert_[3 * pid + 1], vert_[3 * pid + 2]);
+      vert[i] = Vec3f(Real(pts_[3 * pid]), Real(pts_[3 * pid + 1]),
+                      Real(pts_[3 * pid + 2]));
 
       // process neighboring faces and their vertices
       int start = adr;
@@ -183,7 +185,7 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
 
           // point id of face vertex, check
           int pid1 = qh_pointid(qh, vertex1->point);
-          if (pid1 < 0 || pid1 >= nvert()) {
+          if (pid1 < 0 || pid1 >= npts()) {
             ok = 0;
             break;
           }
@@ -218,7 +220,7 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
     }
 
     // size check: SHOULD NOT OCCUR
-    if (adr != numvert + 3 * numface) {
+    if (adr != nvert + 3 * nface) {
       throw std::runtime_error("Wrong size in convex hull graph");
     }
 
@@ -234,11 +236,11 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
     }
 
     // replace global ids with local ids in edge data
-    for (int i = 0; i < numvert + 3 * numface; ++i) {
+    for (int i = 0; i < nvert + 3 * nface; ++i) {
       if (graph[edge_localid + i] >= 0) {
         // search vert_globalid for match
         int adr;
-        for (adr = 0; adr < numvert; ++adr) {
+        for (adr = 0; adr < nvert; ++adr) {
           if (vert_globalid[adr] == graph[edge_localid + i]) {
             graph[edge_localid + i] = adr;
             break;
@@ -246,7 +248,7 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
         }
 
         // make sure we found a match: SHOULD NOT OCCUR
-        if (adr >= numvert) {
+        if (adr >= nvert) {
           throw std::runtime_error("Vertex id not found in convex hull");
         }
       }
@@ -259,6 +261,207 @@ bool MeshLoader::MakeGraph(std::vector<Vec3f>& vert, std::vector<int>& graph) {
     qh_freeqhull(qh, !qh_ALL);
     qh_memfreeshort(qh, &curlong, &totlong);
     vert.clear();
+    graph.clear();
+
+    throw std::runtime_error("qhull error");
+  }
+
+  return true;
+}
+
+// make facet graph describing convex hull
+bool MeshLoader::MakeFacetGraph(std::vector<Vec3f>& normal,
+                                std::vector<Real>& offset,
+                                std::vector<int>& graph) {
+  normal.clear();
+  offset.clear();
+  graph.clear();
+
+  int adr, ok, curlong, totlong, exitcode;
+  facetT *facet, *facet1, **facet1p;
+
+  std::string qhopt = "qhull Qt";
+  if (maxhullvert_ > -1) {
+    // qhull "TA" actually means "number of vertices added after the initial
+    // simplex"
+    qhopt += " TA" + std::to_string(maxhullvert_ - 4);
+  }
+
+  // graph not needed for small meshes
+  if (npts() < 4) {
+    return false;
+  }
+
+  // linear algebra functions
+  auto eqn = [](facetT* facet, double* pt) -> double {
+    return (facet->normal[0] * pt[0] + facet->normal[1] * pt[1] +
+            facet->normal[2] * pt[2] + facet->offset);
+  };
+
+  qhT qh_qh;
+  qhT* qh = &qh_qh;
+  qh_zero(qh, stderr);
+
+  // qhull basic init
+  qh_init_A(qh, stdin, stdout, stderr, 0, NULL);
+
+  // install longjmp error handler
+  exitcode = setjmp(qh->errexit);
+  qh->NOerrexit = false;
+  if (!exitcode) {
+    // actual init
+    qh_initflags(qh, const_cast<char*>(qhopt.c_str()));
+    double* data = this->pts_.data();
+    qh_init_B(qh, data, npts(), 3, False);
+
+    // construct convex hull
+    qh_qhull(qh);
+
+    // allocate graph:
+    //  nfacet, nridge, facet_ridgeadr[nfacet],
+    //  ridge_localid[nfacet + 2*nridge]
+    int nvert = qh->num_vertices;
+    int nfacet = qh->num_facets;
+    int nridge = nfacet + nvert - 2;
+    int szgraph = 2 + 2 * nfacet + 2 * nridge;
+    normal.resize(nfacet);
+    offset.resize(nfacet);
+    graph.resize(szgraph);
+    graph[0] = nfacet;
+    graph[1] = nridge;
+
+    std::vector<int> facet_globalid(nfacet);
+
+    // indices for convenience
+    int facet_ridgeadr = 2;
+    int ridge_localid = 2 + nfacet;
+
+    // fill in graph data
+    Real norm;
+    int i = adr = 0;
+    ok = 1;
+    FORALLfacets {
+      facet_globalid[i] = facet->id;
+
+      // check constraint at facet
+      if (eqn(facet, SETfirstt_(facet->vertices, vertexT)->point) > kEps) {
+        throw std::runtime_error("Incorrect normal and offset at facet");
+      }
+
+      // set normal and offset
+      Real sign = eqn(facet, qh->interior_point) <= 0 ? 1.0 : -1.0;
+      for (int k = 0; k < 3; ++k) {
+        normal[i](k) = sign * Real(facet->normal[k]);
+      }
+      offset[i] = sign * Real(facet->offset);
+      norm = normal[i].norm();
+      if (norm < kEps) {
+        std::runtime_error("Zero normal vector at facet");
+      }
+      normal[i] = normal[i] / norm;
+      offset[i] = offset[i] / norm;
+
+      // save ridge address of this facet
+      graph[facet_ridgeadr + i] = adr;
+
+      // set facet neighbours
+      int cnt = 0;
+      FOREACHsetelement_(facetT, facet->neighbors, facet1) {
+        // insert facet id
+        graph[ridge_localid + adr] = facet1->id;
+        ++cnt;
+        ++adr;
+      }
+      if (cnt < 3) {
+        throw std::runtime_error("Facet with less than three neighbours");
+      }
+
+      // insert separator, advance to next facet
+      graph[ridge_localid + adr] = -1;
+      ++adr;
+      ++i;
+    }
+
+    // size check: SHOULD NOT OCCUR
+    if (i != nfacet || adr != nfacet + 2 * nridge) {
+      throw std::runtime_error("Wrong size in convex hull graph");
+    }
+
+    // replace global ids with local ids in facet data
+    for (int i = 0; i < nfacet + 2 * nridge; ++i) {
+      if (graph[ridge_localid + i] >= 0) {
+        // search facet_globalid for match
+        int adr;
+        for (adr = 0; adr < nfacet; ++adr) {
+          if (facet_globalid[adr] == graph[ridge_localid + i]) {
+            graph[ridge_localid + i] = adr;
+            break;
+          }
+        }
+
+        // make sure we found a match: SHOULD NOT OCCUR
+        if (adr >= nfacet) {
+          throw std::runtime_error("Facet id not found in convex hull");
+        }
+      }
+    }
+
+    // reorder facet neighbours according to CCW orientation
+    int nn;
+    Vec3f n, n1, t1, t2;
+    for (int i = 0; i < nfacet; ++i) {
+      n = normal[i];
+      adr = ridge_localid + graph[facet_ridgeadr + i];
+
+      // number of neighbours
+      if (i < nfacet - 1) {
+        nn = graph[facet_ridgeadr + i + 1] - graph[facet_ridgeadr + i] - 1;
+      } else {
+        nn = nfacet + 2 * nridge - graph[facet_ridgeadr + i] - 1;
+      }
+
+      // check for adjacent parallel facets
+      for (int j = 0; j < nn; ++j) {
+        n1 = normal[graph[adr + j]];
+        if (std::abs(n1.dot(n)) > Real(1.0) - kEps) {
+          throw std::runtime_error("Adjacent facets are (anti)parallel");
+        }
+      }
+
+      // compute tangent vectors at facet
+      t1 = n.cross(normal[graph[adr]]).normalized();
+      t2 = n.cross(t1);
+
+      // sort neighbours
+      auto comp = [&normal, &t1, &t2](int j, int k) -> bool {
+        double aj = std::atan2(normal[j].dot(t2), normal[j].dot(t1));
+        double ak = std::atan2(normal[k].dot(t2), normal[k].dot(t1));
+        return aj < ak;
+      };
+
+      std::sort(graph.begin() + adr, graph.begin() + adr + nn, comp);
+    }
+
+    // free all
+    qh_freeqhull(qh, !qh_ALL);
+    qh_memfreeshort(qh, &curlong, &totlong);
+
+    // bad graph: delete
+    if (!ok) {
+      normal.clear();
+      offset.clear();
+      graph.clear();
+      return false;
+    }
+  }
+
+  // longjmp error handler
+  else {
+    // free all
+    qh_freeqhull(qh, !qh_ALL);
+    qh_memfreeshort(qh, &curlong, &totlong);
+    normal.clear();
+    offset.clear();
     graph.clear();
 
     throw std::runtime_error("qhull error");

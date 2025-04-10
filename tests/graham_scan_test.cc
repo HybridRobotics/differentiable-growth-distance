@@ -141,18 +141,18 @@ TEST(GrahamScanTest, SupportFunction) {
                     Vec2f& sp) -> bool {
     int idx{0};
     Real s{0.0}, sv{n.dot(p[0])};
-    bool degenerate = false;
+    bool multiple{false};
     for (int i = 1; i < static_cast<int>(p.size()); ++i) {
       s = n.dot(p[i]);
       if (s > sv) {
         idx = i;
         sv = s;
-        degenerate = false;
+        multiple = false;
       } else if (s == sv)
-        degenerate = true;
+        multiple = true;
     }
     sp = p[idx];
-    return degenerate;
+    return multiple;
   };
 
   std::vector<Vec2f> pts(npts), vert;
@@ -166,8 +166,8 @@ TEST(GrahamScanTest, SupportFunction) {
     for (int k = 0; k < ndir; ++k) {
       Real ang{Real(2 * k) * kPi / ndir};
       dir = Vec2f(std::cos(ang), std::sin(ang));
-      bool degenerate{support(pts, dir, sp_)};
-      if (degenerate) continue;
+      bool multiple{support(pts, dir, sp_)};
+      if (multiple) continue;
       support(vert, dir, sp);
       EXPECT_NEAR(dir.dot(sp_), dir.dot(sp), kTol);
       ASSERT_NEAR((sp_ - sp).lpNorm<Eigen::Infinity>(), 0.0, kTol);
