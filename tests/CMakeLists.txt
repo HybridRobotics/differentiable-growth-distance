@@ -22,6 +22,13 @@ target_link_libraries(${LIB_CORE}_test
     GTest::gtest_main
 )
 
+target_compile_options(${LIB_CORE}_test
+  PRIVATE
+    -pedantic
+    $<$<CONFIG:Debug>:-Wall -Wextra>
+    $<$<CONFIG:Release>:-Werror>
+)
+
 
 include(GoogleTest)
 gtest_discover_tests(${LIB_CORE}_test)

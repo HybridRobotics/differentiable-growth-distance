@@ -55,7 +55,8 @@ class Mesh : public ConvexSet<3> {
    *                    (default = 2).
    */
   Mesh(const std::vector<Vec3f>& vert, const std::vector<int>& graph,
-       Real margin, Real inradius, Real thresh = 0.9, int guess_level = 2);
+       Real margin, Real inradius, Real thresh = Real(0.9),
+       int guess_level = 2);
 
   ~Mesh() {};
 
@@ -114,7 +115,7 @@ inline Mesh::Mesh(const std::vector<Vec3f>& vert, const std::vector<int>& graph,
     throw std::domain_error("Guess level is not 0, 1, or 2");
 
   if (vert.empty() || graph.size() < 2 || nvert_ != graph[0] ||
-      graph.size() != 2 + 2 * nvert_ + 3 * graph[1])
+      static_cast<int>(graph.size()) != 2 + 2 * nvert_ + 3 * graph[1])
     throw std::domain_error("Invalid graph or vertex set");
 
   vert_edgeadr_ = graph_.begin() + 2;

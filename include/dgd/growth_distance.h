@@ -27,7 +27,7 @@
 #include "dgd/settings.h"
 #include "dgd/utils.h"
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
 #include "dgd/io.h"
 #endif
 
@@ -164,7 +164,7 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
       }
   }
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
   io::PrintDiagnosticsHeader(lb, ub, simplex, settings, out);
 #endif
 
@@ -187,7 +187,7 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
     ub = UpdateSimplex(sp, sp1, sp2, simplex, out);
     ++out.iter;
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
     io::PrintSolutionDiagnostics(lb, ub, simplex, settings, out);
 #endif
 
@@ -207,7 +207,7 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
   // Transform normal vector to world frame.
   out.normal = rot.transpose() * out.normal;
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
   io::PrintDiagnosticsFooter();
 #endif
 
@@ -411,7 +411,7 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
       }
   }
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
   io::PrintDiagnosticsHeader(lb, ub, sx.s, settings, out);
 #endif
 
@@ -434,7 +434,7 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
     ub = UpdateSimplex(sx, out);
     ++out.iter;
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
     io::PrintSolutionDiagnostics(lb, ub, sx.s, settings, out);
 #endif
 
@@ -454,7 +454,7 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
   // Transform the normal vector to world frame.
   out.normal = rot.transpose() * out.normal;
 
-#ifndef DONOT_PRINT_DIAGNOSTICS
+#ifdef DGD_PRINT_DIAGNOSTICS
   io::PrintDiagnosticsFooter();
 #endif
 

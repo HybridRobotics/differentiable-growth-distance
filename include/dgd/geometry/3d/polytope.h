@@ -98,7 +98,7 @@ inline Real Polytope::SupportFunction(const Vec3f& n, Vec3f& sp) {
   // Current support value, current best support value.
   Real s{0.0}, sv{n.dot(vert_[idx])};
 
-  for (int i = 0; i < vert_.size(); ++i) {
+  for (int i = 0; i < static_cast<int>(vert_.size()); ++i) {
     s = n.dot(vert_[i]);
     if (s > sv) {
       idx = i;

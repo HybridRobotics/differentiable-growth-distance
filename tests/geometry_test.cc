@@ -109,8 +109,8 @@ TEST(ConeTest, SupportFunction) {
   const Real rho{height / (Real(1.0) + Real(1.0) / std::sin(ha))};
   auto set{Cone(radius, height, margin)};
 
-  EXPECT_EQ(set.GetInradius(), rho + margin);
-  EXPECT_EQ(set.GetOffset(), rho);
+  EXPECT_NEAR(set.GetInradius(), rho + margin, kTol);
+  EXPECT_NEAR(set.GetOffset(), rho, kTol);
 
   Real sv;
   Vec3f sp, sp_, n;
@@ -230,7 +230,7 @@ TEST(MeshTest, SupportFunction) {
       n = normals.col(j);
       sv_ = polytope.SupportFunction(n, sp_);
       sv = mesh.SupportFunction(n, sp);
-      ASSERT_NEAR(sv, n.dot(sp_), kTol);
+      ASSERT_NEAR(sv, sv_, kTol);
     }
   }
 }
