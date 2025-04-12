@@ -59,7 +59,7 @@ TEST(MeshLoaderTest, StringParse) {
 }
 
 TEST(MeshLoaderTest, InputFile) {
-  std::string file = "../tests/cube.obj";
+  std::string file = "../tinyobjloader/models/cube.obj";
 
   MeshLoader ml{};
   ml.LoadOBJ(file);

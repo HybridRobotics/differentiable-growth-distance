@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <vector>
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/2d/ellipse.h"
@@ -10,8 +11,12 @@
 #include "dgd/geometry/3d/cuboid.h"
 #include "dgd/geometry/3d/cylinder.h"
 #include "dgd/geometry/3d/ellipsoid.h"
+#include "dgd/geometry/3d/mesh.h"
+#include "dgd/geometry/3d/polytope.h"
 #include "dgd/geometry/xd/capsule.h"
 #include "dgd/growth_distance.h"
+#include "dgd/mesh_loader.h"
+#include "dgd/utils.h"
 
 namespace {
 
@@ -195,6 +200,41 @@ TEST(EllipsoidTest, SupportFunction) {
   }
 }
 
+//  Mesh test
+TEST(MeshTest, SupportFunction) {
+  SetDefaultSeed();
+  const int nruns{10};
+  const int npts{400};
+  const Real inradius{0.25}, margin{0.25};
+
+  MeshLoader ml{};
+  std::vector<Vec3f> pts(npts), vert;
+  std::vector<int> graph;
+  Mat3Xf normals;
+  UniformSpherePoints(normals, 100, 10);
+  Vec3f sp, sp_, n;
+  Real sv, sv_;
+  for (int i = 0; i < nruns; ++i) {
+    for (int j = 0; j < npts; ++j)
+      pts[j] = Vec3f(Random(1.0), Random(1.0), Random(1.0)).normalized();
+    ml.ProcessPoints(pts);
+    bool valid{ml.MakeVertexGraph(vert, graph)};
+
+    ASSERT_TRUE(valid);
+
+    auto polytope{Polytope(vert, margin, inradius)};
+    auto mesh{Mesh(vert, graph, margin, inradius)};
+
+    // Support function test.
+    for (int j = 0; j < normals.cols(); ++j) {
+      n = normals.col(j);
+      sv_ = polytope.SupportFunction(n, sp_);
+      sv = mesh.SupportFunction(n, sp);
+      ASSERT_NEAR(sv, n.dot(sp_), kTol);
+    }
+  }
+}
+
 // XD convex set tests
 //  Capsule test
 template <class C>
@@ -229,7 +269,7 @@ TYPED_TEST(CapsuleTest, SupportFunction) {
     sp_(0) += std::copysign(hlx, n(0));
     sv = set.SupportFunction(n, sp);
     EXPECT_NEAR(sv, n.dot(sp_), kTol);
-    EXPECT_PRED3(AssertVectorEQ<dim>, sp, sp_, kTol);
+    ASSERT_PRED3(AssertVectorEQ<dim>, sp, sp_, kTol);
   }
 }
 
