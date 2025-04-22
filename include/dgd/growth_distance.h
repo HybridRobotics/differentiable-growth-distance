@@ -23,6 +23,7 @@
 #define DGD_GROWTH_DISTANCE_H_
 
 #include "dgd/data_types.h"
+#include "dgd/geometry/convex_set.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
 #include "dgd/utils.h"
@@ -484,26 +485,40 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
 /**
  * @brief Gets the primal-dual relative gap and the primal feasibility error.
  *
- * @tparam dim     Dimension of the convex sets.
- * @param  tf1,tf2 Rigid body transformations for the convex sets.
- * @param  out     Solver output.
+ * @tparam dim       Dimension of the convex sets.
+ * @param  set1,set2 Convex Sets.
+ * @param  tf1,tf2   Rigid body transformations for the convex sets.
+ * @param  out       Solver output.
  * @return Solution error.
  */
 template <int dim>
-SolutionError GetSolutionError(const Transformf<dim>& tf1,
+SolutionError GetSolutionError(const ConvexSet<dim>* set1,
+                               const Transformf<dim>& tf1,
+                               const ConvexSet<dim>* set2,
                                const Transformf<dim>& tf2,
                                const SolverOutput<dim>& out) {
   SolutionError err;
+  if (out.status != SolutionStatus::kOptimal &&
+      out.status != SolutionStatus::kCoincidentCenters) {
+    err.prim_dual_gap = -1.0;
+    err.prim_feas_err = -1.0;
+    return err;
+  }
 
-  const Vecf<dim> p12{tf1.template block<dim, 1>(0, dim) -
-                      tf2.template block<dim, 1>(0, dim)};
+  const Vecf<dim> p1{tf1.template block<dim, 1>(0, dim)};
+  const Vecf<dim> p2{tf2.template block<dim, 1>(0, dim)};
   const Rotf<dim> rot1{tf1.template block<dim, dim>(0, 0)};
   const Rotf<dim> rot2{tf2.template block<dim, dim>(0, 0)};
-  const Vecf<dim> cp12{(rot1 * out.s1 - rot2 * out.s2) * out.bc};
+  const Vecf<dim> cp1{p1 + out.growth_dist_ub * rot1 * out.s1 * out.bc};
+  const Vecf<dim> cp2{p2 + out.growth_dist_ub * rot2 * out.s2 * out.bc};
 
-  err.primal_dual_rel_gap =
-      std::abs(out.growth_dist_ub / out.growth_dist_lb - 1.0);
-  err.primal_feas_err = (p12 + cp12 * out.growth_dist_ub).norm();
+  Vecf<dim> sp;
+  const Real sv1{set1->SupportFunction(rot1.transpose() * out.normal, sp)};
+  const Real sv2{set2->SupportFunction(-rot2.transpose() * out.normal, sp)};
+  const Real lb{std::abs((p1 - p2).dot(out.normal)) / (sv1 + sv2)};
+
+  err.prim_dual_gap = std::abs(out.growth_dist_ub / lb - 1.0);
+  err.prim_feas_err = (cp1 - cp2).norm();
   return err;
 }
 

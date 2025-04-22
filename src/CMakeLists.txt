@@ -37,8 +37,11 @@ target_compile_options(${LIB_CORE}
 
 # Preprocessor definitions
 if (ENABLE_DIAGNOSTICS)
-  target_compile_definitions(${LIB_CORE}
-    PUBLIC
-      DGD_PRINT_DIAGNOSTICS
-  )
+  target_compile_definitions(${LIB_CORE} PUBLIC DGD_PRINT_DIAGNOSTICS)
 endif()
+
+if (SINGLE_PRECISION)
+  target_compile_definitions(${LIB_CORE} PUBLIC DGD_32_BITS)
+endif()
+
+# Use -DCMAKE_EXPORT_COMPILE_COMMANDS=ON to check compile options

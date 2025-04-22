@@ -6,8 +6,8 @@ cmake_minimum_required(VERSION 3.15)
 #   Build flags
 option(BUILD_TESTS "Build tests" ON)
 option(BUILD_BENCHMARKS
-  "Build benchmarks (only built if BUILD_TESTS is enabled)"
-  OFF
+  "Build benchmarks (only built if BUILD_TESTS=ON and SINGLE_PRECISION=OFF)"
+  ON
 )
 option(BUILD_APPS "Build examples" OFF)
 option(BUILD_DOCS "Add documentation" OFF)
@@ -15,6 +15,7 @@ option(BUILD_DOCS "Add documentation" OFF)
 # option(USE_FFAST_MATH "Add -ffast-math compile option" OFF)
 #   Preprocessor definitions
 option(ENABLE_DIAGNOSTICS "Print solution diagnostics" OFF)
+option(SINGLE_PRECISION "Use 32-bit floating point" OFF)
 
 
 ## Project name and version
@@ -22,7 +23,6 @@ project(
   DifferentiableGrowthDistance
   VERSION 0.1.0
   DESCRIPTION "Differentiable growth distance algorithm for convex sets"
-  LANGUAGES CXX
 )
 
 
@@ -46,7 +46,7 @@ add_subdirectory(src)
 if (BUILD_TESTS)
   enable_testing()
   add_subdirectory(tests)
-  if (BUILD_BENCHMARKS AND CMAKE_BUILD_TYPE STREQUAL "Release")
+  if (BUILD_BENCHMARKS AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT SINGLE_PRECISION)
     add_subdirectory(benchmarks)
   endif()
 endif()

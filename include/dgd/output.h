@@ -155,13 +155,13 @@ struct SolutionError {
    *
    * The error is given by
    * \f[
-   * \text{primal_dual_rel_gap}
+   * \text{prim_dual_gap}
    * = \left|\frac{\text{growth_dist_ub}}{\text{growth_dist_lb}} - 1\right|.
    * \f]
    * When the growth distance algorithm converges, this error is less than the
    * specified value of rel_tol.
    */
-  double primal_dual_rel_gap;
+  double prim_dual_gap;
 
   /**
    * @brief Primal feasibility error.
@@ -170,13 +170,21 @@ struct SolutionError {
    * set support points and barycentric coordinates. Then, the primal
    * feasibility error is given by
    * \f[
-   * \text{primal_feas_err}
+   * \text{prim_feas_err}
    * = | p_{12} + cp_{12} \cdot \text{growth_dist_ub}|_2,
    * \f]
    * where \f$p_{12}\f$ and \f$cp_{12}\f$ are the center position and contact
    * point (wrt the center) on the Minkowski difference set.
    */
-  double primal_feas_err;
+  double prim_feas_err;
+
+  /**
+   * @brief Dual feasibility error.
+   *
+   * The growth distance algorithm always ensures dual feasibility, so this
+   * error is zero.
+   */
+  double dual_feas_err{0.0};
 };
 
 }  // namespace dgd

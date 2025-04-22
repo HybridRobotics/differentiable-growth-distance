@@ -29,7 +29,12 @@
 
 namespace dgd {
 
-typedef double Real; /**< Precision of floating-point real numbers. */
+/**< Precision of floating-point real numbers. */
+#ifdef DGD_32_BITS
+typedef float Real;
+#else
+typedef double Real;
+#endif
 
 /**
  * @brief Infinity.

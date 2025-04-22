@@ -58,9 +58,11 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
                        .topLeftCorner<2, 2>()};
     for (int j = 0; j < nsamples_warm; ++j) {
       GrowthDistance(&set1, tf1, &set2, tf2, settings, out, (j > 0));
-      ASSERT_EQ(out.status, SolutionStatus::kOptimal);
-      const SolutionError err{GetSolutionError(tf1, tf2, out)};
-      ASSERT_NEAR(err.primal_feas_err, 0.0, kTol);
+      ASSERT_TRUE(out.status == SolutionStatus::kOptimal ||
+                  out.status == SolutionStatus::kCoincidentCenters);
+      const SolutionError err{GetSolutionError(&set1, tf1, &set2, tf2, out)};
+      EXPECT_NEAR(err.prim_feas_err, 0.0, kTol);
+      EXPECT_NEAR(err.prim_dual_gap, 0.0, kTol);
 
       tf1.topLeftCorner<2, 2>() *= dR;
       tf1.topRightCorner<2, 1>() += v * dt;
@@ -117,9 +119,11 @@ TEST(GrowthDistanceTest, ConeMesh) {
     EulerToRotation(dt * euler, dR);
     for (int j = 0; j < nsamples_warm; ++j) {
       GrowthDistance(&set1, tf1, &set2, tf2, settings, out, (j > 0));
-      ASSERT_EQ(out.status, SolutionStatus::kOptimal);
-      const SolutionError err{GetSolutionError(tf1, tf2, out)};
-      ASSERT_NEAR(err.primal_feas_err, 0.0, kTol);
+      ASSERT_TRUE(out.status == SolutionStatus::kOptimal ||
+                  out.status == SolutionStatus::kCoincidentCenters);
+      const SolutionError err{GetSolutionError(&set1, tf1, &set2, tf2, out)};
+      EXPECT_NEAR(err.prim_feas_err, 0.0, kTol);
+      EXPECT_NEAR(err.prim_dual_gap, 0.0, kTol);
 
       tf1.topLeftCorner<3, 3>() *= dR;
       tf1.topRightCorner<3, 1>() += v * dt;
