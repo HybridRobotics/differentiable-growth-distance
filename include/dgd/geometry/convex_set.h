@@ -84,7 +84,7 @@ class ConvexSet {
    * where \f$sv\f$ is the return value of the function.
    *
    * @note If the normal vector n is required to have unit 2-norm, the function
-   * Normalize should return true.
+   * RequireUnitNormal should return true.
    *
    * @note Safety margins (in the 2-norm) can be directly included in the
    * support function computation (when n has unit 2-norm) as: \f{align*}{
@@ -98,7 +98,7 @@ class ConvexSet {
    * it leads to the boundary of the convex set being a differentiable manifold;
    * thus more iterations are needed for convergence.
    *
-   * @see Normalize
+   * @see RequireUnitNormal
    *
    * @param[in]     n    Normal vector.
    * @param[out]    sp   Support point. A point at which the maximum for the
@@ -119,7 +119,7 @@ class ConvexSet {
    *
    * @see SupportFunction
    */
-  virtual bool Normalize() const = 0;
+  virtual bool RequireUnitNormal() const = 0;
 
   /**
    * @brief Gets the dimension of the convex set.
@@ -134,7 +134,7 @@ class ConvexSet {
    * @return Inradius.
    * @see inradius_
    */
-  Real GetInradius() const;
+  Real Inradius() const;
 
   /**
    * @brief Sets the inradius.
@@ -159,7 +159,7 @@ constexpr int ConvexSet<dim>::Dimension() {
 }
 
 template <int dim>
-inline Real ConvexSet<dim>::GetInradius() const {
+inline Real ConvexSet<dim>::Inradius() const {
   return inradius_;
 }
 

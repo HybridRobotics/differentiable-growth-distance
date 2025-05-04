@@ -68,7 +68,7 @@ TEST(EllipseTest, SupportFunction) {
   const Real hlx{3.0}, hly{2.0}, margin{0.0};
   auto set{Ellipse(hlx, hly, margin)};
 
-  EXPECT_EQ(set.GetInradius(), hly + margin);
+  EXPECT_EQ(set.Inradius(), hly + margin);
 
   Real sv;
   Vec2f sp, sp_, n;
@@ -95,11 +95,11 @@ TEST(PolygonTest, SupportFunction) {
   for (int i = 0; i < npts; ++i)
     pts.push_back(Vec2f(Random(-len, len), Random(-len, len)));
   GrahamScan(pts, vert);
-  Real inradius{PolygonInradius(vert, Vec2f::Zero())};
+  Real inradius{ComputePolygonInradius(vert, Vec2f::Zero())};
 
   auto set{Polygon(vert, margin, inradius)};
 
-  EXPECT_EQ(set.GetInradius(), inradius + margin);
+  EXPECT_EQ(set.Inradius(), inradius + margin);
 
   Real sv;
   Vec2f sp;
@@ -116,7 +116,7 @@ TEST(RectangleTest, SupportFunction) {
   const Real hlx{3.0}, hly{2.0}, margin{0.0};
   auto set{Rectangle(hlx, hly, margin)};
 
-  EXPECT_EQ(set.GetInradius(), hly + margin);
+  EXPECT_EQ(set.Inradius(), hly + margin);
 
   Real sv;
   Vec2f sp, sp_, n;
@@ -138,8 +138,8 @@ TEST(ConeTest, SupportFunction) {
   const Real rho{height / (Real(1.0) + Real(1.0) / std::sin(ha))};
   auto set{Cone(radius, height, margin)};
 
-  EXPECT_NEAR(set.GetInradius(), rho + margin, kTol);
-  EXPECT_NEAR(set.GetOffset(), rho, kTol);
+  EXPECT_NEAR(set.Inradius(), rho + margin, kTol);
+  EXPECT_NEAR(set.Offset(), rho, kTol);
 
   Real sv;
   Vec3f sp, sp_, n;
@@ -168,7 +168,7 @@ TEST(CuboidTest, SupportFunction) {
   const Real hlx{3.0}, hly{2.0}, hlz{1.5}, margin{0.0};
   auto set{Cuboid(hlx, hly, hlz, margin)};
 
-  EXPECT_EQ(set.GetInradius(), hlz + margin);
+  EXPECT_EQ(set.Inradius(), hlz + margin);
 
   Real sv;
   Vec3f sp, sp_, n;
@@ -188,7 +188,7 @@ TEST(CylinderTest, SupportFunction) {
   const Real hlx{2.0}, radius{2.5}, margin{0.0};
   auto set{Cylinder(hlx, radius, margin)};
 
-  EXPECT_EQ(set.GetInradius(), hlx + margin);
+  EXPECT_EQ(set.Inradius(), hlx + margin);
 
   Real sv;
   Vec3f sp, sp_, n;
@@ -212,7 +212,7 @@ TEST(EllipsoidTest, SupportFunction) {
   const Real hlx{3.0}, hly{2.0}, hlz{1.5}, margin{0.0};
   auto set{Ellipsoid(hlx, hly, hlz, margin)};
 
-  EXPECT_EQ(set.GetInradius(), hlz + margin);
+  EXPECT_EQ(set.Inradius(), hlz + margin);
 
   Real sv;
   Vec3f sp, sp_, n;
@@ -241,16 +241,16 @@ TEST(FrustumTest, SupportFunction) {
   rt[0] = radius;
   h[0] = height;
   sets.push_back(Frustum(radius, radius, height, margin));
-  EXPECT_NEAR(sets[0].GetInradius(), radius + margin, kTol);
-  EXPECT_NEAR(sets[0].GetOffset(), radius, kTol);
+  EXPECT_NEAR(sets[0].Inradius(), radius + margin, kTol);
+  EXPECT_NEAR(sets[0].Offset(), radius, kTol);
   // Short cylinder.
   height = 0.5;
   rb[1] = radius;
   rt[1] = radius;
   h[1] = height;
   sets.push_back(Frustum(radius, radius, height, margin));
-  EXPECT_NEAR(sets[1].GetInradius(), height / Real(2.0) + margin, kTol);
-  EXPECT_NEAR(sets[1].GetOffset(), height / Real(2.0), kTol);
+  EXPECT_NEAR(sets[1].Inradius(), height / Real(2.0) + margin, kTol);
+  EXPECT_NEAR(sets[1].Offset(), height / Real(2.0), kTol);
 
   // Cone.
   Real ha{kPi / 6.0};
@@ -260,15 +260,15 @@ TEST(FrustumTest, SupportFunction) {
   rt[2] = 0.0;
   h[2] = height;
   sets.push_back(Frustum(radius, 0.0, height, margin));
-  EXPECT_NEAR(sets[2].GetInradius(), rho + margin, kTol);
-  EXPECT_NEAR(sets[2].GetOffset(), rho, kTol);
+  EXPECT_NEAR(sets[2].Inradius(), rho + margin, kTol);
+  EXPECT_NEAR(sets[2].Offset(), rho, kTol);
   // Inverted cone.
   rb[3] = 0.0;
   rt[3] = radius;
   h[3] = height;
   sets.push_back(Frustum(0.0, radius, height, margin));
-  EXPECT_NEAR(sets[3].GetInradius(), rho + margin, kTol);
-  EXPECT_NEAR(sets[3].GetOffset(), height - rho, kTol);
+  EXPECT_NEAR(sets[3].Inradius(), rho + margin, kTol);
+  EXPECT_NEAR(sets[3].Offset(), height - rho, kTol);
 
   // Tall frustum with large base.
   Real height_cone{radius / std::tan(ha)};
@@ -278,15 +278,15 @@ TEST(FrustumTest, SupportFunction) {
   rt[4] = small_radius;
   h[4] = height;
   sets.push_back(Frustum(radius, small_radius, height, margin));
-  EXPECT_NEAR(sets[4].GetInradius(), rho + margin, kTol);
-  EXPECT_NEAR(sets[4].GetOffset(), rho, kTol);
+  EXPECT_NEAR(sets[4].Inradius(), rho + margin, kTol);
+  EXPECT_NEAR(sets[4].Offset(), rho, kTol);
   // Tall frustum with small base.
   rb[5] = small_radius;
   rt[5] = radius;
   h[5] = height;
   sets.push_back(Frustum(small_radius, radius, height, margin));
-  EXPECT_NEAR(sets[5].GetInradius(), rho + margin, kTol);
-  EXPECT_NEAR(sets[5].GetOffset(), height - rho, kTol);
+  EXPECT_NEAR(sets[5].Inradius(), rho + margin, kTol);
+  EXPECT_NEAR(sets[5].Offset(), height - rho, kTol);
   // Short frustum with large base.
   height = rho;
   small_radius = radius / height_cone * height;
@@ -294,15 +294,15 @@ TEST(FrustumTest, SupportFunction) {
   rt[6] = small_radius;
   h[6] = height;
   sets.push_back(Frustum(radius, small_radius, height, margin));
-  EXPECT_NEAR(sets[6].GetInradius(), height / Real(2.0) + margin, kTol);
-  EXPECT_NEAR(sets[6].GetOffset(), height / Real(2.0), kTol);
+  EXPECT_NEAR(sets[6].Inradius(), height / Real(2.0) + margin, kTol);
+  EXPECT_NEAR(sets[6].Offset(), height / Real(2.0), kTol);
   // Short frustum with small base.
   rb[7] = small_radius;
   rt[7] = radius;
   h[7] = height;
   sets.push_back(Frustum(small_radius, radius, height, margin));
-  EXPECT_NEAR(sets[7].GetInradius(), height / Real(2.0) + margin, kTol);
-  EXPECT_NEAR(sets[7].GetOffset(), height / Real(2.0), kTol);
+  EXPECT_NEAR(sets[7].Inradius(), height / Real(2.0) + margin, kTol);
+  EXPECT_NEAR(sets[7].Offset(), height / Real(2.0), kTol);
 
   Real sv, tha, offset;
   Vec3f sp, sp_, n;
@@ -314,7 +314,7 @@ TEST(FrustumTest, SupportFunction) {
       n = pts.col(i);
       n = n / n.lpNorm<Eigen::Infinity>();
       tha = std::abs(rb[k] - rt[k]) / h[k];
-      offset = set.GetOffset();
+      offset = set.Offset();
       if (n.topRows<2>().norm() * tha < n(2)) {
         sp_.topRows<2>() = rt[k] * n.topRows<2>().normalized();
         sp_(2) = h[k] - offset;
@@ -387,11 +387,11 @@ TEST(PolytopeTest, SupportFunction) {
   std::vector<int> graph;
   ml.MakeVertexGraph(vert, graph);
   Vec3f interior_point{Vec3f::Zero()};
-  Real inradius{ml.Inradius(interior_point)};
+  Real inradius{ml.ComputeInradius(interior_point)};
 
   auto set{Polytope(vert, margin, inradius)};
 
-  EXPECT_EQ(set.GetInradius(), inradius + margin);
+  EXPECT_EQ(set.Inradius(), inradius + margin);
 
   Real sv;
   Vec3f sp, n;
@@ -421,7 +421,7 @@ TYPED_TEST(CapsuleTest, SupportFunction) {
   const Real hlx{2.0}, radius{2.5}, margin{0.25};
   auto set{TypeParam(hlx, radius, margin)};
 
-  EXPECT_EQ(set.GetInradius(), radius + margin);
+  EXPECT_EQ(set.Inradius(), radius + margin);
 
   Mat3Xf pts;
   // Odd number of points avoids zero x-component of normal.
@@ -458,7 +458,7 @@ TYPED_TEST(SphereTest, SupportFunction) {
   const Real radius{0.25};
   auto set{TypeParam(radius)};
 
-  EXPECT_EQ(set.GetInradius(), radius);
+  EXPECT_EQ(set.Inradius(), radius);
 
   Vecf<dim> sp;
   Real sv{set.SupportFunction(Vecf<dim>::UnitX(), sp)};

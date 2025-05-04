@@ -45,10 +45,11 @@ class Ellipsoid : public ConvexSet<3> {
 
   ~Ellipsoid() {};
 
-  Real SupportFunction(const Vec3f& n, Vec3f& sp,
-                       SupportFunctionHint<3>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec3f& n, Vec3f& sp,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const Real hlx2_;   /**< Square of the half x-axis length. */
@@ -78,7 +79,7 @@ inline Real Ellipsoid::SupportFunction(const Vec3f& n, Vec3f& sp,
   return k + margin_;
 }
 
-inline bool Ellipsoid::Normalize() const { return (margin_ > 0.0); }
+inline bool Ellipsoid::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 }  // namespace dgd
 

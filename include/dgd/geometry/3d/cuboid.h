@@ -45,10 +45,11 @@ class Cuboid : public ConvexSet<3> {
 
   ~Cuboid() {};
 
-  Real SupportFunction(const Vec3f& n, Vec3f& sp,
-                       SupportFunctionHint<3>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec3f& n, Vec3f& sp,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const Real hlx_;    /**< Half x-axis side length. */
@@ -73,7 +74,7 @@ inline Real Cuboid::SupportFunction(const Vec3f& n, Vec3f& sp,
   return sp.dot(n);
 }
 
-inline bool Cuboid::Normalize() const { return (margin_ > 0.0); }
+inline bool Cuboid::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 }  // namespace dgd
 

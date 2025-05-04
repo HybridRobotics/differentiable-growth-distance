@@ -48,9 +48,9 @@ class Sphere : public ConvexSet<dim> {
 
   Real SupportFunction(
       const Vecf<dim>& n, Vecf<dim>& sp,
-      SupportFunctionHint<dim>* /*hint*/ = nullptr) const final;
+      SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const Real radius_; /**< Radius. */
@@ -72,7 +72,7 @@ inline Real Sphere<dim>::SupportFunction(
 }
 
 template <int dim>
-inline bool Sphere<dim>::Normalize() const {
+inline bool Sphere<dim>::RequireUnitNormal() const {
   return true;
 }
 

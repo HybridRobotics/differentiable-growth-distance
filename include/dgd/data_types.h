@@ -30,7 +30,7 @@
 namespace dgd {
 
 /**< Precision of floating-point real numbers. */
-#ifdef DGD_32_BITS
+#ifdef DGD_32BIT_FLOAT
 typedef float Real;
 #else
 typedef double Real;

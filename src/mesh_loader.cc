@@ -32,7 +32,7 @@
 // Optional. define TINYOBJLOADER_USE_MAPBOX_EARCUT gives robust triangulation.
 // Requires C++11
 // #define TINYOBJLOADER_USE_MAPBOX_EARCUT
-#include "tiny_obj_loader.h"
+#include "tinyobjloader/tiny_obj_loader.h"
 
 extern "C" {
 #include "libqhull_r/qhull_ra.h"
@@ -330,7 +330,7 @@ bool MeshLoader::MakeFacetGraph(std::vector<Vec3f>& normal,
     graph.resize(szgraph);
     graph[0] = nfacet;
     graph[1] = nridge;
-    for (int i = 0; i < 3; ++i) interior_point(i) = qh->interior_point[i];
+    for (int i = 0; i < 3; ++i) interior_point(i) = Real(qh->interior_point[i]);
 
     std::vector<int> facet_globalid(nfacet);
 
@@ -472,9 +472,9 @@ bool MeshLoader::MakeFacetGraph(std::vector<Vec3f>& normal,
   return true;
 }
 
-Real MeshLoader::Inradius(const std::vector<Vec3f>& normal,
-                          const std::vector<Real>& offset,
-                          const Vec3f& interior_point) const {
+Real MeshLoader::ComputeInradius(const std::vector<Vec3f>& normal,
+                                 const std::vector<Real>& offset,
+                                 const Vec3f& interior_point) const {
   Real max{-kInf}, eqn;
   for (int i = 0; i < static_cast<int>(normal.size()); ++i) {
     eqn = normal[i].dot(interior_point) + offset[i];
@@ -486,7 +486,7 @@ Real MeshLoader::Inradius(const std::vector<Vec3f>& normal,
   return -max;
 }
 
-Real MeshLoader::Inradius(Vec3f& interior_point, bool use_given_ip) {
+Real MeshLoader::ComputeInradius(Vec3f& interior_point, bool use_given_ip) {
   std::vector<Vec3f> normal;
   std::vector<Real> offset;
   std::vector<int> graph;
@@ -495,7 +495,7 @@ Real MeshLoader::Inradius(Vec3f& interior_point, bool use_given_ip) {
   if (!valid) throw std::runtime_error("Qhull error");
 
   if (!use_given_ip) interior_point = ip_;
-  return Inradius(normal, offset, interior_point);
+  return ComputeInradius(normal, offset, interior_point);
 }
 
 }  // namespace dgd

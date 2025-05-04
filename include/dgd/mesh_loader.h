@@ -108,9 +108,6 @@ class MeshLoader {
    */
   bool MakeVertexGraph(std::vector<Vec3f>& vert, std::vector<int>& graph);
 
-  //  nfacet, nridge, facet_ridgeadr[nfacet],
-  //  facet_localid[nfacet + 2*nridge]
-
   /**
    * @brief Constructs convex hull (in H-rep) and facet adjacency graph from
    * the stored vector of points.
@@ -154,9 +151,9 @@ class MeshLoader {
    * @param  interior_point A point in the convex hull interior.
    * @return Inradius of the polytope about the interior point.
    */
-  Real Inradius(const std::vector<Vec3f>& normal,
-                const std::vector<Real>& offset,
-                const Vec3f& interior_point) const;
+  Real ComputeInradius(const std::vector<Vec3f>& normal,
+                       const std::vector<Real>& offset,
+                       const Vec3f& interior_point) const;
 
   /**
    * @brief Computes an interior point and the inradius (with respect to the
@@ -168,7 +165,7 @@ class MeshLoader {
    *                               point (default = false).
    * @return        Inradius about the interior point.
    */
-  Real Inradius(Vec3f& interior_point, bool use_given_ip = false);
+  Real ComputeInradius(Vec3f& interior_point, bool use_given_ip = false);
 
   /**
    * @brief Number of points in the mesh.

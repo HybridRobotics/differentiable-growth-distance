@@ -124,7 +124,7 @@ TEST(MeshLoaderTest, MakeFacetGraph) {
   std::vector<int> graph;
   Vec3f interior_point;
   bool valid{ml.MakeFacetGraph(normal, offset, graph, interior_point)};
-  Real inradius{ml.Inradius(normal, offset, interior_point)};
+  Real inradius{ml.ComputeInradius(normal, offset, interior_point)};
 
   ASSERT_TRUE(valid);
   ASSERT_EQ(normal.size(), nfacet_);

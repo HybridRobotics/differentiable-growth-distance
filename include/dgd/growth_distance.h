@@ -136,11 +136,11 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
                 "Convex sets are not two-dimensional");
 
   if (!warm_start) {
-    out.inradius = set1->GetInradius() + set2->GetInradius();
+    out.inradius = set1->Inradius() + set2->Inradius();
     out.hint2_.n_prev = out.hint1_.n_prev = Vec2f::Zero();
   }
   out.iter = 0;
-  const bool normalize{set1->Normalize() || set2->Normalize()};
+  const bool normalize{set1->RequireUnitNormal() || set2->RequireUnitNormal()};
 
   // Check center distance.
   const Vec2f p12{tf1.block<2, 1>(0, 2) - tf2.block<2, 1>(0, 2)};
@@ -259,9 +259,10 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
 namespace {
 
 /**
- * @brief Struct containing all the information about the simplex.
+ * @brief Struct containing all the information about the inner and outer
+ * polyhedral approximations.
  */
-struct Simplex {
+struct Approximation {
   /**
    * @brief Simplex points in the aligned coordinates.
    *
@@ -303,91 +304,91 @@ struct Simplex {
 /**
  * @brief Updates the normal vector using the simplex.
  *
- * @param[in,out] sx Simplex struct.
+ * @param[in,out] a Approximation struct.
  */
-inline void UpdateNormal(Simplex& sx) {
+inline void UpdateNormal(Approximation& a) {
   // The triangle edges are used to compute the normal vector because the origin
   // may not lie in the triangle interior.
-  sx.n(0) = (sx.s(1, 2) - sx.s(1, 0)) * (sx.s(2, 1) - sx.s(2, 0)) -
-            (sx.s(2, 2) - sx.s(2, 0)) * (sx.s(1, 1) - sx.s(1, 0));
-  sx.n(1) = (sx.s(2, 2) - sx.s(2, 0)) * (sx.s(0, 1) - sx.s(0, 0)) -
-            (sx.s(0, 2) - sx.s(0, 0)) * (sx.s(2, 1) - sx.s(2, 0));
-  sx.n(2) = -sx.area;
+  a.n(0) = (a.s(1, 2) - a.s(1, 0)) * (a.s(2, 1) - a.s(2, 0)) -
+           (a.s(2, 2) - a.s(2, 0)) * (a.s(1, 1) - a.s(1, 0));
+  a.n(1) = (a.s(2, 2) - a.s(2, 0)) * (a.s(0, 1) - a.s(0, 0)) -
+           (a.s(0, 2) - a.s(0, 0)) * (a.s(2, 1) - a.s(2, 0));
+  a.n(2) = -a.area;
 }
 
 /**
  * @brief Updates the barycentric coordinates of the origin.
  *
- * @param[in,out] sx  Simplex struct.
+ * @param[in,out] a   Approximation struct.
  * @param[out]    out Solver output.
  * @return        z-coordinate of the intersection point.
  */
-inline Real UpdateOriginCoordinates(Simplex& sx, SolverOutput<3>& out) {
-  out.bc(0) = sx.s(0, 1) * sx.s(1, 2) - sx.s(1, 1) * sx.s(0, 2);
-  out.bc(1) = sx.s(0, 2) * sx.s(1, 0) - sx.s(1, 2) * sx.s(0, 0);
-  out.bc(2) = sx.s(0, 0) * sx.s(1, 1) - sx.s(1, 0) * sx.s(0, 1);
+inline Real UpdateOriginCoordinates(Approximation& a, SolverOutput<3>& out) {
+  out.bc(0) = a.s(0, 1) * a.s(1, 2) - a.s(1, 1) * a.s(0, 2);
+  out.bc(1) = a.s(0, 2) * a.s(1, 0) - a.s(1, 2) * a.s(0, 0);
+  out.bc(2) = a.s(0, 0) * a.s(1, 1) - a.s(1, 0) * a.s(0, 1);
   // The projected (signed) simplex area is guaranteed to be positive. The
   // implementation below is for robustness.
   out.bc.array() = out.bc.array().abs() + kEps * kEps / Real(3.0);
-  sx.area = out.bc.sum();
-  out.bc = out.bc / sx.area;
-  return sx.s.row(2) * out.bc;
+  a.area = out.bc.sum();
+  out.bc = out.bc / a.area;
+  return a.s.row(2) * out.bc;
 }
 
 /**
  * @brief Computes the barycentric coordinates of the support point.
  *
- * @param[in,out] sx Simplex struct.
+ * @param[in,out] a Approximation struct.
  */
-inline void ComputeSupportCoordinates(Simplex& sx) {
-  sx.bc(0) = (sx.s(0, 1) - sx.sp(0)) * (sx.s(1, 2) - sx.sp(1)) -
-             (sx.s(1, 1) - sx.sp(1)) * (sx.s(0, 2) - sx.sp(0));
-  sx.bc(1) = (sx.s(0, 2) - sx.sp(0)) * (sx.s(1, 0) - sx.sp(1)) -
-             (sx.s(1, 2) - sx.sp(1)) * (sx.s(0, 0) - sx.sp(0));
-  sx.bc(2) = (sx.s(0, 0) - sx.sp(0)) * (sx.s(1, 1) - sx.sp(1)) -
-             (sx.s(1, 0) - sx.sp(1)) * (sx.s(0, 1) - sx.sp(0));
-  sx.bc.array() = sx.bc.array() + kEps * kEps / Real(3.0);
-  sx.bc = sx.bc / sx.area;
+inline void ComputeSupportCoordinates(Approximation& a) {
+  a.bc(0) = (a.s(0, 1) - a.sp(0)) * (a.s(1, 2) - a.sp(1)) -
+            (a.s(1, 1) - a.sp(1)) * (a.s(0, 2) - a.sp(0));
+  a.bc(1) = (a.s(0, 2) - a.sp(0)) * (a.s(1, 0) - a.sp(1)) -
+            (a.s(1, 2) - a.sp(1)) * (a.s(0, 0) - a.sp(0));
+  a.bc(2) = (a.s(0, 0) - a.sp(0)) * (a.s(1, 1) - a.sp(1)) -
+            (a.s(1, 0) - a.sp(1)) * (a.s(0, 1) - a.sp(0));
+  a.bc.array() = a.bc.array() + kEps * kEps / Real(3.0);
+  a.bc = a.bc / a.area;
 }
 
 /**
  * @brief Updates the simplex and barycentric coordinates and returns the upper
  * bound, given a support point.
  *
- * @param[in,out] sx  Simplex struct.
+ * @param[in,out] a   Approximation struct.
  * @param[out]    out Solver output.
  * @return        The updated value of the upper bound.
  */
-inline Real UpdateSimplex(Simplex& sx, SolverOutput<3>& out) {
-  ComputeSupportCoordinates(sx);
+inline Real UpdateSimplex(Approximation& a, SolverOutput<3>& out) {
+  ComputeSupportCoordinates(a);
   // Compute one iteration of the simplex algorithm.
   int exiting_idx{0};
   Real value{1.0};
   for (int i = 0; i < 3; ++i)
-    if ((sx.bc(i) > kEps) && (out.bc(i) < sx.bc(i) * value)) {
-      value = out.bc(i) / sx.bc(i);
+    if ((a.bc(i) > kEps) && (out.bc(i) < a.bc(i) * value)) {
+      value = out.bc(i) / a.bc(i);
       exiting_idx = i;
     }
   // Replace the exiting simplex point with the support point.
-  sx.s.col(exiting_idx) = sx.sp;
-  out.s1.col(exiting_idx) = sx.sp1;
-  out.s2.col(exiting_idx) = sx.sp2;
-  return UpdateOriginCoordinates(sx, out);
+  a.s.col(exiting_idx) = a.sp;
+  out.s1.col(exiting_idx) = a.sp1;
+  out.s2.col(exiting_idx) = a.sp2;
+  return UpdateOriginCoordinates(a, out);
 }
 
 /**
- * @brief Initializes the simplex for the algorithm.
+ * @brief Initializes the polyhedral approximation for the algorithm.
  *
- * @param[in,out] sx  Simplex struct.
+ * @param[in,out] a   Approximation struct.
  * @param[in,out] out Solver output.
  */
-inline void InitializeSimplex(Simplex& sx, SolverOutput<3>& out) {
-  sx.n = -Vec3f::UnitZ();
+inline void InitializeApproximation(Approximation& a, SolverOutput<3>& out) {
+  a.n = -Vec3f::UnitZ();
 
-  sx.s.col(0) = out.inradius * Vec3f(0.5, 0.5, 0.0);
-  sx.s.col(1) = out.inradius * Vec3f(-0.5, 0.5, 0.0);
-  sx.s.col(2) = Vec3f(0.0, -out.inradius, 0.0);
-  sx.area = Real(1.5) * out.inradius * out.inradius;
+  a.s.col(0) = out.inradius * Vec3f(0.5, 0.5, 0.0);
+  a.s.col(1) = out.inradius * Vec3f(-0.5, 0.5, 0.0);
+  a.s.col(2) = Vec3f(0.0, -out.inradius, 0.0);
+  a.area = Real(1.5) * out.inradius * out.inradius;
 
   out.bc = Vec3f::Constant(Real(1.0 / 3.0));
 }
@@ -414,11 +415,11 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
                 "Convex sets are not three-dimensional");
 
   if (!warm_start) {
-    out.inradius = set1->GetInradius() + set2->GetInradius();
+    out.inradius = set1->Inradius() + set2->Inradius();
     out.hint2_.n_prev = out.hint1_.n_prev = Vec3f::Zero();
   }
   out.iter = 0;
-  const bool normalize{set1->Normalize() || set2->Normalize()};
+  const bool normalize{set1->RequireUnitNormal() || set2->RequireUnitNormal()};
 
   // Check center distance.
   const Vec3f p12{tf1.block<3, 1>(0, 3) - tf2.block<3, 1>(0, 3)};
@@ -434,31 +435,31 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
 
   // Growth distance bounds.
   Real lb{-kInf}, ub{0.0};
-  Simplex sx;
+  Approximation a;
 
-  InitializeSimplex(sx, out);
+  InitializeApproximation(a, out);
   // Warm-start.
   if (warm_start && (out.status == SolutionStatus::kOptimal)) {
     const Matf<3, 3> s1_{out.s1};
     const Matf<3, 3> s2_{out.s2};
     for (int i = 0; i < 3; ++i)
       if (out.bc(i) > kEps) {
-        sx.sp.noalias() = rot1 * s1_.col(i) - rot2 * s2_.col(i);
-        if (sx.n.dot(sx.sp - sx.s.col(0)) > Real(0.0)) {
-          sx.sp1 = s1_.col(i);
-          sx.sp2 = s2_.col(i);
-          ub = UpdateSimplex(sx, out);
-          UpdateNormal(sx);
+        a.sp.noalias() = rot1 * s1_.col(i) - rot2 * s2_.col(i);
+        if (a.n.dot(a.sp - a.s.col(0)) > Real(0.0)) {
+          a.sp1 = s1_.col(i);
+          a.sp2 = s2_.col(i);
+          ub = UpdateSimplex(a, out);
+          UpdateNormal(a);
           if (normalize)
-            sx.n.normalize();
+            a.n.normalize();
           else
-            sx.n = sx.n / sx.n.lpNorm<Eigen::Infinity>();
+            a.n = a.n / a.n.lpNorm<Eigen::Infinity>();
         }
       }
   }
 
 #ifdef DGD_PRINT_DIAGNOSTICS
-  io::PrintDiagnosticsHeader(lb, ub, sx.s, settings, out);
+  io::PrintDiagnosticsHeader(lb, ub, a.s, settings, out);
 #endif
 
   // Loop invariants (at the start of each iteration):
@@ -469,21 +470,21 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
   while (true) {
     // Compute support point for the Minkowski difference set along the normal.
     const Real sv1{
-        set1->SupportFunction(rot1.transpose() * sx.n, sx.sp1, &out.hint1_)};
+        set1->SupportFunction(rot1.transpose() * a.n, a.sp1, &out.hint1_)};
     const Real sv2{
-        set2->SupportFunction(-rot2.transpose() * sx.n, sx.sp2, &out.hint2_)};
-    sx.sp.noalias() = rot1 * sx.sp1 - rot2 * sx.sp2;
+        set2->SupportFunction(-rot2.transpose() * a.n, a.sp2, &out.hint2_)};
+    a.sp.noalias() = rot1 * a.sp1 - rot2 * a.sp2;
     // Update the lower bound and the current best normal vector.
-    const Real lb_{(sv1 + sv2) / sx.n(2)};
+    const Real lb_{(sv1 + sv2) / a.n(2)};
     if (lb_ > lb) {
       lb = lb_;
-      out.normal = sx.n;
+      out.normal = a.n;
     }
-    ub = UpdateSimplex(sx, out);
+    ub = UpdateSimplex(a, out);
     ++out.iter;
 
 #ifdef DGD_PRINT_DIAGNOSTICS
-    io::PrintSolutionDiagnostics(lb, ub, sx.s, settings, out);
+    io::PrintSolutionDiagnostics(lb, ub, a.s, settings, out);
 #endif
 
     if constexpr (collide) {
@@ -511,11 +512,11 @@ Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
       out.status = SolutionStatus::kMaxIterReached;
       break;
     }
-    UpdateNormal(sx);
+    UpdateNormal(a);
     if (normalize)
-      sx.n.normalize();
+      a.n.normalize();
     else
-      sx.n = sx.n / sx.n.lpNorm<Eigen::Infinity>();
+      a.n = a.n / a.n.lpNorm<Eigen::Infinity>();
   }
 
   out.growth_dist_lb = -cdist / lb;

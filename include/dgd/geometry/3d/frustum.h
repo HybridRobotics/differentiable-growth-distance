@@ -60,10 +60,11 @@ class Frustum : public ConvexSet<3> {
 
   ~Frustum() {};
 
-  Real SupportFunction(const Vec3f& n, Vec3f& sp,
-                       SupportFunctionHint<3>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec3f& n, Vec3f& sp,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
   /**
    * @brief Gets the z-offset of the base of the frustum.
@@ -73,7 +74,7 @@ class Frustum : public ConvexSet<3> {
    *
    * @return z-offset of the base of the frustum.
    */
-  Real GetOffset() const;
+  Real Offset() const;
 
  private:
   const Real rb_;     /**< Base radius. */
@@ -118,9 +119,9 @@ inline Real Frustum::SupportFunction(const Vec3f& n, Vec3f& sp,
   return sp.dot(n);
 }
 
-inline bool Frustum::Normalize() const { return (margin_ > 0.0); }
+inline bool Frustum::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline Real Frustum::GetOffset() const { return offset_; }
+inline Real Frustum::Offset() const { return offset_; }
 
 }  // namespace dgd
 

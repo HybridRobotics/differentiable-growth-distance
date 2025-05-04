@@ -53,10 +53,11 @@ class Cone : public ConvexSet<3> {
 
   ~Cone() {};
 
-  Real SupportFunction(const Vec3f& n, Vec3f& sp,
-                       SupportFunctionHint<3>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec3f& n, Vec3f& sp,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
   /**
    * @brief Gets the z-offset of the base of the cone.
@@ -66,7 +67,7 @@ class Cone : public ConvexSet<3> {
    *
    * @return z-offset of the base of the cone.
    */
-  Real GetOffset() const;
+  Real Offset() const;
 
  private:
   const Real r_;      /**< Radius. */
@@ -101,9 +102,9 @@ inline Real Cone::SupportFunction(const Vec3f& n, Vec3f& sp,
   }
 }
 
-inline bool Cone::Normalize() const { return (margin_ > 0.0); }
+inline bool Cone::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline Real Cone::GetOffset() const { return rho_; }
+inline Real Cone::Offset() const { return rho_; }
 
 }  // namespace dgd
 

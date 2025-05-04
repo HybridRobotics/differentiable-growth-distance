@@ -45,7 +45,7 @@ class Mesh : public ConvexSet<3> {
    * interior and that the inradius is correct.
    *
    * @see MeshLoader::MakeVertexGraph
-   * @see MeshLoader::Inradius
+   * @see MeshLoader::ComputeInradius
    *
    * @param vert        Vertices of the mesh convex hull.
    * @param graph       Vertex adjacency graph of the mesh convex hull.
@@ -60,17 +60,18 @@ class Mesh : public ConvexSet<3> {
 
   ~Mesh() {};
 
-  Real SupportFunction(const Vec3f& n, Vec3f& sp,
-                       SupportFunctionHint<3>* hint = nullptr) const final;
+  Real SupportFunction(
+      const Vec3f& n, Vec3f& sp,
+      SupportFunctionHint<3>* hint = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
   /**
    * @brief Gets the vertices of the mesh convex hull.
    *
    * @return Convex hull vertices.
    */
-  const std::vector<Vec3f>& GetVertices() const;
+  const std::vector<Vec3f>& Vertices() const;
 
   /**
    * @brief Gets the vertex adjacency graph of the mesh convex hull.
@@ -79,7 +80,7 @@ class Mesh : public ConvexSet<3> {
    *
    * @return Vertex adjacency graph.
    */
-  const std::vector<int>& GetGraph() const;
+  const std::vector<int>& Graph() const;
 
   /**
    * @brief Returns the number of vertices in the mesh convex hull.
@@ -203,11 +204,11 @@ inline Real Mesh::SupportFunction(const Vec3f& n, Vec3f& sp,
   return sv + margin_;
 }
 
-inline bool Mesh::Normalize() const { return (margin_ > 0.0); }
+inline bool Mesh::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline const std::vector<Vec3f>& Mesh::GetVertices() const { return vert_; }
+inline const std::vector<Vec3f>& Mesh::Vertices() const { return vert_; }
 
-inline const std::vector<int>& Mesh::GetGraph() const { return graph_; }
+inline const std::vector<int>& Mesh::Graph() const { return graph_; }
 
 inline int Mesh::nvert() const { return nvert_; }
 

@@ -40,7 +40,7 @@ class Polygon : public ConvexSet<2> {
    * guaranteed by the user, whenever necessary.
    *
    * @see GrahamScan
-   * @see PolygonInradius
+   * @see ComputePolygonInradius
    *
    * @param vert     Vector of n two-dimensional vertices.
    * @param margin   Safety margin.
@@ -50,10 +50,11 @@ class Polygon : public ConvexSet<2> {
 
   ~Polygon() {};
 
-  Real SupportFunction(const Vec2f& n, Vec2f& sp,
-                       SupportFunctionHint<2>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec2f& n, Vec2f& sp,
+      SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const std::vector<Vec2f> vert_; /**< Polygon vertices. */
@@ -85,7 +86,7 @@ inline Real Polygon::SupportFunction(const Vec2f& n, Vec2f& sp,
   return sv + margin_;
 }
 
-inline bool Polygon::Normalize() const { return (margin_ > 0.0); }
+inline bool Polygon::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 }  // namespace dgd
 

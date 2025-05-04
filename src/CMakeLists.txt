@@ -1,47 +1,49 @@
 ## DGD library
-add_library(${LIB_CORE}
-  "${PROJECT_SOURCE_DIR}/src/mesh_loader.cc"
+add_library(${DGD_LIB} STATIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/mesh_loader.cc"
 )
 
-target_include_directories(${LIB_CORE}
+add_library(${DGD_LIB}::${DGD_LIB} ALIAS ${DGD_LIB})
+
+target_include_directories(${DGD_LIB}
   PRIVATE
-    "${PROJECT_SOURCE_DIR}/tinyobjloader/"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../external"
   PUBLIC
-    "${PROJECT_SOURCE_DIR}/include/"
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-target_link_libraries(${LIB_CORE}
+target_link_libraries(${DGD_LIB}
   PRIVATE
     QHULL::QHULL
   PUBLIC
     Eigen3::Eigen
 )
 
-## Compiler flags
-target_compile_features(${LIB_CORE} PUBLIC cxx_std_17)
-set_target_properties(${LIB_CORE} PROPERTIES CXX_EXTENSIONS OFF)
+
+# Compiler flags
+# Use -DCMAKE_EXPORT_COMPILE_COMMANDS=ON to check compile options
+target_compile_features(${DGD_LIB} PUBLIC cxx_std_17)
+set_target_properties(${DGD_LIB} PROPERTIES CXX_EXTENSIONS OFF)
 
 # Note: -ffast-math (-fno-math-errno, -Ofast) breaks IEEE compliance
 #       and enables -ffinite-math-only.
-target_compile_options(${LIB_CORE}
+target_compile_options(${DGD_LIB}
   PRIVATE
-    -pedantic
-    $<$<CONFIG:Debug>:-Wall -Wextra>
-    $<$<CONFIG:Release>:-Werror>
+    -Wall -Wextra -Werror -Wconversion -Wpedantic
     # $<$<CONFIG:Release>:-funroll-loops -march=native -mfpmath=sse -fopenmp>
-    # $<$<AND:$<CONFIG:Release>,$<USE_FFAST_MATH>>:-ffast-math>
+    # $<$<AND:$<CONFIG:Release>,$<DGD_USE_FFAST_MATH>>:-ffast-math>
   PUBLIC
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
 )
 
+
 # Preprocessor definitions
-if (ENABLE_DIAGNOSTICS)
-  target_compile_definitions(${LIB_CORE} PUBLIC DGD_PRINT_DIAGNOSTICS)
+if (DGD_ENABLE_DIAGNOSTICS)
+  target_compile_definitions(${DGD_LIB} PUBLIC DGD_PRINT_DIAGNOSTICS)
 endif()
 
-if (SINGLE_PRECISION)
-  target_compile_definitions(${LIB_CORE} PUBLIC DGD_32_BITS)
+if (DGD_SINGLE_PRECISION)
+  target_compile_definitions(${DGD_LIB} PUBLIC DGD_32BIT_FLOAT)
 endif()
-
-# Use -DCMAKE_EXPORT_COMPILE_COMMANDS=ON to check compile options

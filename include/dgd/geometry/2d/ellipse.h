@@ -45,10 +45,11 @@ class Ellipse : public ConvexSet<2> {
 
   ~Ellipse() {};
 
-  Real SupportFunction(const Vec2f& n, Vec2f& sp,
-                       SupportFunctionHint<2>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec2f& n, Vec2f& sp,
+      SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const Real hlx2_;   /**< Square of the half x-axis length. */
@@ -71,7 +72,7 @@ inline Real Ellipse::SupportFunction(const Vec2f& n, Vec2f& sp,
   return k + margin_;
 }
 
-inline bool Ellipse::Normalize() const { return (margin_ > 0.0); }
+inline bool Ellipse::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 }  // namespace dgd
 

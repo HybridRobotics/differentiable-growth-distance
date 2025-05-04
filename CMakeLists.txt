@@ -1,70 +1,101 @@
-## CMake version
 cmake_minimum_required(VERSION 3.15)
 
-
-## User flags
-#   Build flags
-option(BUILD_TESTS "Build tests" ON)
-option(BUILD_BENCHMARKS
-  "Build benchmarks (only built if BUILD_TESTS=ON and SINGLE_PRECISION=OFF)"
-  ON
-)
-option(BUILD_APPS "Build examples" OFF)
-option(BUILD_DOCS "Add documentation" OFF)
-#   Compile flags
-# option(USE_FFAST_MATH "Add -ffast-math compile option" OFF)
-#   Preprocessor definitions
-option(ENABLE_DIAGNOSTICS "Print solution diagnostics" OFF)
-option(SINGLE_PRECISION "Use 32-bit floating point" OFF)
-
-
-## Project name and version
 project(
   DifferentiableGrowthDistance
-  VERSION 0.1.0
+  VERSION 1.0.0
   DESCRIPTION "Differentiable growth distance algorithm for convex sets"
 )
 
 
-## Compiler flags
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
+## User flags
+#   Compile flags
+# option(DGD_USE_FFAST_MATH     "Add -ffast-math compile option" OFF)
+#   Preprocessor definitions
+option(DGD_ENABLE_DIAGNOSTICS "Print solution diagnostics" OFF)
+option(DGD_SINGLE_PRECISION   "Use 32-bit floating point" OFF)
+#   Installation rules
+option(DGD_INSTALL_LIBS       "Install library" ON)
+
 
 ## Packages
-list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
-include(FetchContent)
+include(GNUInstallDirs)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Eigen3 3.4.90 REQUIRED NO_MODULE)
 find_package(Qhull 2020.2 REQUIRED)
 
 
-## DGD subdirectories
-set(LIB_CORE dgd)
+## DGD Core library
+set(DGD_LIB dgd)
 add_subdirectory(src)
 
+if(DGD_INSTALL_LIBS)
+  include(CMakePackageConfigHelpers)
 
-## Tests
-if (BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(tests)
-  if (BUILD_BENCHMARKS AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT SINGLE_PRECISION)
+  configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/dgdConfig.cmake.in"
+    "${PROJECT_BINARY_DIR}/${DGD_LIB}Config.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${DGD_LIB}"
+  )
+
+  # major.minor1.patch1 is compatible with major.minor2.patch2
+  write_basic_package_version_file(
+    "${PROJECT_BINARY_DIR}/${DGD_LIB}ConfigVersion.cmake"
+    COMPATIBILITY SameMajorVersion
+  )
+
+  install(
+    FILES "${PROJECT_BINARY_DIR}/${DGD_LIB}ConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${DGD_LIB}"
+  )
+
+  install(TARGETS ${DGD_LIB}
+    EXPORT ${DGD_LIB}Targets
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+
+  install(EXPORT ${DGD_LIB}Targets
+    NAMESPACE ${DGD_LIB}::
+    FILE "${DGD_LIB}Targets.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${DGD_LIB}
+  )
+
+  install(
+    DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/dgd"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    FILES_MATCHING PATTERN "*.h"
+  )
+endif()
+
+
+# Tests, bechmarks, and documentation
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  option(DGD_BUILD_TESTS      "Build tests" ON)
+  option(DGD_BUILD_BENCHMARKS "Build benchmarks (only for Release config with double precision)" OFF)
+  option(DGD_BUILD_DOCS       "Build documentation" OFF)
+
+  include(FetchContent)
+
+  if(DGD_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+  endif()
+
+  if(DGD_BUILD_BENCHMARKS AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT DGD_SINGLE_PRECISION)
     add_subdirectory(benchmarks)
   endif()
-endif()
 
-
-## Apps
-if (BUILD_APPS)
-  add_subdirectory(apps)
-endif()
-
-
-## Documentation
-if (BUILD_DOCS)
-  find_package(Doxygen)
-  if (Doxygen_FOUND)
-    message(STATUS "Doxygen found: ${DOXYGEN_EXECUTABLE} -- ${DOXYGEN_VERSION}")
-    add_subdirectory(docs)
-  else()
-    message(STATUS "Doxygen not found; not building docs")
+  if(DGD_BUILD_DOCS)
+    find_package(Doxygen)
+    if(Doxygen_FOUND)
+      message(STATUS "Doxygen found: ${DOXYGEN_EXECUTABLE} -- ${DOXYGEN_VERSION}")
+      add_subdirectory(docs EXCLUDE_FROM_ALL)
+    else()
+      message(STATUS "Doxygen not found; not building docs")
+    endif()
   endif()
+
 endif()

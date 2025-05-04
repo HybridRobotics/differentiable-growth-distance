@@ -54,9 +54,9 @@ class Capsule : public ConvexSet<dim> {
 
   Real SupportFunction(
       const Vecf<dim>& n, Vecf<dim>& sp,
-      SupportFunctionHint<dim>* /*hint*/ = nullptr) const final;
+      SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const Real hlx_;    /**< Half axis length. */
@@ -86,7 +86,7 @@ inline Real Capsule<dim>::SupportFunction(
 }
 
 template <int dim>
-inline bool Capsule<dim>::Normalize() const {
+inline bool Capsule<dim>::RequireUnitNormal() const {
   return true;
 }
 

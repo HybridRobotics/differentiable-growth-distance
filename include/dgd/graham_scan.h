@@ -105,8 +105,8 @@ inline int GrahamScan(const std::vector<Vec2f>& pts, std::vector<Vec2f>& vert) {
  * @return Inradius about the interior point. Inradius is negative when
  *         interior_point is not in the convex hull.
  */
-inline Real PolygonInradius(const std::vector<Vec2f>& vert,
-                            const Vec2f& interior_point) {
+inline Real ComputePolygonInradius(const std::vector<Vec2f>& vert,
+                                   const Vec2f& interior_point) {
   if (vert.size() < 3) return 0.0;
 
   Vec2f t, n, prev{vert.end()[-1]};

@@ -109,7 +109,7 @@ TEST(GrahamScanTest, TwoDim) {
   EXPECT_EQ(vert[1], Vec2f(6.0, 4.0));
   EXPECT_EQ(vert[2], Vec2f(0.0, 4.0));
 
-  Real inradius{PolygonInradius(vert, Vec2f(3.0, 3.0))};
+  Real inradius{ComputePolygonInradius(vert, Vec2f(3.0, 3.0))};
   EXPECT_NEAR(inradius, std::sqrt(9.0 / 13.0), kTol);
 }
 

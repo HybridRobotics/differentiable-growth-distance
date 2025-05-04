@@ -1,5 +1,5 @@
-# Exclude folders using negative llokahead
-exclude: '^benchmarks/incremental/(?!CMakeLists\.txt$|incremental.*$).*$'
+# Exclude external files
+exclude: '^external/tinyobjloader/.*$'
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks

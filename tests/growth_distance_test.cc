@@ -41,7 +41,7 @@ void Set2dConvexSets(ConvexSetPtr<2>& set1, ConvexSetPtr<2>& set2,
     pts.push_back(vec);
   }
   GrahamScan(pts, vert);
-  Real inradius{PolygonInradius(vert, Vec2f::Zero())};
+  Real inradius{ComputePolygonInradius(vert, Vec2f::Zero())};
   set2 = std::make_unique<Polygon>(vert, margin2, inradius);
 }
 
@@ -69,7 +69,7 @@ void Set3dConvexSets(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
   ml.ProcessPoints(pts);
   bool valid{ml.MakeVertexGraph(vert, graph)};
   ASSERT_TRUE(valid);
-  const Real inradius{ml.Inradius(vec)};
+  const Real inradius{ml.ComputeInradius(vec)};
   for (auto& v : vert) v -= vec;
   set2 = std::make_unique<Mesh>(vert, graph, margin2, inradius);
 }
@@ -87,7 +87,7 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
   Transform2f tf1, tf2;
   SolverSettings settings;
   SolverOutput<2> out;
-  const Real dt{0.1};
+  const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<2>(-2.0, 2.0, tf1);
@@ -123,7 +123,7 @@ TEST(CollisionCheckTest, EllipsePolygon) {
   Transform2f tf1, tf2;
   SolverSettings settings;
   SolverOutput<2> out;
-  const Real dt{0.1};
+  const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<2>(-5.0, 5.0, tf1);
@@ -162,7 +162,7 @@ TEST(GrowthDistanceTest, ConeMesh) {
   Transform3f tf1, tf2;
   SolverSettings settings;
   SolverOutput<3> out;
-  const Real dt{0.1};
+  const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<3>(-3.0, 3.0, tf1);
@@ -200,7 +200,7 @@ TEST(CollisionCheckTest, ConeMesh) {
   Transform3f tf1, tf2;
   SolverSettings settings;
   SolverOutput<3> out;
-  const Real dt{0.1};
+  const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<3>(-6.0, 6.0, tf1);

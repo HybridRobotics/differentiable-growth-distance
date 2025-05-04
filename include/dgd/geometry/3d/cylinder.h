@@ -48,10 +48,11 @@ class Cylinder : public ConvexSet<3> {
 
   ~Cylinder() {};
 
-  Real SupportFunction(const Vec3f& n, Vec3f& sp,
-                       SupportFunctionHint<3>* /*hint*/ = nullptr) const final;
+  Real SupportFunction(
+      const Vec3f& n, Vec3f& sp,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
-  bool Normalize() const final;
+  bool RequireUnitNormal() const final override;
 
  private:
   const Real hlx_;    /**< Half axis length. */
@@ -75,7 +76,7 @@ inline Real Cylinder::SupportFunction(const Vec3f& n, Vec3f& sp,
   return sp.dot(n);
 }
 
-inline bool Cylinder::Normalize() const { return (margin_ > 0.0); }
+inline bool Cylinder::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 }  // namespace dgd
 
