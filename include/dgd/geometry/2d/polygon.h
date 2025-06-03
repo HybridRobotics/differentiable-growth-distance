@@ -22,6 +22,8 @@
 #ifndef DGD_GEOMETRY_2D_POLYGON_H_
 #define DGD_GEOMETRY_2D_POLYGON_H_
 
+#include <stdexcept>
+
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
 
@@ -46,29 +48,30 @@ class Polygon : public ConvexSet<2> {
    * @param margin   Safety margin.
    * @param inradius Polygon inradius.
    */
-  explicit Polygon(const std::vector<Vec2f>& vert, Real margin, Real inradius);
+  explicit Polygon(const std::vector<Vec2r>& vert, Real margin, Real inradius);
 
-  ~Polygon() {};
+  ~Polygon() = default;
 
   Real SupportFunction(
-      const Vec2f& n, Vec2f& sp,
+      const Vec2r& n, Vec2r& sp,
       SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
 
  private:
-  const std::vector<Vec2f> vert_; /**< Polygon vertices. */
+  const std::vector<Vec2r> vert_; /**< Polygon vertices. */
   const Real margin_;             /**< Safety margin. */
 };
 
-inline Polygon::Polygon(const std::vector<Vec2f>& vert, Real margin,
+inline Polygon::Polygon(const std::vector<Vec2r>& vert, Real margin,
                         Real inradius)
     : ConvexSet<2>(margin + inradius), vert_(vert), margin_(margin) {
-  if ((margin < 0.0) || (inradius <= 0.0))
+  if ((margin < 0.0) || (inradius <= 0.0)) {
     throw std::domain_error("Invalid margin or inradius");
+  }
 }
 
-inline Real Polygon::SupportFunction(const Vec2f& n, Vec2f& sp,
+inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
                                      SupportFunctionHint<2>* /*hint*/) const {
   // Other methods/options:
   // 1. Early termination of the loop.

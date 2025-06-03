@@ -54,14 +54,19 @@ class Mesh : public ConvexSet<3> {
    * @param thresh      Support function threshold (default = 0.9).
    * @param guess_level Guess level for the warm start index (default = 2).
    */
-  explicit Mesh(const std::vector<Vec3f>& vert, const std::vector<int>& graph,
+  explicit Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
                 Real margin, Real inradius, Real thresh = Real(0.9),
                 int guess_level = 1);
 
-  ~Mesh() {};
+  ~Mesh() = default;
+
+  Mesh(const Mesh&) = delete;
+  Mesh& operator=(const Mesh&) = delete;
+  Mesh(Mesh&&) noexcept = delete;
+  Mesh& operator=(Mesh&&) noexcept = delete;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* hint = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -71,7 +76,7 @@ class Mesh : public ConvexSet<3> {
    *
    * @return Convex hull vertices.
    */
-  const std::vector<Vec3f>& Vertices() const;
+  const std::vector<Vec3r>& vertices() const;
 
   /**
    * @brief Gets the vertex adjacency graph of the mesh convex hull.
@@ -80,7 +85,7 @@ class Mesh : public ConvexSet<3> {
    *
    * @return Vertex adjacency graph.
    */
-  const std::vector<int>& Graph() const;
+  const std::vector<int>& graph() const;
 
   /**
    * @brief Returns the number of vertices in the mesh convex hull.
@@ -90,46 +95,49 @@ class Mesh : public ConvexSet<3> {
   int nvert() const;
 
  private:
-  std::vector<Vec3f> vert_; /**< Convex hull vertices. */
+  std::vector<Vec3r> vert_; /**< Convex hull vertices. */
   std::vector<int> graph_;  /**< Vertex adjacency graph. */
-  const Real margin_;       /**< Safety margin. */
-  const int nvert_;         /**< Number of vertices. */
-
   std::vector<int>::const_iterator vert_edgeadr_;
   std::vector<int>::const_iterator edge_localid_;
-  std::vector<int> idx_ws0_;  // Initial guesses for idx_ws_.
-  const Real thresh_;         // Support function warm start threshold.
+
+  const Real margin_;        /**< Safety margin. */
+  const Real thresh_;        /**< Support function warm start threshold. */
+  std::vector<int> idx_ws0_; /**< Initial guesses for idx_ws_. */
+  const int nvert_;          /**< Number of vertices. */
 };
 
-inline Mesh::Mesh(const std::vector<Vec3f>& vert, const std::vector<int>& graph,
+inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
                   Real margin, Real inradius, Real thresh, int guess_level)
     : ConvexSet<3>(margin + inradius),
       vert_(vert),
       graph_(graph),
       margin_(margin),
-      nvert_(static_cast<int>(vert.size())),
-      thresh_(thresh) {
-  if ((inradius <= 0.0) || (margin < 0.0))
+      thresh_(thresh),
+      nvert_(static_cast<int>(vert.size())) {
+  if ((inradius <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid inradius or margin");
-  if ((guess_level < 0) || (guess_level > 2))
+  }
+  if ((guess_level < 0) || (guess_level > 2)) {
     throw std::domain_error("Guess level is not 0, 1, or 2");
+  }
 
   if (vert.empty() || graph.size() < 2 || nvert_ != graph[0] ||
-      static_cast<int>(graph.size()) != 2 + 2 * nvert_ + 3 * graph[1])
+      static_cast<int>(graph.size()) != 2 + 2 * nvert_ + 3 * graph[1]) {
     throw std::domain_error("Invalid graph or vertex set");
+  }
 
   vert_edgeadr_ = graph_.begin() + 2;
   edge_localid_ = vert_edgeadr_ + nvert_;
 
   // Set idx_ws0_ indices.
   //  Select (0, 8, 20) uniformly distributed normal vectors.
-  std::vector<Vec3f> normals;
-  Vec3f n;
+  std::vector<Vec3r> normals;
+  Vec3r n;
   Real f[2]{1.0, -1.0};
   if (guess_level > 0) {
     // Add cube vertices.
     for (int i = 0; i < 8; ++i) {
-      n = Vec3f(f[i % 2], f[(i / 2) % 2], f[(i / 4) % 2]);
+      n = Vec3r(f[i % 2], f[(i / 2) % 2], f[(i / 4) % 2]);
       normals.push_back(n.normalized());
     }
   }
@@ -140,17 +148,17 @@ inline Mesh::Mesh(const std::vector<Vec3f>& vert, const std::vector<int>& graph,
     // Add regular dodecahedron vertices.
     // See https://en.wikipedia.org/wiki/Dodecahedron#Cartesian_coordinates
     for (int i = 0; i < 4; ++i) {
-      n = Vec3f(0.0, f[i % 2] * ha, f[(i / 2) % 2] * hb);
+      n = Vec3r(0.0, f[i % 2] * ha, f[(i / 2) % 2] * hb);
       normals.push_back(n.normalized());
-      n = Vec3f(f[i % 2] * ha, f[(i / 2) % 2] * hb, 0.0);
+      n = Vec3r(f[i % 2] * ha, f[(i / 2) % 2] * hb, 0.0);
       normals.push_back(n.normalized());
-      n = Vec3f(f[i % 2] * hb, 0.0, f[(i / 2) % 2] * ha);
+      n = Vec3r(f[i % 2] * hb, 0.0, f[(i / 2) % 2] * ha);
       normals.push_back(n.normalized());
     }
   }
 
   //  Compute support function to set idx_ws0_.
-  Vec3f sp;
+  Vec3r sp;
   for (const auto& n : normals) {
     SupportFunctionHint<3> hint{};
     SupportFunction(n, sp, &hint);
@@ -158,21 +166,22 @@ inline Mesh::Mesh(const std::vector<Vec3f>& vert, const std::vector<int>& graph,
   }
 }
 
-inline Real Mesh::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
                                   SupportFunctionHint<3>* hint) const {
   // If the current normal is much different than the previous normal,
   // compute a new warm start index.
   int idx_ws{hint ? hint->idx_ws : 0};
   if (hint && hint->n_prev.dot(n) < thresh_) {
-    if (idx_ws0_.empty())
+    if (idx_ws0_.empty()) {
       idx_ws = 0;
-    else {
+    } else {
       Real s{0.0}, smax{-kInf};
-      for (int i : idx_ws0_)
+      for (int i : idx_ws0_) {
         if ((s = n.dot(vert_[i])) > smax) {
           idx_ws = i;
           smax = s;
         }
+      }
     }
   }
 
@@ -206,9 +215,9 @@ inline Real Mesh::SupportFunction(const Vec3f& n, Vec3f& sp,
 
 inline bool Mesh::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline const std::vector<Vec3f>& Mesh::Vertices() const { return vert_; }
+inline const std::vector<Vec3r>& Mesh::vertices() const { return vert_; }
 
-inline const std::vector<int>& Mesh::Graph() const { return graph_; }
+inline const std::vector<int>& Mesh::graph() const { return graph_; }
 
 inline int Mesh::nvert() const { return nvert_; }
 

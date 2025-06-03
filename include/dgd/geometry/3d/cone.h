@@ -51,10 +51,10 @@ class Cone : public ConvexSet<3> {
    */
   explicit Cone(Real radius, Real height, Real margin);
 
-  ~Cone() {};
+  ~Cone() = default;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -67,7 +67,7 @@ class Cone : public ConvexSet<3> {
    *
    * @return z-offset of the base of the cone.
    */
-  Real Offset() const;
+  Real offset() const;
 
  private:
   const Real r_;      /**< Radius. */
@@ -79,14 +79,15 @@ class Cone : public ConvexSet<3> {
 
 inline Cone::Cone(Real radius, Real height, Real margin)
     : ConvexSet<3>(), r_(radius), h_(height), margin_(margin) {
-  if ((radius <= 0.0) || (height <= 0.0) || (margin < 0.0))
+  if ((radius <= 0.0) || (height <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid radius, height, or margin");
+  }
   tha_ = r_ / h_;
   rho_ = (std::sqrt(r_ * r_ + h_ * h_) * r_ - r_ * r_) / h_;
-  SetInradius(rho_ + margin);
+  set_inradius(rho_ + margin);
 }
 
-inline Real Cone::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Cone::SupportFunction(const Vec3r& n, Vec3r& sp,
                                   SupportFunctionHint<3>* /*hint*/) const {
   sp = margin_ * n;
   const Real k{std::sqrt(n(0) * n(0) + n(1) * n(1))};
@@ -104,7 +105,7 @@ inline Real Cone::SupportFunction(const Vec3f& n, Vec3f& sp,
 
 inline bool Cone::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline Real Cone::Offset() const { return rho_; }
+inline Real Cone::offset() const { return rho_; }
 
 }  // namespace dgd
 

@@ -1,3 +1,5 @@
+#include "dgd/growth_distance.h"
+
 #include <gtest/gtest.h>
 
 #include <cmath>
@@ -5,15 +7,14 @@
 #include <typeinfo>
 
 #include "dgd/data_types.h"
+#include "dgd/error_metrics.h"
 #include "dgd/geometry/2d/ellipse.h"
 #include "dgd/geometry/2d/polygon.h"
 #include "dgd/geometry/3d/cone.h"
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/graham_scan.h"
-// clang-format off
-#include "dgd/growth_distance.h"
-// clang-format on
 #include "dgd/mesh_loader.h"
+#include "dgd/utils.h"
 
 namespace {
 
@@ -32,16 +33,16 @@ void Set2dConvexSets(ConvexSetPtr<2>& set1, ConvexSetPtr<2>& set2,
   SetDefaultSeed();
   const int npts{100};
   const Real len{2.0};
-  std::vector<Vec2f> pts, vert;
-  Vec2f vec;
+  std::vector<Vec2r> pts, vert;
+  Vec2r vec;
   const int pnorm{6};
   for (int i = 0; i < npts; ++i) {
-    vec = Vec2f(Random(1.0), Random(1.0));
+    vec = Vec2r(Random(1.0), Random(1.0));
     vec = vec * len / (vec.lpNorm<pnorm>() + kEps);
     pts.push_back(vec);
   }
   GrahamScan(pts, vert);
-  Real inradius{ComputePolygonInradius(vert, Vec2f::Zero())};
+  Real inradius{ComputePolygonInradius(vert, Vec2r::Zero())};
   set2 = std::make_unique<Polygon>(vert, margin2, inradius);
 }
 
@@ -57,12 +58,12 @@ void Set3dConvexSets(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
   const int npts{500};
   const Real len{2.0};
   MeshLoader ml{};
-  std::vector<Vec3f> pts, vert;
+  std::vector<Vec3r> pts, vert;
   std::vector<int> graph;
-  Vec3f vec;
+  Vec3r vec;
   const int pnorm{4};
   for (int i = 0; i < npts; ++i) {
-    vec = Vec3f(Random(1.0), Random(1.0), Random(1.0));
+    vec = Vec3r(Random(1.0), Random(1.0), Random(1.0));
     vec = vec * len / (vec.lpNorm<pnorm>() + kEps);
     pts.push_back(vec);
   }
@@ -74,7 +75,7 @@ void Set3dConvexSets(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
   set2 = std::make_unique<Mesh>(vert, graph, margin2, inradius);
 }
 
-const Real kTol{kEpsSqrt};
+const Real kTol{kSqrtEps};
 
 TEST(GrowthDistanceTest, EllipsePolygon) {
   const int nsamples_cold{100};
@@ -84,23 +85,23 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
   Set2dConvexSets(set1, set2, 0.0, 0.0);
 
   // Compute growth distance for random transformations.
-  Transform2f tf1, tf2;
-  SolverSettings settings;
-  SolverOutput<2> out;
+  Transform2r tf1, tf2;
+  Settings settings;
+  Output<2> out;
   const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<2>(-2.0, 2.0, tf1);
     RandomRigidBodyTransform<2>(-2.0, 2.0, tf2);
-    const Vec2f v(Random(1.0), Random(1.0));
+    const Vec2r v(Random(1.0), Random(1.0));
     const Real w{Random(kPi)};
-    const Rot2f dR{Eigen::AngleAxis<Real>(w * dt, Vec3f::UnitZ())
-                       .matrix()
-                       .topLeftCorner<2, 2>()};
+    const Rotation2r dR{Eigen::AngleAxis<Real>(w * dt, Vec3r::UnitZ())
+                            .matrix()
+                            .topLeftCorner<2, 2>()};
     for (int j = 0; j < nsamples_warm; ++j) {
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out, (j > 0));
-      ASSERT_TRUE(out.status == SolutionStatus::kOptimal ||
-                  out.status == SolutionStatus::kCoincidentCenters);
+      ASSERT_TRUE(out.status == SolutionStatus::Optimal ||
+                  out.status == SolutionStatus::CoincidentCenters);
       const SolutionError err{
           GetSolutionError(set1.get(), tf1, set2.get(), tf2, out)};
       ASSERT_NEAR(err.prim_feas_err, 0.0, kTol);
@@ -120,26 +121,26 @@ TEST(CollisionCheckTest, EllipsePolygon) {
   Set2dConvexSets(set1, set2, 0.0, 0.0);
 
   // Check collisions for random transformations.
-  Transform2f tf1, tf2;
-  SolverSettings settings;
-  SolverOutput<2> out;
+  Transform2r tf1, tf2;
+  Settings settings;
+  Output<2> out;
   const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<2>(-5.0, 5.0, tf1);
     RandomRigidBodyTransform<2>(-5.0, 5.0, tf2);
-    const Vec2f v(Random(1.0), Random(1.0));
+    const Vec2r v(Random(1.0), Random(1.0));
     const Real w{Random(kPi)};
-    const Rot2f dR{Eigen::AngleAxis<Real>(w * dt, Vec3f::UnitZ())
-                       .matrix()
-                       .topLeftCorner<2, 2>()};
+    const Rotation2r dR{Eigen::AngleAxis<Real>(w * dt, Vec3r::UnitZ())
+                            .matrix()
+                            .topLeftCorner<2, 2>()};
     for (int j = 0; j < nsamples_warm; ++j) {
-      const bool collision{CollisionCheck(set1.get(), tf1, set2.get(), tf2,
-                                          settings, out, (j > 0))};
-      ASSERT_TRUE(out.status == SolutionStatus::kOptimal ||
-                  out.status == SolutionStatus::kCoincidentCenters);
-      const bool assertion{
-          AssertCollision(set1.get(), tf1, set2.get(), tf2, out, collision)};
+      const bool collision{DetectCollision(set1.get(), tf1, set2.get(), tf2,
+                                           settings, out, (j > 0))};
+      ASSERT_TRUE(out.status == SolutionStatus::Optimal ||
+                  out.status == SolutionStatus::CoincidentCenters);
+      const bool assertion{AssertCollisionStatus(set1.get(), tf1, set2.get(),
+                                                 tf2, out, collision)};
       ASSERT_TRUE(assertion);
 
       tf1.topLeftCorner<2, 2>() *= dR;
@@ -159,22 +160,22 @@ TEST(GrowthDistanceTest, ConeMesh) {
   Set3dConvexSets(set1, set2, 0.0, 0.0);
 
   // Compute growth distance for random transformations.
-  Transform3f tf1, tf2;
-  SolverSettings settings;
-  SolverOutput<3> out;
+  Transform3r tf1, tf2;
+  Settings settings;
+  Output<3> out;
   const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<3>(-3.0, 3.0, tf1);
     RandomRigidBodyTransform<3>(-3.0, 3.0, tf2);
-    const Vec3f v(Random(1.0), Random(1.0), Random(1.0));
-    const Vec3f euler(Random(kPi), Random(kPi), Random(kPi));
-    Rot3f dR;
+    const Vec3r v(Random(1.0), Random(1.0), Random(1.0));
+    const Vec3r euler(Random(kPi), Random(kPi), Random(kPi));
+    Rotation3r dR;
     EulerToRotation(dt * euler, dR);
     for (int j = 0; j < nsamples_warm; ++j) {
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out, (j > 0));
-      ASSERT_TRUE(out.status == SolutionStatus::kOptimal ||
-                  out.status == SolutionStatus::kCoincidentCenters);
+      ASSERT_TRUE(out.status == SolutionStatus::Optimal ||
+                  out.status == SolutionStatus::CoincidentCenters);
       const SolutionError err{
           GetSolutionError(set1.get(), tf1, set2.get(), tf2, out)};
       ASSERT_NEAR(err.prim_feas_err, 0.0, kTol);
@@ -197,25 +198,25 @@ TEST(CollisionCheckTest, ConeMesh) {
   Set3dConvexSets(set1, set2, 0.0, 0.0);
 
   // Compute growth distance for random transformations.
-  Transform3f tf1, tf2;
-  SolverSettings settings;
-  SolverOutput<3> out;
+  Transform3r tf1, tf2;
+  Settings settings;
+  Output<3> out;
   const Real dt{Real(0.1)};
 
   for (int i = 0; i < nsamples_cold; ++i) {
     RandomRigidBodyTransform<3>(-6.0, 6.0, tf1);
     RandomRigidBodyTransform<3>(-6.0, 6.0, tf2);
-    const Vec3f v(Random(1.0), Random(1.0), Random(1.0));
-    const Vec3f euler(Random(kPi), Random(kPi), Random(kPi));
-    Rot3f dR;
+    const Vec3r v(Random(1.0), Random(1.0), Random(1.0));
+    const Vec3r euler(Random(kPi), Random(kPi), Random(kPi));
+    Rotation3r dR;
     EulerToRotation(dt * euler, dR);
     for (int j = 0; j < nsamples_warm; ++j) {
-      const bool collision{CollisionCheck(set1.get(), tf1, set2.get(), tf2,
-                                          settings, out, (j > 0))};
-      ASSERT_TRUE(out.status == SolutionStatus::kOptimal ||
-                  out.status == SolutionStatus::kCoincidentCenters);
-      const bool assertion{
-          AssertCollision(set1.get(), tf1, set2.get(), tf2, out, collision)};
+      const bool collision{DetectCollision(set1.get(), tf1, set2.get(), tf2,
+                                           settings, out, (j > 0))};
+      ASSERT_TRUE(out.status == SolutionStatus::Optimal ||
+                  out.status == SolutionStatus::CoincidentCenters);
+      const bool assertion{AssertCollisionStatus(set1.get(), tf1, set2.get(),
+                                                 tf2, out, collision)};
       ASSERT_TRUE(assertion);
 
       tf1.topLeftCorner<3, 3>() *= dR;

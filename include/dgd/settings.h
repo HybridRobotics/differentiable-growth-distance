@@ -29,12 +29,7 @@ namespace dgd {
 /**
  * @brief Settings for the growth distance algorithm.
  */
-struct SolverSettings {
-  /**
-   * @brief Maximum number of solver iterations (\f$> 1\f$).
-   */
-  int max_iter{100};
-
+struct Settings {
   /**
    * @brief Minimum distance between the centers of the convex sets (\f$> 0\f$).
    *
@@ -42,7 +37,7 @@ struct SolverSettings {
    * (corresponding to the rigid body transformations), and \f$|p_1 - p_2| <\f$
    * min_center_dist, then the growth distance is set to zero.
    */
-  Real min_center_dist{kEpsSqrt};
+  Real min_center_dist{kSqrtEps};
 
   /**
    * @brief Relative tolerance between the upper and lower bounds of the growth
@@ -53,7 +48,12 @@ struct SolverSettings {
    * lb \leq ub \leq (\text{rel_tol}) \ lb.
    * \f]
    */
-  Real rel_tol{Real(1.0) + kEpsSqrt};
+  Real rel_tol{Real(1.0) + kSqrtEps};
+
+  /**
+   * @brief Maximum number of solver iterations (\f$> 1\f$).
+   */
+  int max_iter{100};
 };
 
 }  // namespace dgd

@@ -29,8 +29,10 @@
 
 namespace dgd {
 
-/**< Precision of floating-point real numbers. */
-#ifdef DGD_32BIT_FLOAT
+/**
+ * @brief Precision of floating-point real numbers.
+ */
+#ifdef DGD_USE_32BIT_FLOAT
 typedef float Real;
 #else
 typedef double Real;
@@ -46,14 +48,9 @@ typedef double Real;
 constexpr Real kInf{std::numeric_limits<Real>::infinity()};
 constexpr Real kEps{
     std::numeric_limits<Real>::epsilon()}; /**< Machine epsilon. */
-constexpr Real kEpsSqrt{
+constexpr Real kSqrtEps{
     std::sqrt(kEps)}; /**< Square root of machine epsilon. */
-constexpr Real kPi{static_cast<Real>(EIGEN_PI)}; /**< \f$\pi\f$. */
-
-/**
- * @brief Dynamic-size vector.
- */
-using VecXf = Eigen::Vector<Real, -1>;
+constexpr Real kPi{static_cast<Real>(EIGEN_PI)}; /**< Pi. */
 
 /**
  * @brief Fixed-dimension vector.
@@ -64,30 +61,15 @@ using VecXf = Eigen::Vector<Real, -1>;
 template <typename T, int dim>
 using Vec = Eigen::Vector<T, dim>;
 template <int dim>
-using Vecf = Vec<Real, dim>;
-typedef Vecf<2> Vec2f;
-typedef Vecf<3> Vec3f;
+using Vecr = Vec<Real, dim>;
+typedef Vecr<2> Vec2r;
+typedef Vecr<3> Vec3r;
 
 /**
  * @brief Alias for Eigen::MatrixBase.
- *
- * @tparam Derived Derived class.
  */
 template <typename Derived>
 using MatrixBase = Eigen::MatrixBase<Derived>;
-
-/**
- * @brief Fixed-row, variable-column matrix.
- *
- * @note Vectors should be stored along columns, since Eigen stores matrices in
- * a column-major format (by default).
- *
- * @tparam dim Number of rows of the matrix.
- */
-template <int dim>
-using MatXf = Eigen::Matrix<Real, dim, -1>;
-typedef MatXf<2> Mat2Xf;
-typedef MatXf<3> Mat3Xf;
 
 /**
  * @brief Fixed-size matrix.
@@ -98,7 +80,17 @@ typedef MatXf<3> Mat3Xf;
  * @tparam col Number of columns of the matrix.
  */
 template <int row, int col>
-using Matf = Eigen::Matrix<Real, row, col>;
+using Matr = Eigen::Matrix<Real, row, col>;
+
+/**
+ * @brief Rotation matrix.
+ *
+ * @tparam dim Dimension of the space.
+ */
+template <int dim>
+using Rotationr = Matr<dim, dim>;
+typedef Rotationr<2> Rotation2r;
+typedef Rotationr<3> Rotation3r;
 
 /**
  * @brief Rigid body transformation matrix.
@@ -112,19 +104,9 @@ using Matf = Eigen::Matrix<Real, row, col>;
  * @tparam dim Dimension of the space.
  */
 template <int dim>
-using Transformf = Matf<dim + 1, dim + 1>;
-typedef Transformf<2> Transform2f;
-typedef Transformf<3> Transform3f;
-
-/**
- * @brief Rotation matrix.
- *
- * @tparam dim Dimension of the space.
- */
-template <int dim>
-using Rotf = Matf<dim, dim>;
-typedef Rotf<2> Rot2f;
-typedef Rotf<3> Rot3f;
+using Transformr = Matr<dim + 1, dim + 1>;
+typedef Transformr<2> Transform2r;
+typedef Transformr<3> Transform3r;
 
 }  // namespace dgd
 

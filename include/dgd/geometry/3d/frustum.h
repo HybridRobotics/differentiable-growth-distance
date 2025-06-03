@@ -58,10 +58,10 @@ class Frustum : public ConvexSet<3> {
    */
   explicit Frustum(Real base_radius, Real top_radius, Real height, Real margin);
 
-  ~Frustum() {};
+  ~Frustum() = default;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -74,7 +74,7 @@ class Frustum : public ConvexSet<3> {
    *
    * @return z-offset of the base of the frustum.
    */
-  Real Offset() const;
+  Real offset() const;
 
  private:
   const Real rb_;     /**< Base radius. */
@@ -93,17 +93,18 @@ inline Frustum::Frustum(Real base_radius, Real top_radius, Real height,
       h_(height),
       margin_(margin) {
   if ((std::max(base_radius, top_radius) <= 0.0) || (height <= 0.0) ||
-      (margin < 0.0))
+      (margin < 0.0)) {
     throw std::domain_error("Invalid radii, height, or margin");
+  }
   tha_ = std::abs(rb_ - rt_) / h_;
   const Real r{std::max(rb_, rt_)};
   const Real rho{std::min(h_ / Real(2.0),
                           (std::sqrt(Real(1.0) + tha_ * tha_) - tha_) * r)};
   offset_ = (rb_ >= rt_) ? rho : h_ - rho;
-  SetInradius(rho + margin);
+  set_inradius(rho + margin);
 }
 
-inline Real Frustum::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Frustum::SupportFunction(const Vec3r& n, Vec3r& sp,
                                      SupportFunctionHint<3>* /*hint*/) const {
   sp = margin_ * n;
   const Real k{std::sqrt(n(0) * n(0) + n(1) * n(1))};
@@ -121,7 +122,7 @@ inline Real Frustum::SupportFunction(const Vec3f& n, Vec3f& sp,
 
 inline bool Frustum::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline Real Frustum::Offset() const { return offset_; }
+inline Real Frustum::offset() const { return offset_; }
 
 }  // namespace dgd
 

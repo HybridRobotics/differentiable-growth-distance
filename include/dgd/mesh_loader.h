@@ -26,7 +26,6 @@
 #ifndef DGD_MESH_LOADER_H_
 #define DGD_MESH_LOADER_H_
 
-#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
@@ -55,6 +54,8 @@ class MeshLoader {
   /**
    * @brief Loads a mesh object from file or parses from string.
    *
+   * @note This function internally calls ProcessPoints.
+   *
    * See
    * https://github.com/tinyobjloader/tinyobjloader/blob/release/loader_example.cc
    *
@@ -62,7 +63,7 @@ class MeshLoader {
    * @param is_file Whether input is a filename or an object string
    *                (default = true).
    */
-  void LoadOBJ(const std::string& input, bool is_file = true);
+  void LoadObj(const std::string& input, bool is_file = true);
 
   /**
    * @brief Converts points to double precision and removes duplicates.
@@ -78,7 +79,7 @@ class MeshLoader {
    *
    * @param pts Vector of 3D point coordinates.
    */
-  void ProcessPoints(const std::vector<Vec3f>& pts);
+  void ProcessPoints(const std::vector<Vec3r>& pts);
 
   /**
    * @brief Constructs convex hull (in V-rep) and vertex adjacency graph from
@@ -106,7 +107,7 @@ class MeshLoader {
    * @param[out] graph Vertex adjacency graph.
    * @return     true (success) or false (failure).
    */
-  bool MakeVertexGraph(std::vector<Vec3f>& vert, std::vector<int>& graph);
+  bool MakeVertexGraph(std::vector<Vec3r>& vert, std::vector<int>& graph);
 
   /**
    * @brief Constructs convex hull (in H-rep) and facet adjacency graph from
@@ -139,8 +140,8 @@ class MeshLoader {
    * @param[out] interior_point A point in the convex hull interior.
    * @return     true (success) or false (failure).
    */
-  bool MakeFacetGraph(std::vector<Vec3f>& normal, std::vector<Real>& offset,
-                      std::vector<int>& graph, Vec3f& interior_point);
+  bool MakeFacetGraph(std::vector<Vec3r>& normal, std::vector<Real>& offset,
+                      std::vector<int>& graph, Vec3r& interior_point);
 
   /**
    * @brief Computes the inradius of a polytope with respect to an interior
@@ -151,13 +152,16 @@ class MeshLoader {
    * @param  interior_point A point in the convex hull interior.
    * @return Inradius of the polytope about the interior point.
    */
-  Real ComputeInradius(const std::vector<Vec3f>& normal,
+  Real ComputeInradius(const std::vector<Vec3r>& normal,
                        const std::vector<Real>& offset,
-                       const Vec3f& interior_point) const;
+                       const Vec3r& interior_point) const;
 
   /**
    * @brief Computes an interior point and the inradius (with respect to the
    * interior point) for the stored vector of points.
+   *
+   * @note Use this function if normals and offsets are not available. This
+   * function internally calls MakeFacetGraph.
    *
    * @param[in,out] interior_point A point in the convex hull interior.
    * @param         use_given_ip   Whether to compute the inradius about
@@ -165,14 +169,14 @@ class MeshLoader {
    *                               point (default = false).
    * @return        Inradius about the interior point.
    */
-  Real ComputeInradius(Vec3f& interior_point, bool use_given_ip = false);
+  Real ComputeInradius(Vec3r& interior_point, bool use_given_ip = false);
 
   /**
    * @brief Number of points in the mesh.
    */
   int npts() const;
 
-  ~MeshLoader() {};
+  ~MeshLoader() = default;
 
  private:
   const int maxhullvert_;       /**< Maximum number of convex hull vertices. */
@@ -270,7 +274,7 @@ void MeshLoader::ProcessPoints(const std::vector<T>& pts) {
   }
 }
 
-inline void MeshLoader::ProcessPoints(const std::vector<Vec3f>& pts) {
+inline void MeshLoader::ProcessPoints(const std::vector<Vec3r>& pts) {
   std::vector<Real> p(3 * pts.size());
   for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
     p[3 * i] = pts[i](0);
@@ -281,7 +285,7 @@ inline void MeshLoader::ProcessPoints(const std::vector<Vec3f>& pts) {
 }
 
 inline int MeshLoader::npts() const {
-  return static_cast<int>(pts_.size()) / 3;
+  return static_cast<int>(pts_.size() / 3);
 }
 
 }  // namespace dgd

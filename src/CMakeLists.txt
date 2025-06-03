@@ -31,19 +31,22 @@ set_target_properties(${DGD_LIB} PROPERTIES CXX_EXTENSIONS OFF)
 target_compile_options(${DGD_LIB}
   PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wpedantic
-    # $<$<CONFIG:Release>:-funroll-loops -march=native -mfpmath=sse -fopenmp>
-    # $<$<AND:$<CONFIG:Release>,$<DGD_USE_FFAST_MATH>>:-ffast-math>
-  PUBLIC
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
+    # $<$<CONFIG:Release>:-funroll-loops -march=native -mfpmath=sse -fopenmp>
+    # $<$<AND:$<CONFIG:Release>,$<DGD_USE_FFAST_MATH>>:-ffast-math>
 )
 
 
 # Preprocessor definitions
-if (DGD_ENABLE_DIAGNOSTICS)
-  target_compile_definitions(${DGD_LIB} PUBLIC DGD_PRINT_DIAGNOSTICS)
+if (DGD_USE_32BIT_FLOAT)
+  target_compile_definitions(${DGD_LIB} PUBLIC DGD_USE_32BIT_FLOAT)
 endif()
 
-if (DGD_SINGLE_PRECISION)
-  target_compile_definitions(${DGD_LIB} PUBLIC DGD_32BIT_FLOAT)
+if (DGD_ENABLE_DEBUG_PRINTING)
+  target_compile_definitions(${DGD_LIB} PUBLIC DGD_ENABLE_DEBUG_PRINTING)
+endif()
+
+if (DGD_COMPUTE_COLLISION_INTERSECTION)
+  target_compile_definitions(${DGD_LIB} PUBLIC DGD_COMPUTE_COLLISION_INTERSECTION)
 endif()

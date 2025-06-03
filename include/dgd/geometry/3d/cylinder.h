@@ -46,10 +46,10 @@ class Cylinder : public ConvexSet<3> {
    */
   explicit Cylinder(Real hlx, Real radius, Real margin);
 
-  ~Cylinder() {};
+  ~Cylinder() = default;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -62,12 +62,13 @@ class Cylinder : public ConvexSet<3> {
 
 inline Cylinder::Cylinder(Real hlx, Real radius, Real margin)
     : ConvexSet<3>(), hlx_(hlx), radius_(radius), margin_(margin) {
-  if ((hlx <= 0.0) || (radius <= 0.0) || (margin < 0.0))
+  if ((hlx <= 0.0) || (radius <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid axis length, radius, or margin");
-  SetInradius(std::min(hlx, radius) + margin);
+  }
+  set_inradius(std::min(hlx, radius) + margin);
 }
 
-inline Real Cylinder::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Cylinder::SupportFunction(const Vec3r& n, Vec3r& sp,
                                       SupportFunctionHint<3>* /*hint*/) const {
   sp = margin_ * n;
   const Real k{std::sqrt(n(1) * n(1) + n(2) * n(2))};

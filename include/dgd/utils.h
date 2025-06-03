@@ -30,20 +30,24 @@
 
 namespace dgd {
 
+/**
+ * RNG utility functions.
+ */
+
 namespace {
-std::random_device rd;
-std::mt19937 gen{rd()};
+std::random_device random_device;
+std::mt19937 generator{random_device()};
 }  // namespace
 
 /**
  * @brief Sets default seed for the RNG.
  */
-inline void SetDefaultSeed() { gen.seed(5489u); }
+inline void SetDefaultSeed() { generator.seed(5489u); }
 
 /**
  * @brief Sets random seed for the RNG.
  */
-inline void SetRandomSeed() { gen.seed(rd()); }
+inline void SetRandomSeed() { generator.seed(random_device()); }
 
 /**
  * @brief Returns a uniform random real number.
@@ -53,9 +57,11 @@ inline void SetRandomSeed() { gen.seed(rd()); }
  * @return Random real number.
  */
 inline Real Random(Real range_from, Real range_to) {
-  if (range_from >= range_to) throw std::range_error("Invalid range");
+  if (range_from >= range_to) {
+    throw std::range_error("Invalid range");
+  }
   std::uniform_real_distribution<Real> dis(range_from, range_to);
-  return dis(gen);
+  return dis(generator);
 }
 
 /**
@@ -66,45 +72,7 @@ inline Real Random(Real range_from, Real range_to) {
  */
 inline Real Random(Real range) { return Random(-range, range); }
 
-/**
- * @name Alignment rotation functions
- * @brief Sets the rotation matrix such that the given normal vector is mapped
- * to the z (\f$e_2\f$ or \f$e_3\f$) axis.
- *
- * @param[in]  n   Normal vector (with unit 2-norm) to be oriented.
- * @param[out] rot Rotation matrix.
- */
-///@{
-inline void RotationToZAxis(const Vec2f& n, Rot2f& rot) {
-  rot(0, 0) = n(1);
-  rot(1, 0) = n(0);
-  rot(0, 1) = -n(0);
-  rot(1, 1) = n(1);
-}
-
-inline void RotationToZAxis(const Vec3f& n, Rot3f& rot) {
-  Vec3f axis{n + Vec3f::UnitZ()};
-  const Real norm{axis.norm()};
-  if (norm > kEps) {
-    axis = axis / norm;
-    rot = Real(2.0) * axis * axis.transpose() - Rot3f::Identity();
-  } else
-    rot = Vec3f(1.0, -1.0, -1.0).asDiagonal();
-}
-///@}
-
-/**
- * @brief Sets the rotation matrix using ZYX Euler angles.
- *
- * @param[in]  euler ZYX Euler angles, in the form (roll, pitch, yaw).
- * @param[out] rot   Rotation matrix.
- */
-inline void EulerToRotation(const Vec3f& euler, Rot3f& rot) {
-  const Eigen::AngleAxis<Real> R(euler(0), Vec3f::UnitX());
-  const Eigen::AngleAxis<Real> P(euler(1), Vec3f::UnitY());
-  const Eigen::AngleAxis<Real> Y(euler(2), Vec3f::UnitZ());
-  rot = (Y * P * R).matrix();
-}
+void EulerToRotation(const Vec3r& euler, Rotation3r& rot);
 
 /**
  * @name Random rotation functions
@@ -113,7 +81,7 @@ inline void EulerToRotation(const Vec3f& euler, Rot3f& rot) {
  * @param[out] rot Rotation matrix.
  */
 ///@{
-inline void RandomRotation(Rot2f& rot) {
+inline void RandomRotation(Rotation2r& rot) {
   const Real angle{Random(kPi)};
   rot(0, 0) = std::cos(angle);
   rot(1, 0) = std::sin(angle);
@@ -121,8 +89,8 @@ inline void RandomRotation(Rot2f& rot) {
   rot(1, 1) = rot(0, 0);
 }
 
-inline void RandomRotation(Rot3f& rot) {
-  Vec3f euler{Random(kPi), Random(kPi / Real(2.0)), Random(kPi)};
+inline void RandomRotation(Rotation3r& rot) {
+  Vec3r euler{Random(kPi), Random(kPi / Real(2.0)), Random(kPi)};
   EulerToRotation(euler, rot);
 }
 ///@}
@@ -136,16 +104,17 @@ inline void RandomRotation(Rot3f& rot) {
  * @param[out] tf         Transformation matrix.
  */
 template <int dim>
-inline void RandomRigidBodyTransform(const Vecf<dim>& range_from,
-                                     const Vecf<dim>& range_to,
-                                     Transformf<dim>& tf) {
-  if ((range_from.array() >= range_to.array()).any())
+inline void RandomRigidBodyTransform(const Vecr<dim>& range_from,
+                                     const Vecr<dim>& range_to,
+                                     Transformr<dim>& tf) {
+  if ((range_from.array() >= range_to.array()).any()) {
     throw std::range_error("Invalid range");
-  Rotf<dim> rot;
+  }
+  Rotationr<dim> rot;
   RandomRotation(rot);
   tf.template block<dim, dim>(0, 0) = rot;
   for (int i = 0; i < dim; ++i) tf(i, dim) = Random(range_from(i), range_to(i));
-  tf.template block<1, dim>(dim, 0) = Vecf<dim>::Zero().transpose();
+  tf.template block<1, dim>(dim, 0) = Vecr<dim>::Zero().transpose();
   tf(dim, dim) = Real(1.0);
 }
 
@@ -160,9 +129,26 @@ inline void RandomRigidBodyTransform(const Vecf<dim>& range_from,
  */
 template <int dim>
 inline void RandomRigidBodyTransform(Real range_from, Real range_to,
-                                     Transformf<dim>& tf) {
-  RandomRigidBodyTransform<dim>(Vecf<dim>::Constant(range_from),
-                                Vecf<dim>::Constant(range_to), tf);
+                                     Transformr<dim>& tf) {
+  RandomRigidBodyTransform<dim>(Vecr<dim>::Constant(range_from),
+                                Vecr<dim>::Constant(range_to), tf);
+}
+
+/**
+ * Math utility functions.
+ */
+
+/**
+ * @brief Sets the rotation matrix using ZYX Euler angles.
+ *
+ * @param[in]  euler ZYX Euler angles, in the form (roll, pitch, yaw).
+ * @param[out] rot   Rotation matrix.
+ */
+inline void EulerToRotation(const Vec3r& euler, Rotation3r& rot) {
+  const Eigen::AngleAxis<Real> R(euler(0), Vec3r::UnitX());
+  const Eigen::AngleAxis<Real> P(euler(1), Vec3r::UnitY());
+  const Eigen::AngleAxis<Real> Y(euler(2), Vec3r::UnitZ());
+  rot.noalias() = (Y * P * R).matrix();
 }
 
 }  // namespace dgd

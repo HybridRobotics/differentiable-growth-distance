@@ -13,14 +13,16 @@
 // limitations under the License.
 
 /**
- * @file io.h
+ * @file debug.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
  * @date 2025-02-24
- * @brief Input/Ouput functions.
+ * @brief Debug printing functions.
  */
 
-#ifndef DGD_IO_H_
-#define DGD_IO_H_
+#ifndef DGD_DEBUG_H_
+#define DGD_DEBUG_H_
+
+#ifdef DGD_ENABLE_DEBUG_PRINTING
 
 #include <cmath>
 #include <iomanip>
@@ -33,16 +35,11 @@
 
 namespace dgd {
 
-namespace io {
-
-/**
- * @brief Prints diagnostic information at any iteration of the algorithm.
- */
+// Prints debugging information at any iteration of the algorithm.
 template <int dim>
-void PrintSolutionDiagnostics(Real lb, Real ub, const Matf<dim, dim>& simplex,
-                              const SolverSettings& settings,
-                              const SolverOutput<dim>& out) {
-  const int iter{out.iter};
+void PrintDebugIteration(int iter, Real lb, Real ub,
+                         const Matr<dim, dim>& simplex,
+                         const Settings& settings, const Output<dim>& out) {
   const Real primal{std::abs(Real(1.0) / ub)};
   const Real dual{std::abs(Real(1.0) / lb)};
   const Real rel_err{std::abs(lb / ub)};
@@ -60,13 +57,10 @@ void PrintSolutionDiagnostics(Real lb, Real ub, const Matf<dim, dim>& simplex,
   // clang-format on
 }
 
-/**
- * @brief Sets ostream properties and prints diagnostics header.
- */
+// Sets ostream properties and prints debugging header.
 template <int dim>
-void PrintDiagnosticsHeader(Real lb, Real ub, const Matf<dim, dim>& simplex,
-                            const SolverSettings& settings,
-                            const SolverOutput<dim>& out) {
+void PrintDebugHeader(int iter, Real lb, Real ub, const Matr<dim, dim>& simplex,
+                      const Settings& settings, const Output<dim>& out) {
   std::cout << std::left;
   std::cout << std::scientific;
   const int line_len{6 + 15 * 4 + 13 + 21};
@@ -80,19 +74,27 @@ void PrintDiagnosticsHeader(Real lb, Real ub, const Matf<dim, dim>& simplex,
             << std::setw(15) << "prim-feas-err" << std::endl;
   // clang-format on
   std::cout << std::string(line_len, '-') << std::endl;
-  PrintSolutionDiagnostics(lb, ub, simplex, settings, out);
+  PrintDebugIteration(iter, lb, ub, simplex, settings, out);
 }
 
-/**
- * @brief Unsets ostream properties.
- */
-inline void PrintDiagnosticsFooter() {
+// Unsets ostream properties.
+inline void PrintDebugFooter() {
   std::cout.unsetf(std::ios::fixed | std::ios::scientific);
   std::cout << std::right;
 }
 
-}  // namespace io
-
 }  // namespace dgd
 
-#endif  // DGD_IO_H_
+#define DGD_PRINT_DEBUG_ITERATION(...) dgd::PrintDebugIteration(__VA_ARGS__)
+#define DGD_PRINT_DEBUG_HEADER(...) dgd::PrintDebugHeader(__VA_ARGS__)
+#define DGD_PRINT_DEBUG_FOOTER() dgd::PrintDebugFooter()
+
+#else  // DGD_ENABLE_DEBUG_PRINTING
+
+#define DGD_PRINT_DEBUG_ITERATION(...) (void)0
+#define DGD_PRINT_DEBUG_HEADER(...) (void)0
+#define DGD_PRINT_DEBUG_FOOTER() (void)0
+
+#endif  // DGD_ENABLE_DEBUG_PRINTING
+
+#endif  // DGD_DEBUG_H_

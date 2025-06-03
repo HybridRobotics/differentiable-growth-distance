@@ -1,7 +1,6 @@
-# Obtained from: https://github.com/PointCloudLibrary/pcl/tree/master/cmake/Modules
-
-#.rst:
-# FindQhull
+# .rst: from
+# https://github.com/PointCloudLibrary/pcl/blob/master/cmake/Modules/FindQhull.cmake,
+# BSD licenced FindQhull
 # --------
 #
 # Try to find QHULL library and headers. This module supports both old released versions

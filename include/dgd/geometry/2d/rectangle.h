@@ -43,10 +43,10 @@ class Rectangle : public ConvexSet<2> {
    */
   explicit Rectangle(Real hlx, Real hly, Real margin);
 
-  ~Rectangle() {};
+  ~Rectangle() = default;
 
   Real SupportFunction(
-      const Vec2f& n, Vec2f& sp,
+      const Vec2r& n, Vec2r& sp,
       SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -59,12 +59,13 @@ class Rectangle : public ConvexSet<2> {
 
 inline Rectangle::Rectangle(Real hlx, Real hly, Real margin)
     : ConvexSet<2>(), hlx_(hlx), hly_(hly), margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (margin < 0.0))
+  if ((hlx <= 0.0) || (hly <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid axis lengths or margin");
-  SetInradius(std::min(hlx, hly) + margin);
+  }
+  set_inradius(std::min(hlx, hly) + margin);
 }
 
-inline Real Rectangle::SupportFunction(const Vec2f& n, Vec2f& sp,
+inline Real Rectangle::SupportFunction(const Vec2r& n, Vec2r& sp,
                                        SupportFunctionHint<2>* /*hint*/) const {
   sp = margin_ * n;
   sp(0) += std::copysign(hlx_, n(0));

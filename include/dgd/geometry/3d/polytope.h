@@ -44,7 +44,7 @@ class Polytope : public ConvexSet<3> {
    * origin in its interior. This property is not enforced and must be
    * guaranteed by the user, whenever necessary.
    *
-   * @see MeshLoader::ProcessPoints(const std::vector<Vec3f>&)
+   * @see MeshLoader::ProcessPoints(const std::vector<Vec3r>&)
    * @see MeshLoader::MakeVertexGraph
    *
    * @param vert     Vector of n three-dimensional vertices.
@@ -52,13 +52,13 @@ class Polytope : public ConvexSet<3> {
    * @param inradius Polytope inradius.
    * @param thresh   Support function threshold (default = 0.75).
    */
-  explicit Polytope(const std::vector<Vec3f>& vert, Real margin, Real inradius,
+  explicit Polytope(const std::vector<Vec3r>& vert, Real margin, Real inradius,
                     Real thresh = Real(0.75));
 
-  ~Polytope() {};
+  ~Polytope() = default;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* hint = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -68,7 +68,7 @@ class Polytope : public ConvexSet<3> {
    *
    * @return Polytope vertices.
    */
-  const std::vector<Vec3f>& Vertices() const;
+  const std::vector<Vec3r>& vertices() const;
 
   /**
    * @brief Returns the number of vertices in the polytope.
@@ -78,34 +78,37 @@ class Polytope : public ConvexSet<3> {
   int nvert() const;
 
  private:
-  const std::vector<Vec3f> vert_; /**< Polytope vertices. */
+  const std::vector<Vec3r> vert_; /**< Polytope vertices. */
   const Real margin_;             /**< Safety margin. */
 
   const Real thresh_;  // Support function threshold.
 };
 
-inline Polytope::Polytope(const std::vector<Vec3f>& vert, Real margin,
+inline Polytope::Polytope(const std::vector<Vec3r>& vert, Real margin,
                           Real inradius, Real thresh)
     : ConvexSet<3>(margin + inradius),
       vert_(vert),
       margin_(margin),
       thresh_(thresh) {
-  if ((margin < 0.0) || (inradius <= 0.0))
+  if ((margin < 0.0) || (inradius <= 0.0)) {
     throw std::domain_error("Invalid margin or inradius");
+  }
 
   // const int nvert{static_cast<int>(vert.size())};
-  // if (nvert < 4)
+  // if (nvert < 4) {
   //   throw std::domain_error("Polytope is not solid");
+  // }
 
-  // Mat3Xf aff_vert(3, nvert - 1);
+  // Matr<3, -1> aff_vert(3, nvert - 1);
   // for (int i = 1; i < nvert; ++i) aff_vert.col(i - 1) = vert[i] - vert[0];
-  // const Eigen::ColPivHouseholderQR<Mat3Xf> qr(aff_vert);
+  // const Eigen::ColPivHouseholderQR<Matr<3, -1>> qr(aff_vert);
   // const int rank{static_cast<int>(qr.rank())};
-  // if (rank != 3)
+  // if (rank != 3) {
   //   throw std::domain_error("Polytope is not solid");
+  // }
 }
 
-inline Real Polytope::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Polytope::SupportFunction(const Vec3r& n, Vec3r& sp,
                                       SupportFunctionHint<3>* hint) const {
   // Current best index.
   int idx{(hint && hint->n_prev.dot(n) > thresh_) ? hint->idx_ws : 0};
@@ -132,7 +135,7 @@ inline Real Polytope::SupportFunction(const Vec3f& n, Vec3f& sp,
 
 inline bool Polytope::RequireUnitNormal() const { return (margin_ > 0.0); }
 
-inline const std::vector<Vec3f>& Polytope::Vertices() const { return vert_; }
+inline const std::vector<Vec3r>& Polytope::vertices() const { return vert_; }
 
 inline int Polytope::nvert() const { return static_cast<int>(vert_.size()); }
 

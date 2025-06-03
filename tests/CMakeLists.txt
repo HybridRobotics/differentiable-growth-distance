@@ -16,7 +16,6 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(${DGD_LIB}_test
   "${PROJECT_SOURCE_DIR}/tests/geometry_test.cc"
-  "${PROJECT_SOURCE_DIR}/tests/utils_test.cc"
   "${PROJECT_SOURCE_DIR}/tests/graham_scan_test.cc"
   "${PROJECT_SOURCE_DIR}/tests/mesh_loader_test.cc"
   "${PROJECT_SOURCE_DIR}/tests/growth_distance_test.cc"

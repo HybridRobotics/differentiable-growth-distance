@@ -16,69 +16,93 @@
  * @file growth_distance.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
  * @date 2025-02-18
- * @brief Growth distance algorithm for convex sets.
+ * @brief Growth distance algorithm for 2D and 3D convex sets.
  */
 
 #ifndef DGD_GROWTH_DISTANCE_H_
 #define DGD_GROWTH_DISTANCE_H_
 
 #include "dgd/data_types.h"
+#include "dgd/debug.h"
 #include "dgd/geometry/convex_set.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
-#include "dgd/utils.h"
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-#include "dgd/io.h"
+#ifdef DGD_COMPUTE_COLLISION_INTERSECTION
+
+#define DGD_INITIALIZE_SET_SIMPLICES(...) \
+  dgd::InitializeSetSimplices(__VA_ARGS__)
+#define DGD_COMPUTE_PRIMAL_SOLUTION(...) dgd::ComputePrimalSolution(__VA_ARGS__)
+
+#else
+
+#define DGD_INITIALIZE_SET_SIMPLICES(...) (void)0
+#define DGD_COMPUTE_PRIMAL_SOLUTION(...) (void)0
+
 #endif
 
 namespace dgd {
 
-/**********************************************************
- * GROWTH DISTANCE ALGORITHM FOR 2D CONVEX SETS           *
- **********************************************************/
+/**
+ * Common utility functions.
+ */
 
 namespace {
 
-/**
- * @brief Sets zero output when the centers of the convex sets coincide.
- *
- * @tparam     dim Dimension of the convex sets.
- * @param[out] out Solver output.
- * @return     Growth distance (\f$= 0\f$).
- */
+// Sets zero output when the centers of the convex sets coincide.
 template <int dim>
-inline Real SetZeroOutput(SolverOutput<dim>& out) {
+inline Real SetZeroOutput(Output<dim>& out) {
+  out.normal = Vecr<dim>::Zero();
   out.growth_dist_ub = out.growth_dist_lb = Real(0.0);
-  out.status = SolutionStatus::kCoincidentCenters;
+  out.z2 = out.z1 = Vecr<dim>::Zero();
+  out.status = SolutionStatus::CoincidentCenters;
   return Real(0.0);
 }
 
+// Computes the primal solution in the world frame of reference.
+template <int dim>
+inline void ComputePrimalSolution(const Transformr<dim>& tf1,
+                                  const Transformr<dim>& tf2,
+                                  Output<dim>& out) {
+  out.z1.noalias() = tf1.template block<dim, dim>(0, 0) * out.s1 * out.bc +
+                     tf1.template block<dim, 1>(0, dim);
+  out.z2.noalias() = tf2.template block<dim, dim>(0, 0) * out.s2 * out.bc +
+                     tf2.template block<dim, 1>(0, dim);
+}
+
+}  // namespace
+
 /**
- * @brief Updates the normal vector using the simplex.
- *
- * @param[in]  simplex Simplex.
- * @param[out] normal  Normal vector.
+ * 2D utility functions.
  */
-inline void UpdateNormal(const Matf<2, 2>& simplex, Vec2f& normal) {
+
+namespace {
+
+// Sets rot such that rot * n = Vec2r::UnitY().
+inline void RotationToZAxis(const Vec2r& n, Rotation2r& rot) {
+  rot(0, 0) = n(1);
+  rot(1, 0) = n(0);
+  rot(0, 1) = -n(0);
+  rot(1, 1) = n(1);
+}
+
+// Updates the normal vector using the simplex.
+inline void UpdateNormal(const Matr<2, 2>& simplex, Vec2r& normal,
+                         bool normalize) {
   normal(0) = simplex(1, 1) - simplex(1, 0);
   normal(1) = simplex(0, 0) - simplex(0, 1) -
               kEps;  // Small constant added for dual feasibility.
+  if (normalize) {
+    normal.normalize();
+  } else {
+    normal /= normal.lpNorm<Eigen::Infinity>();
+  }
 }
 
-/**
- * @brief Updates the simplex and barycentric coordinates and returns the upper
- * bound, given a support point.
- *
- * @param[in]  sp      Support point for the Minkowski difference set.
- * @param[in]  sp1     Support point for convex set 1.
- * @param[in]  sp2     Support point for convex set 2.
- * @param[out] simplex Simplex.
- * @param[out] out     Solver output.
- * @return     The updated value of the upper bound.
- */
-inline Real UpdateSimplex(const Vec2f& sp, const Vec2f& sp1, const Vec2f& sp2,
-                          Matf<2, 2>& simplex, SolverOutput<2>& out) {
+// Updates the simplex and the barycentric coordinates and returns the upper
+// bound, given a support point.
+inline Real UpdateSimplex(const Vec2r& sp, const Vec2r& sp1, const Vec2r& sp2,
+                          Matr<2, 2>& simplex, Output<2>& out) {
   const int idx = (sp(0) >= 0);
   simplex.col(idx) = sp;
   out.s1.col(idx) = sp1;
@@ -86,29 +110,41 @@ inline Real UpdateSimplex(const Vec2f& sp, const Vec2f& sp1, const Vec2f& sp2,
 
   out.bc(0) = (simplex(0, 1) + kEps / Real(2.0));
   out.bc(1) = (-simplex(0, 0) + kEps / Real(2.0));
-  out.bc = out.bc / out.bc.sum();
+  out.bc /= out.bc.sum();
 
   return simplex.row(1) * out.bc;
 }
 
-/**
- * @brief Initializes the simplex for the algorithm.
- *
- * @param[out]    normal  Initial normal vector.
- * @param[out]    simplex Initial simplex.
- * @param[in,out] out     Solver output.
- */
-inline void InitializeSimplex(Vec2f& normal, Matf<2, 2>& simplex,
-                              SolverOutput<2>& out) {
-  normal = -Vec2f::UnitY();
+// Initializes the simplex for the algorithm.
+inline void InitializeSimplex(Vec2r& normal, Matr<2, 2>& simplex,
+                              Output<2>& out) {
+  normal = -Vec2r::UnitY();
 
-  simplex.col(0) = Vec2f(-out.inradius, 0.0);
-  simplex.col(1) = Vec2f(out.inradius, 0.0);
+  simplex.col(0) = Vec2r(-out.inradius, 0.0);
+  simplex.col(1) = Vec2r(out.inradius, 0.0);
 
-  out.bc = Vec2f::Constant(0.5);
+  out.bc = Vec2r::Constant(0.5);
+}
+
+// Initializes the convex set simplices.
+template <class C1, class C2>
+inline void InitializeSetSimplices(const C1* set1, const Rotation2r& rot1,
+                                   const C2* set2, const Rotation2r& rot2,
+                                   Output<2>& out) {
+  const Real r1{set1->inradius()}, r2{set2->inradius()};
+
+  out.s1.col(1).noalias() = r1 * rot1.transpose().col(0);
+  out.s1.col(0) = -out.s1.col(1);
+
+  out.s2.col(0).noalias() = r2 * rot2.transpose().col(0);
+  out.s2.col(1) = -out.s2.col(0);
 }
 
 }  // namespace
+
+/**
+ * Growth distance algorithm for 2D convex sets.
+ */
 
 /**
  * @brief Growth distance algorithm for 2D convex sets.
@@ -119,75 +155,68 @@ inline void InitializeSimplex(Vec2f& normal, Matf<2, 2>& simplex,
  * calls;
  * The order of set1 and set2 must not be changed.
  *
- * @tparam        collide    If true, performs a boolean collision check.
- * @param[in]     set1,set2  Convex sets.
- * @param[in]     tf1,tf2    Rigid body transformations for the convex sets.
- * @param[in]     settings   Solver settings.
- * @param[in,out] out        Solver output.
- * @param         warm_start Use previous solver output to warm start current
- *                           solution (default = false).
+ * @tparam        detect_collision If true, performs a boolean collision check.
+ * @param[in]     set1,set2        Convex sets.
+ * @param[in]     tf1,tf2          Rigid body transformations for the sets.
+ * @param[in]     settings         Solver settings.
+ * @param[in,out] out              Solver output.
+ * @param         warm_start       Use previous solver output to warm start
+ * current current solution (default = false).
  * @return        (lower bound of) the growth distance.
  */
-template <class C1, class C2, bool collide = false>
-Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
-                    const Transform2f& tf2, const SolverSettings& settings,
-                    SolverOutput<2>& out, bool warm_start = false) {
-  static_assert((C1::Dimension() == 2) && (C2::Dimension() == 2),
+template <class C1, class C2, bool detect_collision = false>
+Real GrowthDistance(const C1* set1, const Transform2r& tf1, const C2* set2,
+                    const Transform2r& tf2, const Settings& settings,
+                    Output<2>& out, bool warm_start = false) {
+  static_assert((C1::dimension() == 2) && (C2::dimension() == 2),
                 "Convex sets are not two-dimensional");
 
   if (!warm_start) {
-    out.inradius = set1->Inradius() + set2->Inradius();
-    out.hint2_.n_prev = out.hint1_.n_prev = Vec2f::Zero();
+    out.hint2_.n_prev = out.hint1_.n_prev = Vec2r::Zero();
+    out.inradius = set1->inradius() + set2->inradius();
   }
-  out.iter = 0;
+  int iter{0};
   const bool normalize{set1->RequireUnitNormal() || set2->RequireUnitNormal()};
 
   // Check center distance.
-  const Vec2f p12{tf1.block<2, 1>(0, 2) - tf2.block<2, 1>(0, 2)};
+  const Vec2r p12{tf1.block<2, 1>(0, 2) - tf2.block<2, 1>(0, 2)};
   const Real cdist{p12.norm()};
   if (cdist < settings.min_center_dist) return SetZeroOutput(out);
 
   // Alignment rotation matrix.
-  Rot2f rot;
+  Rotation2r rot;
   RotationToZAxis(p12 / cdist, rot);
-  // Axis-aligned rotation matrices.
-  const Rot2f rot1{rot * tf1.block<2, 2>(0, 0)};
-  const Rot2f rot2{rot * tf2.block<2, 2>(0, 0)};
+  const Rotation2r rot1{rot * tf1.block<2, 2>(0, 0)};
+  const Rotation2r rot2{rot * tf2.block<2, 2>(0, 0)};
 
   // Growth distance bounds.
   Real lb{-kInf}, ub{0.0};
   // Normal vector, suppport points, and the simplex matrix.
-  Vec2f normal, sp1, sp2, sp;
-  Matf<2, 2> simplex;
+  Vec2r normal, sp1, sp2, sp;
+  Matr<2, 2> simplex;
 
   InitializeSimplex(normal, simplex, out);
-  // Warm-start.
-  if (warm_start && (out.status == SolutionStatus::kOptimal)) {
-    const Matf<2, 2> s1_{out.s1};
-    const Matf<2, 2> s2_{out.s2};
-    for (int i = 0; i < 2; ++i)
+  if (warm_start && (out.status == SolutionStatus::Optimal)) {
+    // Warm-start.
+    const Matr<2, 2> s1_c{out.s1};
+    const Matr<2, 2> s2_c{out.s2};
+    DGD_INITIALIZE_SET_SIMPLICES(set1, rot1, set2, rot2, out);
+    for (int i = 0; i < 2; ++i) {
       if (out.bc(i) > kEps) {
-        sp.noalias() = rot1 * s1_.col(i) - rot2 * s2_.col(i);
+        sp.noalias() = rot1 * s1_c.col(i) - rot2 * s2_c.col(i);
         if (normal.dot(sp - simplex.col(0)) > Real(0.0)) {
-          ub = UpdateSimplex(sp, s1_.col(i), s2_.col(i), simplex, out);
-          UpdateNormal(simplex, normal);
-          if (normalize)
-            normal.normalize();
-          else
-            normal = normal / normal.lpNorm<Eigen::Infinity>();
+          ub = UpdateSimplex(sp, s1_c.col(i), s2_c.col(i), simplex, out);
+          UpdateNormal(simplex, normal, normalize);
         }
       }
+    }
+  } else {
+    DGD_INITIALIZE_SET_SIMPLICES(set1, rot1, set2, rot2, out);
   }
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-  io::PrintDiagnosticsHeader(lb, ub, simplex, settings, out);
-#endif
+  DGD_PRINT_DEBUG_HEADER(iter, lb, ub, simplex, settings, out);
 
-  // Loop invariants (at the start of each iteration):
-  //  a) normal, ub, and bc correspond to simplex.
-  //  b) lb and out.normal are correctly set for iter >= 1.
-  // s1 and s2 (corresponding to nonzero bc) are correctly set at the end of the
-  // algorithm.
+  Real gd;
   while (true) {
     // Compute support point for the Minkowski difference set along the normal.
     const Real sv1{
@@ -196,476 +225,369 @@ Real GrowthDistance(const C1* set1, const Transform2f& tf1, const C2* set2,
         set2->SupportFunction(-rot2.transpose() * normal, sp2, &out.hint2_)};
     sp.noalias() = rot1 * sp1 - rot2 * sp2;
     // Update the lower bound and the current best normal vector.
-    const Real lb_{(sv1 + sv2) / normal(1)};
-    if (lb_ > lb) {
-      lb = lb_;
+    const Real lb_n{(sv1 + sv2) / normal(1)};
+    if (lb_n > lb) {
+      lb = lb_n;
       out.normal = normal;
     }
     ub = UpdateSimplex(sp, sp1, sp2, simplex, out);
-    ++out.iter;
+    ++iter;
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-    io::PrintSolutionDiagnostics(lb, ub, simplex, settings, out);
-#endif
+    DGD_PRINT_DEBUG_ITERATION(iter, lb, ub, simplex, settings, out);
 
-    if constexpr (collide) {
+    // Termination criteria.
+    if constexpr (detect_collision) {
       // Perform collision check.
       if (lb > -cdist) {
         // No collision.
-        out.growth_dist_lb = -cdist / lb;
         out.normal = rot.transpose() * out.normal;
-        out.status = SolutionStatus::kOptimal;
-        return -1.0;
+        out.growth_dist_lb = -cdist / lb;
+        out.status = SolutionStatus::Optimal;
+        gd = -1.0;
+        break;
       } else if (ub <= -cdist) {
         // Collision.
         out.growth_dist_ub = -cdist / ub;
-        out.status = SolutionStatus::kOptimal;
-        return 1.0;
+        DGD_COMPUTE_PRIMAL_SOLUTION(tf1, tf2, out);
+        out.status = SolutionStatus::Optimal;
+        gd = 1.0;
+        break;
       }
     } else {
       // Check primal-dual gap.
       if (lb >= ub * settings.rel_tol) {
-        out.status = SolutionStatus::kOptimal;
+        // Transform normal vector to world frame.
+        out.normal = rot.transpose() * out.normal;
+        out.growth_dist_lb = -cdist / lb;
+        out.growth_dist_ub = -cdist / ub;
+        ComputePrimalSolution(tf1, tf2, out);
+        out.status = SolutionStatus::Optimal;
+        gd = out.growth_dist_lb;
         break;
       }
     }
     if (out.iter >= settings.max_iter) {
-      out.status = SolutionStatus::kMaxIterReached;
+      out.status = SolutionStatus::MaxIterReached;
+      gd = -cdist / lb;
       break;
     }
-    UpdateNormal(simplex, normal);
-    if (normalize)
-      normal.normalize();
-    else
-      normal = normal / normal.lpNorm<Eigen::Infinity>();
+
+    UpdateNormal(simplex, normal, normalize);
   }
+  out.iter = iter;
 
-  out.growth_dist_lb = -cdist / lb;
-  out.growth_dist_ub = -cdist / ub;
-  // Transform normal vector to world frame.
-  out.normal = rot.transpose() * out.normal;
+  DGD_PRINT_DEBUG_FOOTER();
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-  io::PrintDiagnosticsFooter();
-#endif
-
-  return out.growth_dist_lb;
+  return gd;
 }
 
-/**********************************************************
- * GROWTH DISTANCE ALGORITHM FOR 3D CONVEX SETS           *
- **********************************************************/
+/**
+ * 3D utility functions.
+ */
 
 namespace {
 
-/**
- * @brief Struct containing all the information about the inner and outer
- * polyhedral approximations.
- */
-struct Approximation {
-  /**
-   * @brief Simplex points in the aligned coordinates.
-   *
-   * The simplex points are in CCW order when projected to the x-y plane.
-   */
-  Matf<3, 3> s;
+// Sets rot such that rot * n = Vec3r::UnitZ().
+inline void RotationToZAxis(const Vec3r& n, Rotation3r& rot) {
+  Vec3r axis{n + Vec3r::UnitZ()};
+  const Real norm{axis.norm()};
+  if (norm > kEps) {
+    axis /= norm;
+    rot.noalias() =
+        Real(2.0) * axis * axis.transpose() - Rotation3r::Identity();
+  } else {
+    rot = Vec3r(1.0, -1.0, -1.0).asDiagonal();
+  }
+}
 
-  /**
-   * @brief Normal vector.
-   */
-  Vec3f n;
+// Temporary variables for the growth distance solver.
+struct SolverContext {
+  // Simplex points in the aligned coordinates.
+  // The simplex points are in CCW order when projected to the x-y plane.
+  Matr<3, 3> s;
 
-  /**
-   * @name Convex set support points
-   * @brief Support points for the convex sets in the local coordinates.
-   */
-  ///@{
-  Vec3f sp1;
-  Vec3f sp2;
-  ///@}
+  // Set support points in local coordinates.
+  Vec3r sp1, sp2;
 
-  /**
-   * @brief Support point for the Minkowski difference set at the current
-   * normal, in the aligned coordinates.
-   */
-  Vec3f sp;
+  // Support point for the Minkowski difference set at the current normal,
+  // in the aligned coordinates.
+  Vec3r sp;
 
-  /**
-   * @brief Barycentric coordinates of sp.
-   */
-  Vec3f bc;
+  // Barycentric coordinates of sp.
+  Vec3r bc;
 
-  /**
-   * @brief (\f$2 \times\f$) area of the projected simplex (\f$> 0\f$).
-   */
+  // Normal vector.
+  Vec3r n;
+
+  // Twice the area of the projected simplex (> 0).
   Real area;
 };
 
-/**
- * @brief Updates the normal vector using the simplex.
- *
- * @param[in,out] a Approximation struct.
- */
-inline void UpdateNormal(Approximation& a) {
+// Updates the normal vector using the simplex.
+inline void UpdateNormal(SolverContext& c, bool normalize) {
   // The triangle edges are used to compute the normal vector because the origin
   // may not lie in the triangle interior.
-  a.n(0) = (a.s(1, 2) - a.s(1, 0)) * (a.s(2, 1) - a.s(2, 0)) -
-           (a.s(2, 2) - a.s(2, 0)) * (a.s(1, 1) - a.s(1, 0));
-  a.n(1) = (a.s(2, 2) - a.s(2, 0)) * (a.s(0, 1) - a.s(0, 0)) -
-           (a.s(0, 2) - a.s(0, 0)) * (a.s(2, 1) - a.s(2, 0));
-  a.n(2) = -a.area;
+  // c.n = (c.s.col(2) - c.s.col(0)).cross(c.s.col(1) - c.s.col(0));
+  c.n(0) = (c.s(1, 2) - c.s(1, 0)) * (c.s(2, 1) - c.s(2, 0)) -
+           (c.s(2, 2) - c.s(2, 0)) * (c.s(1, 1) - c.s(1, 0));
+  c.n(1) = (c.s(2, 2) - c.s(2, 0)) * (c.s(0, 1) - c.s(0, 0)) -
+           (c.s(0, 2) - c.s(0, 0)) * (c.s(2, 1) - c.s(2, 0));
+  c.n(2) = -c.area;
+  if (normalize) {
+    c.n.normalize();
+  } else {
+    c.n /= c.n.lpNorm<Eigen::Infinity>();
+  }
 }
 
-/**
- * @brief Updates the barycentric coordinates of the origin.
- *
- * @param[in,out] a   Approximation struct.
- * @param[out]    out Solver output.
- * @return        z-coordinate of the intersection point.
- */
-inline Real UpdateOriginCoordinates(Approximation& a, SolverOutput<3>& out) {
-  out.bc(0) = a.s(0, 1) * a.s(1, 2) - a.s(1, 1) * a.s(0, 2);
-  out.bc(1) = a.s(0, 2) * a.s(1, 0) - a.s(1, 2) * a.s(0, 0);
-  out.bc(2) = a.s(0, 0) * a.s(1, 1) - a.s(1, 0) * a.s(0, 1);
+// Updates the barycentric coordinates of the origin, and returns the
+// z-coordinate of the intersection point.
+inline Real UpdateOriginCoordinates(SolverContext& c, Output<3>& out) {
+  out.bc(0) = c.s(0, 1) * c.s(1, 2) - c.s(1, 1) * c.s(0, 2);
+  out.bc(1) = c.s(0, 2) * c.s(1, 0) - c.s(1, 2) * c.s(0, 0);
+  out.bc(2) = c.s(0, 0) * c.s(1, 1) - c.s(1, 0) * c.s(0, 1);
   // The projected (signed) simplex area is guaranteed to be positive. The
   // implementation below is for robustness.
-  out.bc.array() = out.bc.array().abs() + kEps * kEps / Real(3.0);
-  a.area = out.bc.sum();
-  out.bc = out.bc / a.area;
-  return a.s.row(2) * out.bc;
+  out.bc.array() = out.bc.array() + kEps * kEps / Real(3.0);
+  c.area = out.bc.sum();
+  out.bc /= c.area;
+  return c.s.row(2) * out.bc;
 }
 
-/**
- * @brief Computes the barycentric coordinates of the support point.
- *
- * @param[in,out] a Approximation struct.
- */
-inline void ComputeSupportCoordinates(Approximation& a) {
-  a.bc(0) = (a.s(0, 1) - a.sp(0)) * (a.s(1, 2) - a.sp(1)) -
-            (a.s(1, 1) - a.sp(1)) * (a.s(0, 2) - a.sp(0));
-  a.bc(1) = (a.s(0, 2) - a.sp(0)) * (a.s(1, 0) - a.sp(1)) -
-            (a.s(1, 2) - a.sp(1)) * (a.s(0, 0) - a.sp(0));
-  a.bc(2) = (a.s(0, 0) - a.sp(0)) * (a.s(1, 1) - a.sp(1)) -
-            (a.s(1, 0) - a.sp(1)) * (a.s(0, 1) - a.sp(0));
-  a.bc.array() = a.bc.array() + kEps * kEps / Real(3.0);
-  a.bc = a.bc / a.area;
+// Computes the barycentric coordinates of the support point.
+inline void ComputeSupportCoordinates(SolverContext& c) {
+  c.bc(0) = (c.s(0, 1) - c.sp(0)) * (c.s(1, 2) - c.sp(1)) -
+            (c.s(1, 1) - c.sp(1)) * (c.s(0, 2) - c.sp(0));
+  c.bc(1) = (c.s(0, 2) - c.sp(0)) * (c.s(1, 0) - c.sp(1)) -
+            (c.s(1, 2) - c.sp(1)) * (c.s(0, 0) - c.sp(0));
+  c.bc(2) = (c.s(0, 0) - c.sp(0)) * (c.s(1, 1) - c.sp(1)) -
+            (c.s(1, 0) - c.sp(1)) * (c.s(0, 1) - c.sp(0));
+  c.bc.array() += kEps * kEps / Real(3.0);
+  c.bc /= c.area;
 }
 
-/**
- * @brief Updates the simplex and barycentric coordinates and returns the upper
- * bound, given a support point.
- *
- * @param[in,out] a   Approximation struct.
- * @param[out]    out Solver output.
- * @return        The updated value of the upper bound.
- */
-inline Real UpdateSimplex(Approximation& a, SolverOutput<3>& out) {
-  ComputeSupportCoordinates(a);
+// Updates the simplex and barycentric coordinates and returns the upper bound,
+// given a support point.
+inline Real UpdateSimplex(SolverContext& c, Output<3>& out) {
+  ComputeSupportCoordinates(c);
   // Compute one iteration of the simplex algorithm.
   int exiting_idx{0};
   Real value{1.0};
-  for (int i = 0; i < 3; ++i)
-    if ((a.bc(i) > kEps) && (out.bc(i) < a.bc(i) * value)) {
-      value = out.bc(i) / a.bc(i);
+  for (int i = 0; i < 3; ++i) {
+    if ((c.bc(i) > kEps) && (out.bc(i) < c.bc(i) * value)) {
+      value = out.bc(i) / c.bc(i);
       exiting_idx = i;
     }
+  }
   // Replace the exiting simplex point with the support point.
-  a.s.col(exiting_idx) = a.sp;
-  out.s1.col(exiting_idx) = a.sp1;
-  out.s2.col(exiting_idx) = a.sp2;
-  return UpdateOriginCoordinates(a, out);
+  c.s.col(exiting_idx) = c.sp;
+  out.s1.col(exiting_idx) = c.sp1;
+  out.s2.col(exiting_idx) = c.sp2;
+  return UpdateOriginCoordinates(c, out);
 }
 
-/**
- * @brief Initializes the polyhedral approximation for the algorithm.
- *
- * @param[in,out] a   Approximation struct.
- * @param[in,out] out Solver output.
- */
-inline void InitializeApproximation(Approximation& a, SolverOutput<3>& out) {
-  a.n = -Vec3f::UnitZ();
+// Initializes the simplex for the algorithm.
+inline void InitializeSimplex(SolverContext& c, Output<3>& out) {
+  c.n = -Vec3r::UnitZ();
 
-  a.s.col(0) = out.inradius * Vec3f(0.5, 0.5, 0.0);
-  a.s.col(1) = out.inradius * Vec3f(-0.5, 0.5, 0.0);
-  a.s.col(2) = Vec3f(0.0, -out.inradius, 0.0);
-  a.area = Real(1.5) * out.inradius * out.inradius;
+  c.s.col(0) = out.inradius * Vec3r(0.5, 0.5, 0.0);
+  c.s.col(1) = out.inradius * Vec3r(-0.5, 0.5, 0.0);
+  c.s.col(2) = Vec3r(0.0, -out.inradius, 0.0);
+  c.area = Real(1.5) * out.inradius * out.inradius;
 
-  out.bc = Vec3f::Constant(Real(1.0 / 3.0));
+  out.bc = Vec3r::Constant(Real(1.0 / 3.0));
+}
+
+// Initializes the convex set simplices.
+template <class C1, class C2>
+inline void InitializeSetSimplices(const C1* set1, const Rotation3r& rot1,
+                                   const C2* set2, const Rotation3r& rot2,
+                                   Output<3>& out) {
+  const Real r1{set1->inradius()}, r2{set2->inradius()};
+
+  out.s1.col(1).noalias() = r1 * rot1.transpose() * Vec3r(-0.5, 0.5, 0.0);
+  out.s1.col(2).noalias() = rot1.transpose() * Vec3r(0.0, -r1, 0.0);
+  out.s1.col(0) = -(out.s1.col(1) + out.s1.col(2));
+
+  out.s2.col(1).noalias() = r2 * rot2.transpose() * Vec3r(0.5, -0.5, 0.0);
+  out.s2.col(2).noalias() = rot2.transpose() * Vec3r(0.0, r2, 0.0);
+  out.s2.col(0) = -(out.s2.col(1) + out.s2.col(2));
 }
 
 }  // namespace
 
 /**
+ * Growth distance algorithm for 3D convex sets.
+ */
+
+/**
  * @brief Growth distance algorithm for 3D convex sets.
  *
- * @tparam        collide    If true, performs a boolean collision check.
- * @param[in]     set1,set2  Convex sets.
- * @param[in]     tf1,tf2    Rigid body transformations for the convex sets.
- * @param[in]     settings   Solver settings.
- * @param[in,out] out        Solver output.
- * @param         warm_start Use previous solver output to warm start current
- *                           solution (default = false).
+ * @attention When using warm-start, the following properties must be ensured:
+ * The same out struct must be reused from the previous function call;
+ * The out struct must not be used for other pairs of sets in between function
+ * calls;
+ * The order of set1 and set2 must not be changed.
+ *
+ * @tparam        detect_collision If true, performs a boolean collision check.
+ * @param[in]     set1,set2        Convex sets.
+ * @param[in]     tf1,tf2          Rigid body transformations for the sets.
+ * @param[in]     settings         Solver settings.
+ * @param[in,out] out              Solver output.
+ * @param         warm_start       Use previous solver output to warm start
+ *                                 current solution (default = false).
  * @return        (lower bound of) the growth distance.
  */
-template <class C1, class C2, bool collide = false>
-Real GrowthDistance(const C1* set1, const Transform3f& tf1, const C2* set2,
-                    const Transform3f& tf2, const SolverSettings& settings,
-                    SolverOutput<3>& out, bool warm_start = false) {
-  static_assert((C1::Dimension() == 3) && (C2::Dimension() == 3),
+template <class C1, class C2, bool detect_collision = false>
+Real GrowthDistance(const C1* set1, const Transform3r& tf1, const C2* set2,
+                    const Transform3r& tf2, const Settings& settings,
+                    Output<3>& out, bool warm_start = false) {
+  static_assert((C1::dimension() == 3) && (C2::dimension() == 3),
                 "Convex sets are not three-dimensional");
 
   if (!warm_start) {
-    out.inradius = set1->Inradius() + set2->Inradius();
-    out.hint2_.n_prev = out.hint1_.n_prev = Vec3f::Zero();
+    out.hint2_.n_prev = out.hint1_.n_prev = Vec3r::Zero();
+    out.inradius = set1->inradius() + set2->inradius();
   }
-  out.iter = 0;
+  int iter{0};
   const bool normalize{set1->RequireUnitNormal() || set2->RequireUnitNormal()};
 
   // Check center distance.
-  const Vec3f p12{tf1.block<3, 1>(0, 3) - tf2.block<3, 1>(0, 3)};
+  const Vec3r p12{tf1.block<3, 1>(0, 3) - tf2.block<3, 1>(0, 3)};
   const Real cdist{p12.norm()};
   if (cdist < settings.min_center_dist) return SetZeroOutput(out);
 
   // Alignment rotation matrix.
-  Rot3f rot;
+  Rotation3r rot;
   RotationToZAxis(p12 / cdist, rot);
-  // Axis-aligned rotation matrices.
-  const Rot3f rot1{rot * tf1.block<3, 3>(0, 0)};
-  const Rot3f rot2{rot * tf2.block<3, 3>(0, 0)};
+  const Rotation3r rot1{rot * tf1.block<3, 3>(0, 0)};
+  const Rotation3r rot2{rot * tf2.block<3, 3>(0, 0)};
 
   // Growth distance bounds.
   Real lb{-kInf}, ub{0.0};
-  Approximation a;
+  SolverContext c;
 
-  InitializeApproximation(a, out);
-  // Warm-start.
-  if (warm_start && (out.status == SolutionStatus::kOptimal)) {
-    const Matf<3, 3> s1_{out.s1};
-    const Matf<3, 3> s2_{out.s2};
-    for (int i = 0; i < 3; ++i)
+  InitializeSimplex(c, out);
+  if (warm_start && (out.status == SolutionStatus::Optimal)) {
+    // Warm-start.
+    const Matr<3, 3> s1_c{out.s1};
+    const Matr<3, 3> s2_c{out.s2};
+    DGD_INITIALIZE_SET_SIMPLICES(set1, rot1, set2, rot2, out);
+    for (int i = 0; i < 3; ++i) {
       if (out.bc(i) > kEps) {
-        a.sp.noalias() = rot1 * s1_.col(i) - rot2 * s2_.col(i);
-        if (a.n.dot(a.sp - a.s.col(0)) > Real(0.0)) {
-          a.sp1 = s1_.col(i);
-          a.sp2 = s2_.col(i);
-          ub = UpdateSimplex(a, out);
-          UpdateNormal(a);
-          if (normalize)
-            a.n.normalize();
-          else
-            a.n = a.n / a.n.lpNorm<Eigen::Infinity>();
+        c.sp.noalias() = rot1 * s1_c.col(i) - rot2 * s2_c.col(i);
+        if (c.n.dot(c.sp - c.s.col(0)) > Real(0.0)) {
+          c.sp1 = s1_c.col(i);
+          c.sp2 = s2_c.col(i);
+          ub = UpdateSimplex(c, out);
+          UpdateNormal(c, normalize);
         }
       }
+    }
+  } else {
+    DGD_INITIALIZE_SET_SIMPLICES(set1, rot1, set2, rot2, out);
   }
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-  io::PrintDiagnosticsHeader(lb, ub, a.s, settings, out);
-#endif
+  DGD_PRINT_DEBUG_HEADER(iter, lb, ub, c.s, settings, out);
 
   // Loop invariants (at the start of each iteration):
   //  a) n, ub, and out.bc correspond to s.
   //  b) lb and normal are correctly set for iter >= 1.
   // s1 and s2 (corresponding to nonzero out.bc) are correctly set at the end of
   // the algorithm.
+  Real gd;
   while (true) {
     // Compute support point for the Minkowski difference set along the normal.
     const Real sv1{
-        set1->SupportFunction(rot1.transpose() * a.n, a.sp1, &out.hint1_)};
+        set1->SupportFunction(rot1.transpose() * c.n, c.sp1, &out.hint1_)};
     const Real sv2{
-        set2->SupportFunction(-rot2.transpose() * a.n, a.sp2, &out.hint2_)};
-    a.sp.noalias() = rot1 * a.sp1 - rot2 * a.sp2;
+        set2->SupportFunction(-rot2.transpose() * c.n, c.sp2, &out.hint2_)};
+    c.sp.noalias() = rot1 * c.sp1 - rot2 * c.sp2;
     // Update the lower bound and the current best normal vector.
-    const Real lb_{(sv1 + sv2) / a.n(2)};
-    if (lb_ > lb) {
-      lb = lb_;
-      out.normal = a.n;
+    const Real lb_n{(sv1 + sv2) / c.n(2)};
+    if (lb_n > lb) {
+      lb = lb_n;
+      out.normal = c.n;
     }
-    ub = UpdateSimplex(a, out);
-    ++out.iter;
+    ub = UpdateSimplex(c, out);
+    ++iter;
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-    io::PrintSolutionDiagnostics(lb, ub, a.s, settings, out);
-#endif
+    DGD_PRINT_DEBUG_ITERATION(iter, lb, ub, c.s, settings, out);
 
-    if constexpr (collide) {
+    // Termination criteria.
+    if constexpr (detect_collision) {
       // Perform collision check.
       if (lb > -cdist) {
         // No collision.
-        out.growth_dist_lb = -cdist / lb;
         out.normal = rot.transpose() * out.normal;
-        out.status = SolutionStatus::kOptimal;
-        return -1.0;
+        out.growth_dist_lb = -cdist / lb;
+        out.status = SolutionStatus::Optimal;
+        gd = -1.0;
+        break;
       } else if (ub <= -cdist) {
         // Collision.
         out.growth_dist_ub = -cdist / ub;
-        out.status = SolutionStatus::kOptimal;
-        return 1.0;
+        DGD_COMPUTE_PRIMAL_SOLUTION(tf1, tf2, out);
+        out.status = SolutionStatus::Optimal;
+        gd = 1.0;
+        break;
       }
     } else {
       // Check primal-dual gap.
       if (lb >= ub * settings.rel_tol) {
-        out.status = SolutionStatus::kOptimal;
+        // Transform the normal vector to world frame.
+        out.normal = rot.transpose() * out.normal;
+        out.growth_dist_lb = -cdist / lb;
+        out.growth_dist_ub = -cdist / ub;
+        ComputePrimalSolution(tf1, tf2, out);
+        out.status = SolutionStatus::Optimal;
+        gd = out.growth_dist_lb;
         break;
       }
     }
     if (out.iter >= settings.max_iter) {
-      out.status = SolutionStatus::kMaxIterReached;
+      out.status = SolutionStatus::MaxIterReached;
+      gd = -cdist / lb;
       break;
     }
-    UpdateNormal(a);
-    if (normalize)
-      a.n.normalize();
-    else
-      a.n = a.n / a.n.lpNorm<Eigen::Infinity>();
+
+    UpdateNormal(c, normalize);
   }
+  out.iter = iter;
 
-  out.growth_dist_lb = -cdist / lb;
-  out.growth_dist_ub = -cdist / ub;
-  // Transform the normal vector to world frame.
-  out.normal = rot.transpose() * out.normal;
+  DGD_PRINT_DEBUG_FOOTER();
 
-#ifdef DGD_PRINT_DIAGNOSTICS
-  io::PrintDiagnosticsFooter();
-#endif
-
-  return out.growth_dist_lb;
+  return gd;
 }
 
-/**********************************************************
- * BOOLEAN COLLISION DETECTION ALGORITHM                  *
- **********************************************************/
+/**
+ * Boolean collision detection function.
+ */
 
 /**
  * @brief Collision detection algorithm for 2D and 3D convex sets.
  *
- * The function returns true if the centers coincide or if the sets intersect;
+ * Returns true if the centers coincide or if the sets intersect;
  * false if a separating plane has been found or if the maximum number of
  * iterations have been reached.
  *
  * @param[in]     set1,set2  Convex sets.
- * @param[in]     tf1,tf2    Rigid body transformations for the convex sets.
+ * @param[in]     tf1,tf2    Rigid body transformations for the sets.
  * @param[in]     settings   Solver settings.
  * @param[in,out] out        Solver output.
  * @param         warm_start Use previous solver output to warm start current
  *                           solution (default = false).
- * @return        true, if the convex sets are colliding.
+ * @return        true, if the sets are colliding; false, otherwise.
  */
 template <class C1, class C2, int dim>
-inline bool CollisionCheck(const C1* set1, const Transformf<dim>& tf1,
-                           const C2* set2, const Transformf<dim>& tf2,
-                           const SolverSettings& settings,
-                           SolverOutput<dim>& out, bool warm_start = false) {
+inline bool DetectCollision(const C1* set1, const Transformr<dim>& tf1,
+                            const C2* set2, const Transformr<dim>& tf2,
+                            const Settings& settings, Output<dim>& out,
+                            bool warm_start = false) {
   const Real gd{GrowthDistance<C1, C2, true>(set1, tf1, set2, tf2, settings,
                                              out, warm_start)};
-  return ((out.status == SolutionStatus::kCoincidentCenters) ||
-          (out.status == SolutionStatus::kOptimal && gd > 0.0));
-}
-
-/**********************************************************
- * ADDITIONAL UTILITY FUNCTIONS                           *
- **********************************************************/
-
-/**
- * @brief Computes an optimal solution for the growth distance problem.
- *
- * @attention Solver status must be kOptimal or kCoincidentCenters.
- *
- * @attention For the collision detection problem, out.s1 and out.s2 might not
- * correspond to the simplex in the Minkowski difference set. So, this function
- * might not return the intersection point.
- *
- * @tparam dim  Dimension of the convex sets.
- * @param  tf1  Rigid body transformations for convex set 1.
- * @param  tf2  (Unused) Rigid body transformations for convex set 2.
- * @param  out  Solver output.
- * @param  zopt Optimal solution.
- */
-template <int dim>
-void GetOptimalSolution(const Transformf<dim>& tf1,
-                        const Transformf<dim>& /*tf2*/,
-                        const SolverOutput<dim>& out, Vecf<dim>& zopt) {
-  const Vecf<dim> p1{tf1.template block<dim, 1>(0, dim)};
-  const Rotf<dim> rot1{tf1.template block<dim, dim>(0, 0)};
-  zopt = p1 + out.growth_dist_ub * rot1 * out.s1 * out.bc;
-}
-
-/**
- * @brief Gets the primal-dual relative gap and the primal feasibility error.
- *
- * @tparam dim       Dimension of the convex sets.
- * @param  set1,set2 Convex Sets.
- * @param  tf1,tf2   Rigid body transformations for the convex sets.
- * @param  out       Solver output.
- * @return Solution error.
- */
-template <int dim>
-SolutionError GetSolutionError(const ConvexSet<dim>* set1,
-                               const Transformf<dim>& tf1,
-                               const ConvexSet<dim>* set2,
-                               const Transformf<dim>& tf2,
-                               const SolverOutput<dim>& out) {
-  SolutionError err;
-  if (out.status != SolutionStatus::kOptimal &&
-      out.status != SolutionStatus::kCoincidentCenters) {
-    err.prim_dual_gap = -1.0;
-    err.prim_feas_err = -1.0;
-    return err;
-  }
-
-  const Vecf<dim> p1{tf1.template block<dim, 1>(0, dim)};
-  const Vecf<dim> p2{tf2.template block<dim, 1>(0, dim)};
-  const Rotf<dim> rot1{tf1.template block<dim, dim>(0, 0)};
-  const Rotf<dim> rot2{tf2.template block<dim, dim>(0, 0)};
-  const Vecf<dim> cp1{p1 + out.growth_dist_ub * rot1 * out.s1 * out.bc};
-  const Vecf<dim> cp2{p2 + out.growth_dist_ub * rot2 * out.s2 * out.bc};
-
-  Vecf<dim> sp;
-  const Real sv1{set1->SupportFunction(rot1.transpose() * out.normal, sp)};
-  const Real sv2{set2->SupportFunction(-rot2.transpose() * out.normal, sp)};
-  const Real lb{(p2 - p1).dot(out.normal) / (sv1 + sv2)};
-
-  err.prim_dual_gap = std::abs(out.growth_dist_ub / lb - 1.0);
-  err.prim_feas_err = (cp1 - cp2).norm();
-  return err;
-}
-
-/**
- * @brief Asserts the collision status of the two convex sets.
- *
- * @tparam dim       Dimension of the convex sets.
- * @param  set1,set2 Convex Sets.
- * @param  tf1,tf2   Rigid body transformations for the convex sets.
- * @param  out       Solver output.
- * @param  collision Output of the CollisionCheck function.
- * @return true, if the collision status is correct; false otherwise.
- */
-template <int dim>
-bool AssertCollision(const ConvexSet<dim>* set1, const Transformf<dim>& tf1,
-                     const ConvexSet<dim>* set2, const Transformf<dim>& tf2,
-                     const SolverOutput<dim>& out, bool collision) {
-  if (out.status == SolutionStatus::kCoincidentCenters) {
-    return collision;
-  } else if (out.status == SolutionStatus::kMaxIterReached) {
-    return !collision;
-  }
-
-  const Vecf<dim> p1{tf1.template block<dim, 1>(0, dim)};
-  const Vecf<dim> p2{tf2.template block<dim, 1>(0, dim)};
-  const Rotf<dim> rot1{tf1.template block<dim, dim>(0, 0)};
-  const Rotf<dim> rot2{tf2.template block<dim, dim>(0, 0)};
-
-  if (collision) {
-    // const Vecf<dim> cp1{p1 + out.growth_dist_ub * rot1 * out.s1 * out.bc};
-    // const Vecf<dim> cp2{p2 + out.growth_dist_ub * rot2 * out.s2 * out.bc};
-    // return ((cp1 - cp2).norm() < kEpsSqrt) && (out.growth_dist_ub <= 1.0);
-    return out.growth_dist_ub <= 1.0;
-  } else {
-    Vecf<dim> sp;
-    const Real sv1{set1->SupportFunction(rot1.transpose() * out.normal, sp)};
-    const Real sv2{set2->SupportFunction(-rot2.transpose() * out.normal, sp)};
-    return (out.growth_dist_lb > 1.0) &&
-           (p2.dot(out.normal) - sv2 > p1.dot(out.normal) + sv1);
-  }
+  return ((out.status == SolutionStatus::CoincidentCenters) ||
+          (out.status == SolutionStatus::Optimal && gd > 0.0));
 }
 
 }  // namespace dgd

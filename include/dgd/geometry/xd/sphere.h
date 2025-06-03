@@ -44,10 +44,10 @@ class TSphere : public ConvexSet<dim> {
    */
   explicit TSphere(Real radius);
 
-  ~TSphere() {};
+  ~TSphere() = default;
 
   Real SupportFunction(
-      const Vecf<dim>& n, Vecf<dim>& sp,
+      const Vecr<dim>& n, Vecr<dim>& sp,
       SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -60,12 +60,14 @@ template <int dim>
 inline TSphere<dim>::TSphere(Real radius)
     : ConvexSet<dim>(radius), radius_(radius) {
   static_assert((dim == 2) || (dim == 3), "Incompatible dim");
-  if (radius <= 0.0) throw std::domain_error("Radius is nonpositive");
+  if (radius <= 0.0) {
+    throw std::domain_error("Radius is nonpositive");
+  }
 }
 
 template <int dim>
 inline Real TSphere<dim>::SupportFunction(
-    const Vecf<dim>& n, Vecf<dim>& sp,
+    const Vecr<dim>& n, Vecr<dim>& sp,
     SupportFunctionHint<dim>* /*hint*/) const {
   sp = radius_ * n;
   return radius_;

@@ -10,12 +10,15 @@ project(
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 ## User flags
 #   Compile flags
-# option(DGD_USE_FFAST_MATH     "Add -ffast-math compile option" OFF)
+option(DGD_USE_FFAST_MATH "Add -ffast-math compile option" OFF)
+
 #   Preprocessor definitions
-option(DGD_ENABLE_DIAGNOSTICS "Print solution diagnostics" OFF)
-option(DGD_SINGLE_PRECISION   "Use 32-bit floating point" OFF)
+option(DGD_USE_32BIT_FLOAT                "Use 32-bit floating point" OFF)
+option(DGD_ENABLE_DEBUG_PRINTING          "Print debugging information" OFF)
+option(DGD_COMPUTE_COLLISION_INTERSECTION "Compute an intersection point when detecting collisions" OFF)
+
 #   Installation rules
-option(DGD_INSTALL_LIBS       "Install library" ON)
+option(DGD_INSTALL_LIBS "Install library" ON)
 
 
 ## Packages
@@ -23,14 +26,14 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Eigen3 3.4.90 REQUIRED NO_MODULE)
-find_package(Qhull 2020.2 REQUIRED)
+find_package(Qhull REQUIRED)
 
 
 ## DGD Core library
 set(DGD_LIB dgd)
 add_subdirectory(src)
 
-if(DGD_INSTALL_LIBS)
+if(DGD_INSTALL_LIBS AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT DGD_SINGLE_PRECISION)
   include(CMakePackageConfigHelpers)
 
   install(TARGETS ${DGD_LIB}

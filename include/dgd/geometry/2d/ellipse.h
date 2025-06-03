@@ -43,10 +43,10 @@ class Ellipse : public ConvexSet<2> {
    */
   explicit Ellipse(Real hlx, Real hly, Real margin);
 
-  ~Ellipse() {};
+  ~Ellipse() = default;
 
   Real SupportFunction(
-      const Vec2f& n, Vec2f& sp,
+      const Vec2r& n, Vec2r& sp,
       SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -59,12 +59,13 @@ class Ellipse : public ConvexSet<2> {
 
 inline Ellipse::Ellipse(Real hlx, Real hly, Real margin)
     : ConvexSet<2>(), hlx2_(hlx * hlx), hly2_(hly * hly), margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (margin < 0.0))
+  if ((hlx <= 0.0) || (hly <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid axis lengths or margin");
-  SetInradius(std::min(hlx, hly) + margin);
+  }
+  set_inradius(std::min(hlx, hly) + margin);
 }
 
-inline Real Ellipse::SupportFunction(const Vec2f& n, Vec2f& sp,
+inline Real Ellipse::SupportFunction(const Vec2r& n, Vec2r& sp,
                                      SupportFunctionHint<2>* /*hint*/) const {
   const Real k{std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1))};
   sp(0) = (hlx2_ / k + margin_) * n(0);

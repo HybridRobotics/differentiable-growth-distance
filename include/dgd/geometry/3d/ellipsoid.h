@@ -22,8 +22,8 @@
 #ifndef DGD_GEOMETRY_3D_ELLIPSOID_H_
 #define DGD_GEOMETRY_3D_ELLIPSOID_H_
 
-#include <cassert>
 #include <cmath>
+#include <stdexcept>
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
@@ -43,10 +43,10 @@ class Ellipsoid : public ConvexSet<3> {
    */
   explicit Ellipsoid(Real hlx, Real hly, Real hlz, Real margin);
 
-  ~Ellipsoid() {};
+  ~Ellipsoid() = default;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -64,12 +64,13 @@ inline Ellipsoid::Ellipsoid(Real hlx, Real hly, Real hlz, Real margin)
       hly2_(hly * hly),
       hlz2_(hlz * hlz),
       margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (hlz <= 0.0) || (margin < 0.0))
+  if ((hlx <= 0.0) || (hly <= 0.0) || (hlz <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid axis lengths or margin");
-  SetInradius(std::min({hlx, hly, hlz}) + margin);
+  }
+  set_inradius(std::min({hlx, hly, hlz}) + margin);
 }
 
-inline Real Ellipsoid::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Ellipsoid::SupportFunction(const Vec3r& n, Vec3r& sp,
                                        SupportFunctionHint<3>* /*hint*/) const {
   const Real k{std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1) +
                          hlz2_ * n(2) * n(2))};

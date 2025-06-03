@@ -35,7 +35,7 @@ namespace dgd {
  */
 template <int dim>
 struct SupportFunctionHint {
-  Vecf<dim> n_prev{Vecf<dim>::Zero()};
+  Vecr<dim> n_prev{Vecr<dim>::Zero()};
   int idx_ws{-1};
 };
 
@@ -71,9 +71,9 @@ class ConvexSet {
    * @brief Inradius for the convex set.
    *
    * Radius of a ball that is centered at the origin and contained in the set.
-   * Any number greater than 0 and less than the Chebyshev radius will work.
-   * However, larger values can help prevent singularities in simplex
-   * computations and enable faster convergence.
+   * Any number greater than 0 and less than the inradius will work. However,
+   * larger values can help prevent singularities in simplex computations and
+   * enable faster convergence.
    */
   Real inradius_;
 
@@ -117,7 +117,7 @@ class ConvexSet {
    * @return        Value of the support function at the normal vector.
    */
   virtual Real SupportFunction(
-      const Vecf<dim>& n, Vecf<dim>& sp,
+      const Vecr<dim>& n, Vecr<dim>& sp,
       SupportFunctionHint<dim>* /*hint*/ = nullptr) const = 0;
 
   /**
@@ -136,7 +136,7 @@ class ConvexSet {
    *
    * @return Dimension, given by the template parameter dim.
    */
-  static constexpr int Dimension();
+  static constexpr int dimension();
 
   /**
    * @brief Gets the inradius.
@@ -144,7 +144,7 @@ class ConvexSet {
    * @return Inradius.
    * @see inradius_
    */
-  Real Inradius() const;
+  Real inradius() const;
 
   /**
    * @brief Sets the inradius.
@@ -152,7 +152,7 @@ class ConvexSet {
    * @param inradius Inradius (\f$> 0\f$).
    * @see inradius_
    */
-  void SetInradius(Real inradius);
+  void set_inradius(Real inradius);
 };
 
 template <int dim>
@@ -160,22 +160,26 @@ inline ConvexSet<dim>::ConvexSet() : ConvexSet(kEps) {}
 
 template <int dim>
 inline ConvexSet<dim>::ConvexSet(Real inradius) : inradius_(inradius) {
-  if (inradius <= 0.0) throw std::domain_error("Inradius is not positive");
+  if (inradius <= 0.0) {
+    throw std::domain_error("Inradius is not positive");
+  }
 }
 
 template <int dim>
-constexpr int ConvexSet<dim>::Dimension() {
+constexpr int ConvexSet<dim>::dimension() {
   return dim;
 }
 
 template <int dim>
-inline Real ConvexSet<dim>::Inradius() const {
+inline Real ConvexSet<dim>::inradius() const {
   return inradius_;
 }
 
 template <int dim>
-inline void ConvexSet<dim>::SetInradius(Real inradius) {
-  if (inradius <= 0.0) throw std::domain_error("Inradius is not positive");
+inline void ConvexSet<dim>::set_inradius(Real inradius) {
+  if (inradius <= 0.0) {
+    throw std::domain_error("Inradius is not positive");
+  }
   inradius_ = inradius;
 }
 

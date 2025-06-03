@@ -50,10 +50,10 @@ class TCapsule : public ConvexSet<dim> {
    */
   explicit TCapsule(Real hlx, Real radius, Real margin);
 
-  ~TCapsule() {};
+  ~TCapsule() = default;
 
   Real SupportFunction(
-      const Vecf<dim>& n, Vecf<dim>& sp,
+      const Vecr<dim>& n, Vecr<dim>& sp,
       SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -72,13 +72,14 @@ inline TCapsule<dim>::TCapsule(Real hlx, Real radius, Real margin)
       margin_(margin) {
   static_assert((dim == 2) || (dim == 3),
                 "Incompatible dimension (not 2 or 3)");
-  if ((hlx <= 0.0) || (radius <= 0.0) || (margin < 0.0))
+  if ((hlx <= 0.0) || (radius <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid axis length, radius, or margin");
+  }
 }
 
 template <int dim>
 inline Real TCapsule<dim>::SupportFunction(
-    const Vecf<dim>& n, Vecf<dim>& sp,
+    const Vecr<dim>& n, Vecr<dim>& sp,
     SupportFunctionHint<dim>* /*hint*/) const {
   sp = TCapsule<dim>::inradius_ * n;
   sp(0) += std::copysign(hlx_, n(0));

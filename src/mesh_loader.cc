@@ -41,7 +41,7 @@ extern "C" {
 namespace dgd {
 
 // load OBJ mesh
-void MeshLoader::LoadOBJ(const std::string& input, bool is_file) {
+void MeshLoader::LoadObj(const std::string& input, bool is_file) {
   tinyobj::ObjReader objReader;
 
   if (is_file) {
@@ -51,7 +51,7 @@ void MeshLoader::LoadOBJ(const std::string& input, bool is_file) {
   }
 
   if (!objReader.Valid()) {
-    std::string err = "could not parse OBJ file";
+    std::string err = "could not parse .obj file";
     if (is_file) err += std::string(" ") + input;
     throw std::runtime_error(err);
   }
@@ -100,7 +100,7 @@ void MeshLoader::LoadOBJ(const std::string& input, bool is_file) {
 }
 
 // make vertex graph describing convex hull
-bool MeshLoader::MakeVertexGraph(std::vector<Vec3f>& vert,
+bool MeshLoader::MakeVertexGraph(std::vector<Vec3r>& vert,
                                  std::vector<int>& graph) {
   vert.clear();
   graph.clear();
@@ -173,7 +173,7 @@ bool MeshLoader::MakeVertexGraph(std::vector<Vec3f>& vert,
       // save edge address and global id of this vertex
       graph[vert_edgeadr + i] = adr;
       vert_globalid[i] = pid;
-      vert[i] = Vec3f(Real(pts_[3 * pid]), Real(pts_[3 * pid + 1]),
+      vert[i] = Vec3r(Real(pts_[3 * pid]), Real(pts_[3 * pid + 1]),
                       Real(pts_[3 * pid + 2]));
 
       // process neighboring faces and their vertices
@@ -270,10 +270,10 @@ bool MeshLoader::MakeVertexGraph(std::vector<Vec3f>& vert,
 }
 
 // make facet graph describing convex hull
-bool MeshLoader::MakeFacetGraph(std::vector<Vec3f>& normal,
+bool MeshLoader::MakeFacetGraph(std::vector<Vec3r>& normal,
                                 std::vector<Real>& offset,
                                 std::vector<int>& graph,
-                                Vec3f& interior_point) {
+                                Vec3r& interior_point) {
   normal.clear();
   offset.clear();
   graph.clear();
@@ -410,7 +410,7 @@ bool MeshLoader::MakeFacetGraph(std::vector<Vec3f>& normal,
 
     // reorder facet neighbours according to CCW orientation
     int nn;
-    Vec3f n, n1, t1, t2;
+    Vec3r n, n1, t1, t2;
     for (int i = 0; i < nfacet; ++i) {
       n = normal[i];
       adr = ridge_localid + graph[facet_ridgeadr + i];
@@ -472,29 +472,32 @@ bool MeshLoader::MakeFacetGraph(std::vector<Vec3f>& normal,
   return true;
 }
 
-Real MeshLoader::ComputeInradius(const std::vector<Vec3f>& normal,
+Real MeshLoader::ComputeInradius(const std::vector<Vec3r>& normal,
                                  const std::vector<Real>& offset,
-                                 const Vec3f& interior_point) const {
+                                 const Vec3r& interior_point) const {
   Real max{-kInf}, eqn;
   for (int i = 0; i < static_cast<int>(normal.size()); ++i) {
     eqn = normal[i].dot(interior_point) + offset[i];
-    if (eqn >= 0.0)
+    if (eqn >= 0.0) {
       throw std::runtime_error("Point is not in the polytope interior");
+    }
     max = std::max(max, eqn);
   }
 
   return -max;
 }
 
-Real MeshLoader::ComputeInradius(Vec3f& interior_point, bool use_given_ip) {
-  std::vector<Vec3f> normal;
+Real MeshLoader::ComputeInradius(Vec3r& interior_point, bool use_given_ip) {
+  std::vector<Vec3r> normal;
   std::vector<Real> offset;
   std::vector<int> graph;
-  Vec3f ip_;
-  bool valid{MakeFacetGraph(normal, offset, graph, ip_)};
-  if (!valid) throw std::runtime_error("Qhull error");
+  Vec3r ipc;
+  bool valid{MakeFacetGraph(normal, offset, graph, ipc)};
+  if (!valid) {
+    throw std::runtime_error("Qhull error");
+  }
 
-  if (!use_given_ip) interior_point = ip_;
+  if (!use_given_ip) interior_point = ipc;
   return ComputeInradius(normal, offset, interior_point);
 }
 

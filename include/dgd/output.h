@@ -37,40 +37,41 @@ enum class SolutionStatus : uint8_t {
    * @brief Optimal solution reached according to the relative tolerance
    * criterion.
    *
-   * @see SolverSettings.rel_tol
+   * @see Settings.rel_tol
    */
-  kOptimal,
+  Optimal,
 
   /**
    * @brief Maximum number of iterations reached.
    *
-   * @see SolverSettings.max_iter
+   * @see Settings.max_iter
    */
-  kMaxIterReached,
+  MaxIterReached,
 
   /**
    * @brief Coincident center positions of the convex sets.
    *
-   * @see SolverSettings.min_center_dist
+   * @see Settings.min_center_dist
    */
-  kCoincidentCenters,
+  CoincidentCenters,
 };
 
 /**
  * @brief Solver output struct.
  *
- * @attention When not using warm start, a SolverOutput instance can be shared
- * across different pairs of convex sets. When using warm start, each pair
- * should use a different object.
+ * @attention When not using warm start, an Output object can be shared across
+ * different pairs of convex sets. When using warm start, each pair should use
+ * a different object.
  *
  * @tparam dim Dimension of the convex sets.
  */
 template <int dim>
-struct SolverOutput {
+struct Output {
   /**
    * @name Convex set simplex vertices
    * @brief Support points for convex set \f$i\f$, \f$(i = 1, 2)\f$,
-   * corresponding to the optimal simplex for the Minkowski difference set.
+   * corresponding to the optimal inner polyhedral approximation for the
+   * Minkowski difference set.
    *
    * @attention When the simplex points from the previous time step are
    * available, they can be used to warm start the growth distance algorithm.
@@ -80,24 +81,24 @@ struct SolverOutput {
    * directly stored.
    */
   ///@{
-  Matf<dim, dim> s1{Matf<dim, dim>::Zero()};
-  Matf<dim, dim> s2{Matf<dim, dim>::Zero()};
+  Matr<dim, dim> s1{Matr<dim, dim>::Zero()};
+  Matr<dim, dim> s2{Matr<dim, dim>::Zero()};
   ///@}
 
   /**
    * @brief Barycentric coordinates corresponding to the optimal simplex.
    */
-  Vecf<dim> bc{Vecf<dim>::Zero()};
+  Vecr<dim> bc{Vecr<dim>::Zero()};
 
   /**
    * @brief The normal vector of an optimal hyperplane (dual optimal solution).
    *
-   * @note The normal vector need not have unit 2-norm.
-   *
    * @attention The normal vector is in the world frame of reference and is
    * oriented along the vector p2 - p1, i.e., normal.dot(p2 - p1) > 0.
+   *
+   * @note The normal vector need not have unit 2-norm.
    */
-  Vecf<dim> normal{Vecf<dim>::Zero()};
+  Vecr<dim> normal{Vecr<dim>::Zero()};
 
   /**
    * @name Support function hints
@@ -118,13 +119,24 @@ struct SolverOutput {
   /**
    * @brief Upper bound on the growth distance.
    *
-   * The upper bound corresponds to the ray intersection point on the Minkowski
-   * difference set.
+   * The upper bound corresponds to the ray intersection point on the inner
+   * polyhedral approximation of the Minkowski difference set.
    */
   Real growth_dist_ub{0.0};
 
   /**
-   * @brief Inradius of the Minkowski difference set.
+   * @name Primal optimal solutions
+   * @brief Primal optimal solutions for each convex set.
+   *
+   * @attention The primal solutions are in the world frame of reference.
+   */
+  ///@{}
+  Vecr<dim> z1{Vecr<dim>::Zero()};
+  Vecr<dim> z2{Vecr<dim>::Zero()};
+  ///@}
+
+  /**
+   * @brief (Lower bound of the) inradius of the Minkowski difference set.
    */
   Real inradius{kEps};
 
@@ -136,48 +148,7 @@ struct SolverOutput {
   /**
    * @brief Solution status.
    */
-  SolutionStatus status{SolutionStatus::kMaxIterReached};
-};
-
-/**
- * @brief Solution error metrics.
- */
-struct SolutionError {
-  /**
-   * @brief Relative primal-dual gap.
-   *
-   * The error is given by
-   * \f[
-   * \text{prim_dual_gap}
-   * = \left|\frac{\text{growth_dist_ub}}{\text{growth_dist_lb}} - 1\right|.
-   * \f]
-   * When the growth distance algorithm converges, this error is less than the
-   * specified value of rel_tol.
-   */
-  double prim_dual_gap;
-
-  /**
-   * @brief Primal feasibility error.
-   *
-   * The growth distance algorithm returns contact points in the form of convex
-   * set support points and barycentric coordinates. Then, the primal
-   * feasibility error is given by
-   * \f[
-   * \text{prim_feas_err}
-   * = | p_{12} + cp_{12} \cdot \text{growth_dist_ub}|_2,
-   * \f]
-   * where \f$p_{12}\f$ and \f$cp_{12}\f$ are the center position and contact
-   * point (wrt the center) on the Minkowski difference set.
-   */
-  double prim_feas_err;
-
-  /**
-   * @brief Dual feasibility error.
-   *
-   * The growth distance algorithm always ensures dual feasibility, so this
-   * error is zero.
-   */
-  double dual_feas_err{0.0};
+  SolutionStatus status{SolutionStatus::MaxIterReached};
 };
 
 }  // namespace dgd

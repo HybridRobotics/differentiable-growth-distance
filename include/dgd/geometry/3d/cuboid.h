@@ -43,10 +43,10 @@ class Cuboid : public ConvexSet<3> {
    */
   explicit Cuboid(Real hlx, Real hly, Real hlz, Real margin);
 
-  ~Cuboid() {};
+  ~Cuboid() = default;
 
   Real SupportFunction(
-      const Vec3f& n, Vec3f& sp,
+      const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -60,12 +60,13 @@ class Cuboid : public ConvexSet<3> {
 
 inline Cuboid::Cuboid(Real hlx, Real hly, Real hlz, Real margin)
     : ConvexSet<3>(), hlx_(hlx), hly_(hly), hlz_(hlz), margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (hlz <= 0.0) || (margin < 0.0))
+  if ((hlx <= 0.0) || (hly <= 0.0) || (hlz <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid axis lengths or margin");
-  SetInradius(std::min({hlx, hly, hlz}) + margin);
+  }
+  set_inradius(std::min({hlx, hly, hlz}) + margin);
 }
 
-inline Real Cuboid::SupportFunction(const Vec3f& n, Vec3f& sp,
+inline Real Cuboid::SupportFunction(const Vec3r& n, Vec3r& sp,
                                     SupportFunctionHint<3>* /*hint*/) const {
   sp = margin_ * n;
   sp(0) += std::copysign(hlx_, n(0));

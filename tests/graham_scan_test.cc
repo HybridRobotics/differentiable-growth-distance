@@ -13,74 +13,74 @@ namespace {
 
 using namespace dgd;
 
-const Real kTol{kEpsSqrt};
+const Real kTol{kSqrtEps};
 
 TEST(GrahamScanTest, ZeroDim) {
-  std::vector<Vec2f> pts, vert;
+  std::vector<Vec2r> pts, vert;
   pts.push_back({1.0, 1.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 1);
-  EXPECT_EQ(vert[0], Vec2f(1.0, 1.0));
+  EXPECT_EQ(vert[0], Vec2r(1.0, 1.0));
 
   // Duplicate points.
   pts.push_back({1.0, 1.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 1);
-  EXPECT_EQ(vert[0], Vec2f(1.0, 1.0));
+  EXPECT_EQ(vert[0], Vec2r(1.0, 1.0));
 }
 
 TEST(GrahamScanTest, OneDim) {
-  std::vector<Vec2f> pts, vert;
+  std::vector<Vec2r> pts, vert;
   pts.push_back({2.0, 3.0});
   pts.push_back({1.0, 1.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 2);
-  EXPECT_EQ(vert[0], Vec2f(1.0, 1.0));
-  EXPECT_EQ(vert[1], Vec2f(2.0, 3.0));
+  EXPECT_EQ(vert[0], Vec2r(1.0, 1.0));
+  EXPECT_EQ(vert[1], Vec2r(2.0, 3.0));
 
   // Duplicate points.
   pts.push_back({1.0, 1.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 2);
-  EXPECT_EQ(vert[0], Vec2f(1.0, 1.0));
-  EXPECT_EQ(vert[1], Vec2f(2.0, 3.0));
+  EXPECT_EQ(vert[0], Vec2r(1.0, 1.0));
+  EXPECT_EQ(vert[1], Vec2r(2.0, 3.0));
 
   // Collinear points.
   pts.push_back({3.0, 5.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 2);
-  EXPECT_EQ(vert[0], Vec2f(1.0, 1.0));
-  EXPECT_EQ(vert[1], Vec2f(3.0, 5.0));
+  EXPECT_EQ(vert[0], Vec2r(1.0, 1.0));
+  EXPECT_EQ(vert[1], Vec2r(3.0, 5.0));
 }
 
 TEST(GrahamScanTest, TwoDim) {
   // CW-sorted points.
-  std::vector<Vec2f> pts, vert;
+  std::vector<Vec2r> pts, vert;
   pts.push_back({3.0, 2.0});
   pts.push_back({1.0, 0.5});
   pts.push_back({0.0, 0.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 3);
-  EXPECT_EQ(vert[0], Vec2f(0.0, 0.0));
-  EXPECT_EQ(vert[1], Vec2f(1.0, 0.5));
-  EXPECT_EQ(vert[2], Vec2f(3.0, 2.0));
+  EXPECT_EQ(vert[0], Vec2r(0.0, 0.0));
+  EXPECT_EQ(vert[1], Vec2r(1.0, 0.5));
+  EXPECT_EQ(vert[2], Vec2r(3.0, 2.0));
 
   // CCW-sorted points.
-  pts[1] = Vec2f(2.0, 2.0);
+  pts[1] = Vec2r(2.0, 2.0);
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 3);
-  EXPECT_EQ(vert[0], Vec2f(0.0, 0.0));
-  EXPECT_EQ(vert[1], Vec2f(3.0, 2.0));
-  EXPECT_EQ(vert[2], Vec2f(2.0, 2.0));
+  EXPECT_EQ(vert[0], Vec2r(0.0, 0.0));
+  EXPECT_EQ(vert[1], Vec2r(3.0, 2.0));
+  EXPECT_EQ(vert[2], Vec2r(2.0, 2.0));
 
   // Unsorted points with duplicates and p0-collinearity.
   pts.push_back({1.5, 1.0});
   pts.push_back({3.0, 2.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 3);
-  EXPECT_EQ(vert[0], Vec2f(0.0, 0.0));
-  EXPECT_EQ(vert[1], Vec2f(3.0, 2.0));
-  EXPECT_EQ(vert[2], Vec2f(2.0, 2.0));
+  EXPECT_EQ(vert[0], Vec2r(0.0, 0.0));
+  EXPECT_EQ(vert[1], Vec2r(3.0, 2.0));
+  EXPECT_EQ(vert[2], Vec2r(2.0, 2.0));
 
   // Unsorted points with duplicates and p0- and non p0-collinearity.
   // Note: For hill-climbing to work correctly, there must not be any
@@ -88,28 +88,28 @@ TEST(GrahamScanTest, TwoDim) {
   pts.push_back({2.5, 2.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 3);
-  EXPECT_EQ(vert[0], Vec2f(0.0, 0.0));
-  EXPECT_EQ(vert[1], Vec2f(3.0, 2.0));
-  EXPECT_EQ(vert[2], Vec2f(2.0, 2.0));
+  EXPECT_EQ(vert[0], Vec2r(0.0, 0.0));
+  EXPECT_EQ(vert[1], Vec2r(3.0, 2.0));
+  EXPECT_EQ(vert[2], Vec2r(2.0, 2.0));
 
   // Unsorted points with duplicates, p0- and non p0-collinearity, and right
   // turns.
   pts.push_back({0.0, 4.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 3);
-  EXPECT_EQ(vert[0], Vec2f(0.0, 0.0));
-  EXPECT_EQ(vert[1], Vec2f(3.0, 2.0));
-  EXPECT_EQ(vert[2], Vec2f(0.0, 4.0));
+  EXPECT_EQ(vert[0], Vec2r(0.0, 0.0));
+  EXPECT_EQ(vert[1], Vec2r(3.0, 2.0));
+  EXPECT_EQ(vert[2], Vec2r(0.0, 4.0));
 
   // Check inradius.
   pts.push_back({6.0, 4.0});
   GrahamScan(pts, vert);
   ASSERT_EQ(vert.size(), 3);
-  EXPECT_EQ(vert[0], Vec2f(0.0, 0.0));
-  EXPECT_EQ(vert[1], Vec2f(6.0, 4.0));
-  EXPECT_EQ(vert[2], Vec2f(0.0, 4.0));
+  EXPECT_EQ(vert[0], Vec2r(0.0, 0.0));
+  EXPECT_EQ(vert[1], Vec2r(6.0, 4.0));
+  EXPECT_EQ(vert[2], Vec2r(0.0, 4.0));
 
-  Real inradius{ComputePolygonInradius(vert, Vec2f(3.0, 3.0))};
+  Real inradius{ComputePolygonInradius(vert, Vec2r(3.0, 3.0))};
   EXPECT_NEAR(inradius, std::sqrt(9.0 / 13.0), kTol);
 }
 
@@ -119,16 +119,15 @@ TEST(GrahamScanTest, CcwOrientation) {
   const int npts{1000};
   const Real side_len{10.0};
 
-  auto ccw = [](const Vec2f& u, const Vec2f& v, const Vec2f& w) -> Real {
+  auto ccw = [](const Vec2r& u, const Vec2r& v, const Vec2r& w) -> Real {
     return (v - u).cross(w - u);
   };
 
-  std::vector<Vec2f> pts(npts), vert;
-  int nvert;
+  std::vector<Vec2r> pts(npts), vert;
   for (int i = 0; i < nruns; ++i) {
     for (int j = 0; j < npts; ++j)
-      pts[j] = Vec2f(Random(side_len), Random(side_len));
-    nvert = GrahamScan(pts, vert);
+      pts[j] = Vec2r(Random(side_len), Random(side_len));
+    const int nvert{GrahamScan(pts, vert)};
 
     // Orientation test.
     if (nvert > 2) {
@@ -148,8 +147,8 @@ TEST(GrahamScanTest, SupportFunction) {
   const int npts{1000};
   const Real side_len{10.0};
 
-  auto support = [](const std::vector<Vec2f>& p, const Vec2f& n,
-                    Vec2f& sp) -> bool {
+  auto support = [](const std::vector<Vec2r>& p, const Vec2r& n,
+                    Vec2r& sp) -> bool {
     int idx{0};
     Real s{0.0}, sv{n.dot(p[0])};
     bool multiple{false};
@@ -166,22 +165,22 @@ TEST(GrahamScanTest, SupportFunction) {
     return multiple;
   };
 
-  std::vector<Vec2f> pts(npts), vert;
-  Vec2f sp, sp_, dir;
+  std::vector<Vec2r> pts(npts), vert;
+  Vec2r sp, spt, dir;
   for (int i = 0; i < nruns; ++i) {
     for (int j = 0; j < npts; ++j)
-      pts[j] = Vec2f(Random(side_len), Random(side_len));
+      pts[j] = Vec2r(Random(side_len), Random(side_len));
     GrahamScan(pts, vert);
 
     // Support function test.
     for (int k = 0; k < ndir; ++k) {
       Real ang{Real(2 * k) * kPi / ndir};
-      dir = Vec2f(std::cos(ang), std::sin(ang));
-      bool multiple{support(pts, dir, sp_)};
+      dir = Vec2r(std::cos(ang), std::sin(ang));
+      bool multiple{support(pts, dir, spt)};
       if (multiple) continue;
       support(vert, dir, sp);
-      EXPECT_NEAR(dir.dot(sp_), dir.dot(sp), kTol);
-      ASSERT_NEAR((sp_ - sp).lpNorm<Eigen::Infinity>(), 0.0, kTol);
+      EXPECT_NEAR(dir.dot(spt), dir.dot(sp), kTol);
+      ASSERT_NEAR((spt - sp).lpNorm<Eigen::Infinity>(), 0.0, kTol);
     }
   }
 }
