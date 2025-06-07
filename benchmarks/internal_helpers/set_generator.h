@@ -153,6 +153,8 @@ class ConvexSetGenerator {
 
   const std::vector<MeshPtr>& meshes() const { return meshes_; }
 
+  int nmeshes() const { return nmeshes_; }
+
  private:
   std::vector<MeshPtr> meshes_;
   /*
