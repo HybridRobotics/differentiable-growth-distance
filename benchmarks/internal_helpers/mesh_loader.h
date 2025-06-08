@@ -26,6 +26,10 @@ void SetVertexMeshFromObjFile(const std::string& filename, MeshProperties& mp);
 
 void SetFacetMeshFromObjFile(const std::string& filename, MeshProperties& mp);
 
+// Set facet mesh from vertices.
+void SetFacetMeshFromVertices(const std::vector<Vec3r>& vert,
+                              MeshProperties& mp);
+
 // Sets the center of the vertex mesh as the origin.
 inline void SetZeroVertexCenter(MeshProperties& mp) {
   for (auto& v : mp.vert) {
