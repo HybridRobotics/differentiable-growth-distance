@@ -19,7 +19,7 @@
 #include "dgd/geometry/xd/sphere.h"
 #include "dgd/graham_scan.h"
 #include "dgd/mesh_loader.h"
-#include "dgd/utils.h"
+#include "dgd/utils/random.h"
 
 namespace {
 
@@ -87,13 +87,14 @@ TEST(EllipseTest, SupportFunction) {
 
 // Polygon test
 TEST(PolygonTest, SupportFunction) {
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int npts = 100;
   const Real margin = 0.0, len = 5.0;
 
-  std::vector<Vec2r> pts, vert;
+  std::vector<Vec2r> pts(npts), vert;
   for (int i = 0; i < npts; ++i) {
-    pts.push_back(Vec2r(Random(-len, len), Random(-len, len)));
+    pts[i] << rng.Random(len), rng.Random(len);
   }
   GrahamScan(pts, vert);
   Real inradius = ComputePolygonInradius(vert, Vec2r::Zero());
@@ -336,7 +337,8 @@ TEST(MeshTest, SupportFunction) {
   // Qhull computations can be unstable with float.
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nruns = 10;
   const int npts = 400;
   const Real inradius = 0.25, margin = 0.0;
@@ -350,7 +352,7 @@ TEST(MeshTest, SupportFunction) {
   Real sv, svt;
   for (int i = 0; i < nruns; ++i) {
     for (int j = 0; j < npts; ++j) {
-      pts[j] = Vec3r(Random(1.0), Random(1.0), Random(1.0)).normalized();
+      rng.RandomUnitVector(pts[j]);
     }
     ml.ProcessPoints(pts);
     bool valid = ml.MakeVertexGraph(vert, graph);
@@ -376,12 +378,13 @@ TEST(PolytopeTest, SupportFunction) {
   // Qhull computations can be unstable with float.
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int npts = 1000;
   const Real margin = 0.0, len = 5.0;
 
-  std::vector<Real> pts;
-  for (int i = 0; i < 3 * npts; ++i) pts.push_back(Random(-len, len));
+  std::vector<Real> pts(3 * npts);
+  for (int i = 0; i < 3 * npts; ++i) pts[i] = rng.Random(len);
 
   MeshLoader ml{};
   ml.ProcessPoints(pts);

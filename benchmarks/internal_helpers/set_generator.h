@@ -1,11 +1,13 @@
 #ifndef DGD_BENCHMARKS_INTERNAL_HELPERS_SET_GENERATOR_H_
 #define DGD_BENCHMARKS_INTERNAL_HELPERS_SET_GENERATOR_H_
 
+#include <array>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "dgd/data_types.h"
+#include "dgd/utils/random.h"
 
 namespace dgd {
 
@@ -48,72 +50,65 @@ enum class FlatPrimitive3D {
   Count_,
 };
 
-// Feature ranges for convex sets.
-template <typename T>
-struct Range {
-  T low{};
-  T high{};
-};
-
 struct ConvexSetFeatureRange {
   // 2D convex sets.
   struct {
-    Range<Real> hlx{0.25 * 1e-2, 0.25};
-    Range<Real> hly{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
   } ellipse;
 
   struct {
-    Range<Real> hlx{0.25 * 1e-2, 0.25};
-    Range<Real> hly{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
   } rectangle;
 
   struct {
-    Range<int> nvert{6, 16};
+    std::array<int, 2> nvert{6, 16};
     Real size = 0.4;
   } polygon;
 
   // 3D convex sets.
   struct {
-    Range<Real> radius{0.25 * 1e-2, 0.25};
-    Range<Real> height{0.5 * 1e-2, 0.5};
+    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> height{0.5 * 1e-2, 0.5};
   } cone;
 
   struct {
-    Range<Real> hlx{0.4 * 1e-2, 0.4};
-    Range<Real> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.4 * 1e-2, 0.4};
+    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
   } cylinder;
 
   struct {
-    Range<Real> hlx{0.25 * 1e-2, 0.25};
-    Range<Real> hly{0.25 * 1e-2, 0.25};
-    Range<Real> hlz{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlz{0.25 * 1e-2, 0.25};
   } ellipsoid;
 
   struct {
-    Range<Real> base_radius{0.25 * 1e-2, 0.25};
-    Range<Real> top_radius{0.25 * 1e-2, 0.25};
-    Range<Real> height{0.5 * 1e-2, 0.5};
+    std::array<Real, 2> base_radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> top_radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> height{0.5 * 1e-2, 0.5};
   } frustum;
 
   struct {
-    Range<Real> hlx{0.25 * 1e-2, 0.25};
-    Range<Real> hly{0.25 * 1e-2, 0.25};
-    Range<Real> hlz{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlz{0.25 * 1e-2, 0.25};
   } cuboid;
 
   struct {
-    Range<int> nvert{8, 32};
+    std::array<int, 2> nvert{8, 32};
     Real size = 0.4;
   } polytope;
 
   // XD convex sets.
   struct {
-    Range<Real> hlx{0.25 * 1e-2, 0.25};
-    Range<Real> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
   } capsule;
 
   struct {
-    Range<Real> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
   } sphere;
 };
 
@@ -125,7 +120,7 @@ class ConvexSetGenerator {
   ~ConvexSetGenerator() = default;
 
   // Sets default RNG seed.
-  void SetDefaultRngSeed() const;
+  void SetDefaultRngSeed() { rng_.SetDefaultSeed(); };
 
   // Load meshes from .obj files.
   void LoadMeshesFromObjFiles(const std::vector<std::string>& filenames);
@@ -133,17 +128,17 @@ class ConvexSetGenerator {
   // Generate a random convex set of a primitive type.
   ConvexSetPtr<2> GetPrimitiveSet(Primitive2D type);
 
-  ConvexSetPtr<3> GetPrimitiveSet(CurvedPrimitive3D type) const;
+  ConvexSetPtr<3> GetPrimitiveSet(CurvedPrimitive3D type);
 
   ConvexSetPtr<3> GetPrimitiveSet(FlatPrimitive3D type);
 
   // Get random primitive convex sets.
-  ConvexSetPtr<3> GetRandomCurvedPrimitive3DSet() const;
+  ConvexSetPtr<3> GetRandomCurvedPrimitive3DSet();
 
   ConvexSetPtr<3> GetRandomPrimitive3DSet();
 
   // Retrieve a random Mesh set with index.
-  ConvexSetPtr<3> GetRandomMeshSet(int* idx = nullptr) const;
+  ConvexSetPtr<3> GetRandomMeshSet(int* idx = nullptr);
 
   // Get a random convex set.
   ConvexSetPtr<2> GetRandom2DSet();
@@ -161,6 +156,7 @@ class ConvexSetGenerator {
   std::vector<Vec3r> polytope_vert_; // Temporary.
   */
   const ConvexSetFeatureRange fr_;
+  Rng rng_;
   const int count2_, ccount3_, fcount3_;
   int nmeshes_;
 };

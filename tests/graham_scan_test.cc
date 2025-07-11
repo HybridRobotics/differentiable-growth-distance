@@ -7,7 +7,7 @@
 // clang-format off
 #include "dgd/graham_scan.h"
 // clang-format on
-#include "dgd/utils.h"
+#include "dgd/utils/random.h"
 
 namespace {
 
@@ -114,7 +114,8 @@ TEST(GrahamScanTest, TwoDim) {
 }
 
 TEST(GrahamScanTest, CcwOrientation) {
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nruns = 100;
   const int npts = 1000;
   const Real side_len = 10.0;
@@ -126,7 +127,7 @@ TEST(GrahamScanTest, CcwOrientation) {
   std::vector<Vec2r> pts(npts), vert;
   for (int i = 0; i < nruns; ++i) {
     for (int j = 0; j < npts; ++j)
-      pts[j] = Vec2r(Random(side_len), Random(side_len));
+      pts[j] << rng.Random(side_len), rng.Random(side_len);
     const int nvert = GrahamScan(pts, vert);
 
     // Orientation test.
@@ -141,7 +142,8 @@ TEST(GrahamScanTest, CcwOrientation) {
 
 // Support functions of a set and its convex hull are the same.
 TEST(GrahamScanTest, SupportFunction) {
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nruns = 100;
   const int ndir = 100;
   const int npts = 1000;
@@ -169,7 +171,7 @@ TEST(GrahamScanTest, SupportFunction) {
   Vec2r sp, spt, dir;
   for (int i = 0; i < nruns; ++i) {
     for (int j = 0; j < npts; ++j)
-      pts[j] = Vec2r(Random(side_len), Random(side_len));
+      pts[j] << rng.Random(side_len), rng.Random(side_len);
     GrahamScan(pts, vert);
 
     // Support function test.

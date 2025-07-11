@@ -14,7 +14,7 @@
 #include "dgd/geometry/3d/mesh.h"
 #include "dgd/graham_scan.h"
 #include "dgd/mesh_loader.h"
-#include "dgd/utils.h"
+#include "dgd/utils/random.h"
 
 namespace {
 
@@ -30,14 +30,15 @@ void Set2dConvexSets(ConvexSetPtr<2>& set1, ConvexSetPtr<2>& set2,
   set1 = std::make_unique<Ellipse>(hlx, hly, margin1);
 
   // Set 2: polygon.
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int npts = 100;
   const Real len = 2.0;
   std::vector<Vec2r> pts, vert;
   Vec2r vec;
   const int pnorm = 6;
   for (int i = 0; i < npts; ++i) {
-    vec = Vec2r(Random(1.0), Random(1.0));
+    vec << rng.Random(), rng.Random();
     vec = vec * len / (vec.lpNorm<pnorm>() + kEps);
     pts.push_back(vec);
   }
@@ -54,7 +55,8 @@ void Set3dConvexSets(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
   set1 = std::make_unique<Cone>(radius, height, margin1);
 
   // Set 2: mesh.
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int npts = 500;
   const Real len = 2.0;
   MeshLoader ml{};
@@ -63,7 +65,7 @@ void Set3dConvexSets(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
   Vec3r vec;
   constexpr int pnorm = 4;
   for (int i = 0; i < npts; ++i) {
-    vec = Vec3r(Random(1.0), Random(1.0), Random(1.0));
+    vec << rng.Random(), rng.Random(), rng.Random();
     vec = vec * len / (vec.lpNorm<pnorm>() + kEps);
     pts.push_back(vec);
   }
@@ -78,6 +80,8 @@ void Set3dConvexSets(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
 const Real kTol = kSqrtEps;
 
 TEST(GrowthDistanceTest, EllipsePolygon) {
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nsamples_cold = 100;
   const int nsamples_warm = 100;
 
@@ -91,10 +95,10 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    RandomRigidBodyTransform<2>(-2.0, 2.0, tf1);
-    RandomRigidBodyTransform<2>(-2.0, 2.0, tf2);
-    const Vec2r v(Random(1.0), Random(1.0));
-    const Real w = Random(kPi);
+    rng.RandomRigidBodyTransform(-2.0, 2.0, tf1);
+    rng.RandomRigidBodyTransform(-2.0, 2.0, tf2);
+    const Vec2r v(rng.Random(), rng.Random());
+    const Real w = rng.Random(kPi);
     const Rotation2r dR = Eigen::AngleAxis<Real>(w * dt, Vec3r::UnitZ())
                               .matrix()
                               .topLeftCorner<2, 2>();
@@ -114,6 +118,8 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
 }
 
 TEST(CollisionCheckTest, EllipsePolygon) {
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nsamples_cold = 100;
   const int nsamples_warm = 100;
 
@@ -127,10 +133,10 @@ TEST(CollisionCheckTest, EllipsePolygon) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    RandomRigidBodyTransform<2>(-5.0, 5.0, tf1);
-    RandomRigidBodyTransform<2>(-5.0, 5.0, tf2);
-    const Vec2r v(Random(1.0), Random(1.0));
-    const Real w = Random(kPi);
+    rng.RandomRigidBodyTransform(-5.0, 5.0, tf1);
+    rng.RandomRigidBodyTransform(-5.0, 5.0, tf2);
+    const Vec2r v(rng.Random(), rng.Random());
+    const Real w = rng.Random(kPi);
     const Rotation2r dR = Eigen::AngleAxis<Real>(w * dt, Vec3r::UnitZ())
                               .matrix()
                               .topLeftCorner<2, 2>();
@@ -153,6 +159,8 @@ TEST(GrowthDistanceTest, ConeMesh) {
   // Qhull computations can be unstable with float.
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nsamples_cold = 100;
   const int nsamples_warm = 100;
 
@@ -166,10 +174,10 @@ TEST(GrowthDistanceTest, ConeMesh) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    RandomRigidBodyTransform<3>(-3.0, 3.0, tf1);
-    RandomRigidBodyTransform<3>(-3.0, 3.0, tf2);
-    const Vec3r v(Random(1.0), Random(1.0), Random(1.0));
-    const Vec3r euler(Random(kPi), Random(kPi), Random(kPi));
+    rng.RandomRigidBodyTransform(-3.0, 3.0, tf1);
+    rng.RandomRigidBodyTransform(-3.0, 3.0, tf2);
+    const Vec3r v(rng.Random(), rng.Random(), rng.Random());
+    const Vec3r euler(rng.Random(kPi), rng.Random(kPi), rng.Random(kPi));
     Rotation3r dR;
     EulerToRotation(dt * euler, dR);
     for (int j = 0; j < nsamples_warm; ++j) {
@@ -191,6 +199,8 @@ TEST(CollisionCheckTest, ConeMesh) {
   // Qhull computations can be unstable with float.
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nsamples_cold = 100;
   const int nsamples_warm = 100;
 
@@ -204,10 +214,10 @@ TEST(CollisionCheckTest, ConeMesh) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    RandomRigidBodyTransform<3>(-6.0, 6.0, tf1);
-    RandomRigidBodyTransform<3>(-6.0, 6.0, tf2);
-    const Vec3r v(Random(1.0), Random(1.0), Random(1.0));
-    const Vec3r euler(Random(kPi), Random(kPi), Random(kPi));
+    rng.RandomRigidBodyTransform(-6.0, 6.0, tf1);
+    rng.RandomRigidBodyTransform(-6.0, 6.0, tf2);
+    const Vec3r v(rng.Random(), rng.Random(), rng.Random());
+    const Vec3r euler(rng.Random(kPi), rng.Random(kPi), rng.Random(kPi));
     Rotation3r dR;
     EulerToRotation(dt * euler, dR);
     for (int j = 0; j < nsamples_warm; ++j) {

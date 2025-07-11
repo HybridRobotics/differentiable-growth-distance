@@ -16,7 +16,7 @@
  * @file data_types.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
  * @date 2025-02-18
- * @brief Interface for data types and constants.
+ * @brief Data types and constants.
  */
 
 #ifndef DGD_DATA_TYPES_H_
@@ -42,7 +42,7 @@ typedef double Real;
  * @brief Infinity.
  *
  * @note This constant is only used for the initial lower bound for the growth
- * distance algorithm. For a pair of convex sets, kInf can be any number greater
+ * distance algorithm. For a pair of convex sets, it can be any number greater
  * than the sum of their circumradii.
  */
 constexpr Real kInf = std::numeric_limits<Real>::infinity();

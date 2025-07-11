@@ -2,8 +2,8 @@
 #include <vector>
 
 #include "dgd/data_types.h"
+#include "internal_helpers/filesystem_utils.h"
 #include "internal_helpers/mesh_loader.h"
-#include "internal_helpers/utils.h"
 
 int main(int argc, char** argv) {
   if (argc < 2) {

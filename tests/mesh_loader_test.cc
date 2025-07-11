@@ -8,7 +8,7 @@
 // clang-format off
 #include "dgd/mesh_loader.h"
 // clang-format on
-#include "dgd/utils.h"
+#include "dgd/utils/random.h"
 
 namespace {
 
@@ -154,7 +154,8 @@ TEST(MeshLoaderTest, SupportFunction) {
   // Qhull computations can be unstable with float.
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
-  SetDefaultSeed();
+  Rng rng;
+  rng.SetDefaultSeed();
   const int nruns = 10;
   const int ndir_xy = 100, ndir_z = 10;
   const int npts = 1000;
@@ -184,7 +185,8 @@ TEST(MeshLoaderTest, SupportFunction) {
   Vec3r sp, spt, dir;
   for (int i = 0; i < nruns; ++i) {
     for (int j = 0; j < npts; ++j)
-      pts[j] = Vec3r(Random(side_len), Random(side_len), Random(side_len));
+      pts[j] << rng.Random(side_len), rng.Random(side_len),
+          rng.Random(side_len);
     ml.ProcessPoints(pts);
     bool valid = ml.MakeVertexGraph(vert, graph);
 

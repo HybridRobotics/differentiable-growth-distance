@@ -14,14 +14,25 @@
 #include "dgd/growth_distance.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
+#include "dgd/utils/timer.h"
+#include "internal_helpers/filesystem_utils.h"
+#include "internal_helpers/random_utils.h"
 #include "internal_helpers/set_generator.h"
-#include "internal_helpers/timer.h"
-#include "internal_helpers/utils.h"
 
-constexpr double position_lim = 5.0;
-constexpr double dx_max = 0.1, ang_max = dgd::kPi / 18.0;
-constexpr int ncold = 100;
-constexpr int nwarm = 100;
+// Constants.
+const double position_lim = 5.0;
+const double dx_max = 0.1, ang_max = dgd::kPi / 18.0;
+
+//  Number of pairs of sets to benchmark.
+const int npair = 1000;
+//  Number of poses per set pair for cold-start.
+const int npose_c = 100;
+//  Number of poses per set pair for warm-start.
+const int npose_w = 100;
+//  Number of cold-start function calls for a given pair of sets and poses.
+const int ncold = 100;
+//  Number of warm-start function calls for a given pair of sets.
+const int nwarm = 100;
 
 template <int dim>
 struct OptimalSolution {
@@ -62,7 +73,8 @@ void PrintStatistics(double avg_solve_time, double max_prim_dual_gap,
 
 template <int dim, class C1, class C2>
 void ColdStart(std::function<const C1*()> generator1,
-               std::function<const C2*()> generator2, int npair, int npose) {
+               std::function<const C2*()> generator2, dgd::Rng& rng, int npair,
+               int npose) {
   double avg_solve_time = 0.0;
   double max_prim_dual_gap = 0.0;
   double max_prim_feas_err = 0.0;
@@ -70,7 +82,7 @@ void ColdStart(std::function<const C1*()> generator1,
   double avg_iter = 0.0;
   int nsubopt = 0;
 
-  dgd::internal::Timer timer;
+  dgd::Timer timer;
   timer.Stop();
   dgd::Transformr<dim> tf1, tf2;
   dgd::Settings settings;
@@ -79,8 +91,8 @@ void ColdStart(std::function<const C1*()> generator1,
     const C1* set1 = generator1();
     const C2* set2 = generator2();
     for (int j = 0; j < npose; ++j) {
-      dgd::internal::SetRandomTransform<dim>(tf1, tf2, -position_lim,
-                                             position_lim);
+      dgd::internal::SetRandomRigidBodyTransforms(rng, tf1, tf2, -position_lim,
+                                                  position_lim);
       // Initial call to reduce cache misses.
       dgd::GrowthDistance(set1, tf1, set2, tf2, settings, out);
       timer.Start();
@@ -108,7 +120,8 @@ void ColdStart(std::function<const C1*()> generator1,
 
 template <int dim, class C1, class C2>
 void WarmStart(std::function<const C1*()> generator1,
-               std::function<const C2*()> generator2, int npair, int npose) {
+               std::function<const C2*()> generator2, dgd::Rng& rng, int npair,
+               int npose) {
   double avg_solve_time = 0.0;
   double max_prim_dual_gap = 0.0;
   double max_prim_feas_err = 0.0;
@@ -116,7 +129,7 @@ void WarmStart(std::function<const C1*()> generator1,
   double avg_iter = 0.0;
   int nsubopt = 0;
 
-  dgd::internal::Timer timer;
+  dgd::Timer timer;
   timer.Stop();
   dgd::Transformr<dim> tf1, tf1_c, tf2;
   dgd::Vecr<dim> dx;
@@ -128,16 +141,16 @@ void WarmStart(std::function<const C1*()> generator1,
     const C1* set1 = generator1();
     const C2* set2 = generator2();
     for (int j = 0; j < npose; ++j) {
-      dgd::internal::SetRandomTransform<dim>(tf1, tf2, -position_lim,
-                                             position_lim);
+      dgd::internal::SetRandomRigidBodyTransforms(rng, tf1, tf2, -position_lim,
+                                                  position_lim);
       tf1_c = tf1;
-      dgd::internal::SetRandomScrew(dx, drot, dx_max, ang_max);
+      dgd::internal::SetRandomDisplacement(rng, dx, drot, dx_max, ang_max);
       // Initial cold-start call.
       dgd::GrowthDistance(set1, tf1, set2, tf2, settings, out);
       int total_iter = 0;
       timer.Start();
       for (int k = 0; k < nwarm; ++k) {
-        dgd::internal::UpdateTransform(tf1, dx, drot);
+        dgd::internal::UpdateRigidBodyTransform(tf1, dx, drot);
         dgd::GrowthDistance(set1, tf1, set2, tf2, settings, out, true);
         opt_sols[k].SetFromOutput(out);
         total_iter += out.iter;
@@ -148,7 +161,7 @@ void WarmStart(std::function<const C1*()> generator1,
 
       tf1 = tf1_c;
       for (int k = 0; k < nwarm; ++k) {
-        dgd::internal::UpdateTransform(tf1, dx, drot);
+        dgd::internal::UpdateRigidBodyTransform(tf1, dx, drot);
         opt_sols[k].SetOutput(out);
         const auto err = dgd::ComputeSolutionError(set1, tf1, set2, tf2, out);
         max_prim_dual_gap = std::max(max_prim_dual_gap, err.prim_dual_gap);
@@ -187,13 +200,12 @@ int main(int argc, char** argv) {
     std::cout << "No .obj files found; mesh benchmarks will not be run"
               << std::endl;
   }
-  auto set_seed = [&gen]() -> void {
+  dgd::Rng rng;
+  auto set_seed = [&gen, &rng]() -> void {
     gen.SetDefaultRngSeed();
-    dgd::SetDefaultSeed();
+    rng.SetDefaultSeed();
   };
 
-  const int npair = 1000;
-  const int npose_c = 100, npose_w = 100;
   // Benchmarks.
   //  1. Dynamic dispatch: (frustum + ellipsoid, cold-start).
   {
@@ -209,7 +221,7 @@ int main(int argc, char** argv) {
     std::cout << "Dynamic dispatch: (frustum + ellipsoid, cold-start)"
               << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator1, generator2,
-                                                       npair, npose_c);
+                                                       rng, npair, npose_c);
   }
   //  2. Inline call: (frustum + ellipsoid, cold-start).
   {
@@ -226,8 +238,8 @@ int main(int argc, char** argv) {
     };
     std::cout << "Inline call     : (frustum + ellipsoid, cold-start)"
               << std::endl;
-    ColdStart<3, dgd::Frustum, dgd::Ellipsoid>(generator1, generator2, npair,
-                                               npose_c);
+    ColdStart<3, dgd::Frustum, dgd::Ellipsoid>(generator1, generator2, rng,
+                                               npair, npose_c);
   }
 
   //  3. Dynamic dispatch: (mesh + mesh, cold-start).
@@ -238,7 +250,7 @@ int main(int argc, char** argv) {
     };
     std::cout << "Dynamic dispatch: (mesh + mesh, cold-start)" << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
-                                                       npair, npose_c);
+                                                       rng, npair, npose_c);
   }
   //  4. Inline call: (mesh + mesh, cold-start).
   if (gen.nmeshes() > 0) {
@@ -247,7 +259,8 @@ int main(int argc, char** argv) {
       return static_cast<const dgd::Mesh*>(gen.GetRandomMeshSet().get());
     };
     std::cout << "Inline call     : (mesh + mesh, cold-start)" << std::endl;
-    ColdStart<3, dgd::Mesh, dgd::Mesh>(generator, generator, npair, npose_c);
+    ColdStart<3, dgd::Mesh, dgd::Mesh>(generator, generator, rng, npair,
+                                       npose_c);
   }
 
   std::cout << std::string(50, '-') << std::endl;
@@ -258,7 +271,7 @@ int main(int argc, char** argv) {
     };
     std::cout << "Cold-start: (2D primitive + 2D primitive)" << std::endl;
     ColdStart<2, dgd::ConvexSet<2>, dgd::ConvexSet<2>>(generator, generator,
-                                                       npair, npose_c);
+                                                       rng, npair, npose_c);
   }
   //  6. Cold-start: (3D curved primitive + 3D curved primitive).
   {
@@ -268,7 +281,7 @@ int main(int argc, char** argv) {
     std::cout << "Cold-start: (3D curved primitive + 3D curved primitive)"
               << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
-                                                       npair, npose_w);
+                                                       rng, npair, npose_w);
   }
   //  7. Cold-start: (3D primitive + 3D primitive).
   {
@@ -277,7 +290,7 @@ int main(int argc, char** argv) {
     };
     std::cout << "Cold-start: (3D primitive + 3D primitive)" << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
-                                                       npair, npose_w);
+                                                       rng, npair, npose_w);
   }
 
   std::cout << std::string(50, '-') << std::endl;
@@ -288,7 +301,7 @@ int main(int argc, char** argv) {
     };
     std::cout << "Warm-start: (2D primitive + 2D primitive)" << std::endl;
     WarmStart<2, dgd::ConvexSet<2>, dgd::ConvexSet<2>>(generator, generator,
-                                                       npair, npose_w);
+                                                       rng, npair, npose_w);
   }
   //  9. Warm-start: (3D curved primitive + 3D curved primitive).
   {
@@ -298,7 +311,7 @@ int main(int argc, char** argv) {
     std::cout << "Warm-start: (3D curved primitive + 3D curved primitive)"
               << std::endl;
     WarmStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
-                                                       npair, npose_w);
+                                                       rng, npair, npose_w);
   }
   //  10. Warm-start: (mesh + mesh).
   if (gen.nmeshes() > 0) {
@@ -307,6 +320,6 @@ int main(int argc, char** argv) {
     };
     std::cout << "Warm-start: (mesh + mesh)" << std::endl;
     WarmStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
-                                                       npair, npose_w);
+                                                       rng, npair, npose_w);
   }
 }

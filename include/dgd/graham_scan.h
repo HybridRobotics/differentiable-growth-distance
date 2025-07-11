@@ -46,10 +46,9 @@ int GrahamScan(const std::vector<Vec2r>& pts, std::vector<Vec2r>& vert);
  * convex hull vertices and an interior point.
  *
  * @param  vert           Convex hull vertices in CCW order.
- * @param  interior_point A point in the convex hull interior (can be the
- *                        average of the convex hull vertices).
+ * @param  interior_point A point in the convex hull interior.
  * @return Inradius about the interior point. Inradius is negative when
- *         interior_point is not in the convex hull.
+ *         the interior point is not in the convex hull.
  */
 inline Real ComputePolygonInradius(const std::vector<Vec2r>& vert,
                                    const Vec2r& interior_point) {
