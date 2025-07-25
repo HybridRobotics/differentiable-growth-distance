@@ -61,6 +61,7 @@ template <typename T, int dim>
 using Vec = Eigen::Vector<T, dim>;
 template <int dim>
 using Vecr = Vec<Real, dim>;
+using VecXr = Vecr<Eigen::Dynamic>;
 using Vec2r = Vecr<2>;
 using Vec3r = Vecr<3>;
 
@@ -74,6 +75,7 @@ using Vec3r = Vecr<3>;
  */
 template <int row, int col>
 using Matr = Eigen::Matrix<Real, row, col>;
+using MatXr = Matr<Eigen::Dynamic, Eigen::Dynamic>;
 
 /**
  * @brief Rotation matrix.
