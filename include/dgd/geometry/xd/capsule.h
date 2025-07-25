@@ -54,6 +54,10 @@ class CapsuleImpl : public ConvexSet<dim> {
       const Vecr<dim>& n, Vecr<dim>& sp,
       SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
+      SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -83,6 +87,20 @@ inline Real CapsuleImpl<dim>::SupportFunction(
   sp = CapsuleImpl<dim>::inradius_ * n;
   sp(0) += std::copysign(hlx_, n(0));
   return sp.dot(n);
+}
+
+template <int dim>
+inline Real CapsuleImpl<dim>::SupportFunction(
+    const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
+    SupportFunctionHint<dim>* /*hint*/) const {
+  if (hlx_ * std::abs(n(0)) < Real(0.5) * CapsuleImpl<dim>::eps_diff()) {
+    deriv.differentiable = false;
+  } else {
+    deriv.Dsp = CapsuleImpl<dim>::inradius_ *
+                (Matr<dim, dim>::Identity() - n * n.transpose());
+    deriv.differentiable = true;
+  }
+  return SupportFunction(n, deriv.sp);
 }
 
 template <int dim>

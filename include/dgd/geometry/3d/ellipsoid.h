@@ -47,6 +47,10 @@ class Ellipsoid : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -77,6 +81,22 @@ inline Real Ellipsoid::SupportFunction(const Vec3r& n, Vec3r& sp,
   sp(0) = (hlx2_ / k + margin_) * n(0);
   sp(1) = (hly2_ / k + margin_) * n(1);
   sp(2) = (hlz2_ / k + margin_) * n(2);
+  return k + margin_;
+}
+
+inline Real Ellipsoid::SupportFunction(const Vec3r& n,
+                                       SupportFunctionDerivatives<3>& deriv,
+                                       SupportFunctionHint<3>* /*hint*/) const {
+  const Real k2 =
+      hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1) + hlz2_ * n(2) * n(2);
+  const Real k = std::sqrt(k2);
+  const Vec3r g = Vec3r(hlx2_, hly2_, hlz2_) / k;
+  const Vec3r gn = g.cwiseProduct(n);
+  deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose()) -
+              gn * gn.transpose() / k;
+  deriv.Dsp += g.asDiagonal();
+  deriv.sp = gn + margin_ * n;
+  deriv.differentiable = true;
   return k + margin_;
 }
 

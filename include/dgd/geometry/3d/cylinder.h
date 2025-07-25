@@ -50,6 +50,10 @@ class Cylinder : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -70,11 +74,34 @@ inline Cylinder::Cylinder(Real hlx, Real radius, Real margin)
 
 inline Real Cylinder::SupportFunction(const Vec3r& n, Vec3r& sp,
                                       SupportFunctionHint<3>* /*hint*/) const {
-  sp = margin_ * n;
   const Real k = std::sqrt(n(1) * n(1) + n(2) * n(2));
-  if (k > kEps) sp.tail<2>() += radius_ * n.tail<2>() / k;
+  sp = margin_ * n;
+  if (k >= kEps) sp.tail<2>() += radius_ * n.tail<2>() / k;
   sp(0) += std::copysign(hlx_, n(0));
   return sp.dot(n);
+}
+
+inline Real Cylinder::SupportFunction(const Vec3r& n,
+                                      SupportFunctionDerivatives<3>& deriv,
+                                      SupportFunctionHint<3>* /*hint*/) const {
+  const Real k2 = n(1) * n(1) + n(2) * n(2);
+  const Real k = std::sqrt(k2);
+  deriv.sp = margin_ * n;
+  if (radius_ * k < Real(0.5) * eps_diff()) {
+    deriv.differentiable = false;
+  } else {
+    if (hlx_ * std::abs(n(0)) < Real(0.5) * eps_diff()) {
+      deriv.differentiable = false;
+    } else {
+      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      const Vec2r t = Vec2r(n(2), -n(1));
+      deriv.Dsp.block<2, 2>(1, 1) += radius_ / (k2 * k) * t * t.transpose();
+      deriv.differentiable = true;
+    }
+    deriv.sp.tail<2>() += radius_ * n.tail<2>() / k;
+  }
+  deriv.sp(0) += std::copysign(hlx_, n(0));
+  return deriv.sp.dot(n);
 }
 
 inline bool Cylinder::RequireUnitNormal() const { return (margin_ > 0.0); }

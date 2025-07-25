@@ -55,6 +55,10 @@ class Cone : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -87,17 +91,54 @@ inline Cone::Cone(Real radius, Real height, Real margin)
 
 inline Real Cone::SupportFunction(const Vec3r& n, Vec3r& sp,
                                   SupportFunctionHint<3>* /*hint*/) const {
-  sp = margin_ * n;
   const Real k = std::sqrt(n(0) * n(0) + n(1) * n(1));
+  sp = margin_ * n;
   if (n(2) >= tha_ * k) {
     // The cone vertex is the support point.
     sp(2) += (h_ - rho_);
     return (h_ - rho_) * n(2) + margin_;
   } else {
     // The support point lies in the cone base.
-    if (k > kEps) sp.head<2>() += r_ * n.head<2>() / k;
+    if (k >= kEps) sp.head<2>() += r_ * n.head<2>() / k;
     sp(2) -= rho_;
     return sp.dot(n);
+  }
+}
+
+inline Real Cone::SupportFunction(const Vec3r& n,
+                                  SupportFunctionDerivatives<3>& deriv,
+                                  SupportFunctionHint<3>* /*hint*/) const {
+  const Real k2 = n(0) * n(0) + n(1) * n(1);
+  const Real k = std::sqrt(k2);
+  const Real diff = h_ * n(2) - r_ * k;
+  deriv.sp = margin_ * n;
+  if (diff >= Real(0.0)) {
+    // The cone vertex is the support point.
+    if (diff < eps_diff()) {
+      deriv.differentiable = false;
+    } else {
+      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.differentiable = true;
+    }
+    deriv.sp(2) += (h_ - rho_);
+    return (h_ - rho_) * n(2) + margin_;
+  } else {
+    // The support point lies in the cone base.
+    if (r_ * k < Real(0.5) * eps_diff()) {
+      deriv.differentiable = false;
+    } else {
+      if (diff > -eps_diff()) {
+        deriv.differentiable = false;
+      } else {
+        deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+        const Vec2r t = Vec2r(n(1), -n(0));
+        deriv.Dsp.block<2, 2>(0, 0) += r_ / (k2 * k) * t * t.transpose();
+        deriv.differentiable = true;
+      }
+      deriv.sp.head<2>() += r_ * n.head<2>() / k;
+    }
+    deriv.sp(2) -= rho_;
+    return deriv.sp.dot(n);
   }
 }
 

@@ -67,6 +67,10 @@ class Mesh : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* hint = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* hint = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -200,6 +204,27 @@ inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
 
   sp = vert_[idx] + margin_ * n;
   return sv + margin_;
+}
+
+inline Real Mesh::SupportFunction(const Vec3r& n,
+                                  SupportFunctionDerivatives<3>& deriv,
+                                  SupportFunctionHint<3>* hint) const {
+  const Real sv = SupportFunction(n, deriv.sp, hint);
+
+  deriv.differentiable = true;
+  const int idx = hint->idx_ws;
+  int nidx = -1;
+  for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
+       ++i) {
+    if (n.dot(vert_[nidx]) > sv - eps_diff()) {
+      deriv.differentiable = false;
+      break;
+    }
+  }
+  if (deriv.differentiable) {
+    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+  }
+  return sv;
 }
 
 inline bool Mesh::RequireUnitNormal() const { return (margin_ > 0.0); }

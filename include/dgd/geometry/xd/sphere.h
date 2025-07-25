@@ -48,6 +48,10 @@ class SphereImpl : public ConvexSet<dim> {
       const Vecr<dim>& n, Vecr<dim>& sp,
       SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
+      SupportFunctionHint<dim>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -70,6 +74,16 @@ inline Real SphereImpl<dim>::SupportFunction(
     const Vecr<dim>& n, Vecr<dim>& sp,
     SupportFunctionHint<dim>* /*hint*/) const {
   sp = radius_ * n;
+  return radius_;
+}
+
+template <int dim>
+inline Real SphereImpl<dim>::SupportFunction(
+    const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
+    SupportFunctionHint<dim>* /*hint*/) const {
+  deriv.Dsp = radius_ * (Matr<dim, dim>::Identity() - n * n.transpose());
+  deriv.sp = radius_ * n;
+  deriv.differentiable = true;
   return radius_;
 }
 

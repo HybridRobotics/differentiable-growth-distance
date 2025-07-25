@@ -52,6 +52,10 @@ class Polygon : public ConvexSet<2> {
 
   Real SupportFunction(
       const Vec2r& n, Vec2r& sp,
+      SupportFunctionHint<2>* hint = nullptr) const final override;
+
+  Real SupportFunction(
+      const Vec2r& n, SupportFunctionDerivatives<2>& deriv,
       SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
@@ -72,7 +76,7 @@ inline Polygon::Polygon(const std::vector<Vec2r>& vert, Real inradius,
 }
 
 inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
-                                     SupportFunctionHint<2>* /*hint*/) const {
+                                     SupportFunctionHint<2>* hint) const {
   // Other methods/options:
   // 1. Early termination of the loop.
   // 2. Hill-climbing algorithm.
@@ -88,8 +92,29 @@ inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
     }
   }
 
+  if (hint) hint->idx_ws = idx;
+
   sp = vert_[idx] + margin_ * n;
   return sv + margin_;
+}
+
+inline Real Polygon::SupportFunction(const Vec2r& n,
+                                     SupportFunctionDerivatives<2>& deriv,
+                                     SupportFunctionHint<2>* /*hint*/) const {
+  SupportFunctionHint<2> hint{};
+  const Real sv = SupportFunction(n, deriv.sp, &hint);
+
+  const int len = static_cast<int>(vert_.size()), idx = hint.idx_ws;
+  const int prev = (idx == 0) ? len - 1 : idx - 1;
+  const int next = (idx == len - 1) ? 0 : idx + 1;
+  if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) > sv - eps_diff()) {
+    deriv.differentiable = false;
+  } else {
+    const Vec2r t = Vec2r(n(1), -n(0));
+    deriv.Dsp = margin_ * t * t.transpose();
+    deriv.differentiable = true;
+  }
+  return sv;
 }
 
 inline bool Polygon::RequireUnitNormal() const { return (margin_ > 0.0); }

@@ -63,6 +63,10 @@ class Frustum : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -106,18 +110,60 @@ inline Frustum::Frustum(Real base_radius, Real top_radius, Real height,
 
 inline Real Frustum::SupportFunction(const Vec3r& n, Vec3r& sp,
                                      SupportFunctionHint<3>* /*hint*/) const {
-  sp = margin_ * n;
   const Real k = std::sqrt(n(0) * n(0) + n(1) * n(1));
+  sp = margin_ * n;
   if (n(2) >= tha_ * k) {
     // The support point lies in the frustum top.
-    if (k > kEps) sp.head<2>() += rt_ * n.head<2>() / k;
+    if (k >= kEps) sp.head<2>() += rt_ * n.head<2>() / k;
     sp(2) += (h_ - offset_);
   } else {
     // The support point lies in the frustum base.
-    if (k > kEps) sp.head<2>() += rb_ * n.head<2>() / k;
+    if (k >= kEps) sp.head<2>() += rb_ * n.head<2>() / k;
     sp(2) -= offset_;
   }
   return sp.dot(n);
+}
+
+inline Real Frustum::SupportFunction(const Vec3r& n,
+                                     SupportFunctionDerivatives<3>& deriv,
+                                     SupportFunctionHint<3>* /*hint*/) const {
+  const Real k2 = n(0) * n(0) + n(1) * n(1);
+  const Real k = std::sqrt(k2);
+  const Vec2r t = Vec2r(n(1), -n(0));
+  const Real diff = h_ * n(2) - (rb_ - rt_) * k;
+  deriv.sp = margin_ * n;
+  if (diff >= Real(0.0)) {
+    // The support point lies in the frustum top.
+    if (rt_ * k < Real(0.5) * eps_diff()) {
+      deriv.differentiable = false;
+    } else {
+      if (diff < eps_diff()) {
+        deriv.differentiable = false;
+      } else {
+        deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+        deriv.Dsp.block<2, 2>(0, 0) += rt_ / (k2 * k) * t * t.transpose();
+        deriv.differentiable = true;
+      }
+      deriv.sp.head<2>() += rt_ * n.head<2>() / k;
+    }
+    deriv.sp(2) += (h_ - offset_);
+  } else {
+    // The support point lies in the frustum base.
+    if (rb_ * k < Real(0.5) * eps_diff()) {
+      deriv.differentiable = false;
+    } else {
+      if (diff > -eps_diff()) {
+        deriv.differentiable = false;
+      } else {
+        deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+        deriv.Dsp.block<2, 2>(0, 0) += rb_ / (k2 * k) * t * t.transpose();
+        deriv.differentiable = true;
+      }
+      deriv.sp.head<2>() += rb_ * n.head<2>() / k;
+    }
+    deriv.sp(2) -= offset_;
+  }
+  return deriv.sp.dot(n);
 }
 
 inline bool Frustum::RequireUnitNormal() const { return (margin_ > 0.0); }

@@ -47,6 +47,10 @@ class Cuboid : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -73,6 +77,20 @@ inline Real Cuboid::SupportFunction(const Vec3r& n, Vec3r& sp,
   sp(1) += std::copysign(hly_, n(1));
   sp(2) += std::copysign(hlz_, n(2));
   return sp.dot(n);
+}
+
+inline Real Cuboid::SupportFunction(const Vec3r& n,
+                                    SupportFunctionDerivatives<3>& deriv,
+                                    SupportFunctionHint<3>* /*hint*/) const {
+  const Real diff = std::max(
+      {std::abs(hlx_ * n(0)), std::abs(hly_ * n(1)), std::abs(hlz_ * n(2))});
+  if (diff < Real(0.5) * eps_diff()) {
+    deriv.differentiable = false;
+  } else {
+    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    deriv.differentiable = true;
+  }
+  return SupportFunction(n, deriv.sp);
 }
 
 inline bool Cuboid::RequireUnitNormal() const { return (margin_ > 0.0); }

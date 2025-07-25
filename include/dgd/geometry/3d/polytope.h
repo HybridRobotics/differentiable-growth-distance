@@ -55,6 +55,10 @@ class Polytope : public ConvexSet<3> {
       const Vec3r& n, Vec3r& sp,
       SupportFunctionHint<3>* hint = nullptr) const final override;
 
+  Real SupportFunction(
+      const Vec3r& n, SupportFunctionDerivatives<3>& deriv,
+      SupportFunctionHint<3>* hint = nullptr) const final override;
+
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
@@ -84,7 +88,6 @@ inline Polytope::Polytope(const std::vector<Vec3r>& vert, Real inradius,
   // if (nvert < 4) {
   //   throw std::domain_error("Polytope is not solid");
   // }
-
   // Matr<3, -1> aff_vert(3, nvert - 1);
   // for (int i = 1; i < nvert; ++i) aff_vert.col(i - 1) = vert[i] - vert[0];
   // const Eigen::ColPivHouseholderQR<Matr<3, -1>> qr(aff_vert);
@@ -116,6 +119,36 @@ inline Real Polytope::SupportFunction(const Vec3r& n, Vec3r& sp,
   }
 
   sp = vert_[idx] + margin_ * n;
+  return sv + margin_;
+}
+
+inline Real Polytope::SupportFunction(const Vec3r& n,
+                                      SupportFunctionDerivatives<3>& deriv,
+                                      SupportFunctionHint<3>* hint) const {
+  int idx = (hint && hint->n_prev.dot(n) > thresh_) ? hint->idx_ws : 0;
+  Real s = 0.0, sv = n.dot(vert_[idx]);
+
+  deriv.differentiable = true;
+  for (int i = 0; i < static_cast<int>(vert_.size()); ++i) {
+    s = n.dot(vert_[i]);
+    if (s > sv) {
+      deriv.differentiable = (s >= sv + eps_diff());
+      idx = i;
+      sv = s;
+    } else {
+      if (s > sv - eps_diff()) deriv.differentiable = false;
+    }
+  }
+  if (deriv.differentiable) {
+    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+  }
+
+  if (hint) {
+    hint->n_prev = n;
+    hint->idx_ws = idx;
+  }
+
+  deriv.sp = vert_[idx] + margin_ * n;
   return sv + margin_;
 }
 

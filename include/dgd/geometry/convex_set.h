@@ -22,6 +22,7 @@
 #ifndef DGD_GEOMETRY_CONVEX_SET_H_
 #define DGD_GEOMETRY_CONVEX_SET_H_
 
+#include <cmath>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -29,14 +30,51 @@
 namespace dgd {
 
 /**
- * @brief Support function hint struct; used internally.
+ * @brief Support function hint; used internally.
  *
  * @tparam dim Dimension of the convex sets.
  */
 template <int dim>
 struct SupportFunctionHint {
+  /**
+   * @brief Normal vector (in local coordinates) at the previous iteration.
+   */
   Vecr<dim> n_prev = Vecr<dim>::Zero();
+
+  /**
+   * @brief Integer hint for support function computation.
+   */
   int idx_ws = -1;
+};
+
+/**
+ * @brief Second-order support function derivatives.
+ *
+ * @tparam dim Dimension of the convex sets.
+ */
+template <int dim>
+struct SupportFunctionDerivatives {
+  /**
+   * @brief Support point derivative with respect to the normal vector.
+   *
+   * @attention The support point derivative is equal to the support function
+   * Hessian, and it exists almost everywhere. Whenever it exists, it must be
+   * positive semi-definite. Note that the normal vector lies in the null space
+   * of the support point derivative.
+   *
+   * @see differentiable
+   */
+  Matr<dim, dim> Dsp;
+
+  /**
+   * @brief Support point.
+   */
+  Vecr<dim> sp;
+
+  /**
+   * @brief Differentiability of the support point at the given normal vector.
+   */
+  bool differentiable;
 };
 
 /**
@@ -55,7 +93,7 @@ class ConvexSet {
   virtual ~ConvexSet() {}
 
   /**
-   * @brief Implements the support function in the local frame.
+   * @brief Computes the support function in the local frame.
    *
    * Implements the support function for the convex set \f$C\f$, which is given
    * by: \f{align*}{
@@ -87,7 +125,21 @@ class ConvexSet {
    */
   virtual Real SupportFunction(
       const Vecr<dim>& n, Vecr<dim>& sp,
-      SupportFunctionHint<dim>* /*hint*/ = nullptr) const = 0;
+      SupportFunctionHint<dim>* hint = nullptr) const = 0;
+
+  /**
+   * @brief Computes the support function and its higher-order derivatives.
+   *
+   * @see SupportFunctionDerivatives
+   *
+   * @param[in]     n     Normal vector.
+   * @param[out]    deriv Support function derivatives.
+   * @param[in,out] hint  Additional hints.
+   * @return        Support function value at the normal vector.
+   */
+  virtual Real SupportFunction(const Vecr<dim>& n,
+                               SupportFunctionDerivatives<dim>& deriv,
+                               SupportFunctionHint<dim>* hint = nullptr) const;
 
   /**
    * @brief Returns the normalization requirement for the normal vector passed
@@ -117,6 +169,18 @@ class ConvexSet {
   ConvexSet(Real inradius);
 
   /**
+   * @brief Support function differentiability constant.
+   *
+   * The support point function is considered (numerically) differentiable if
+   * the support point at a given normal vector n is unique, the support point
+   * function is differentiable at n, and
+   * sv = n.dot(sp) >= n.dot(p) + eps_diff(),
+   * where sv and sp are the support value and support point, and p is, loosely
+   * speaking, any point not smoothly connected to sp.
+   */
+  static constexpr Real eps_diff();
+
+  /**
    * @brief Convex set inradius at the origin.
    *
    * Radius of a ball that is centered at the origin and contained in the set.
@@ -138,6 +202,14 @@ inline ConvexSet<dim>::ConvexSet(Real inradius) : inradius_(inradius) {
 }
 
 template <int dim>
+inline Real ConvexSet<dim>::SupportFunction(
+    const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
+    SupportFunctionHint<dim>* hint) const {
+  deriv.differentiable = false;
+  return SupportFunction(n, deriv.sp, hint);
+}
+
+template <int dim>
 constexpr int ConvexSet<dim>::dimension() {
   return dim;
 }
@@ -153,6 +225,11 @@ inline void ConvexSet<dim>::set_inradius(Real inradius) {
     throw std::domain_error("Inradius is not positive");
   }
   inradius_ = inradius;
+}
+
+template <int dim>
+constexpr Real ConvexSet<dim>::eps_diff() {
+  return dim * std::pow(kEps, Real(1.0 / 3.0));
 }
 
 }  // namespace dgd
