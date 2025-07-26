@@ -29,11 +29,11 @@ namespace {
 
 template <int dim>
 inline void CenterVertices(std::vector<Vecr<dim>>& vert) {
-  Vecr<dim> center;
+  Vecr<dim> center = Vecr<dim>::Zero();
   for (const auto& v : vert) {
     center += v;
   }
-  center /= static_cast<Real>(vert.size());
+  center /= static_cast<int>(vert.size());
   for (auto& v : vert) {
     v -= center;
   }
@@ -51,10 +51,8 @@ ConvexSetGenerator::ConvexSetGenerator(const ConvexSetFeatureRange& fr)
     throw std::invalid_argument(
         "Polytopes (polygons) must have at least 4 (3) vertices.");
   }
-  /*
   polygon_vert_.reserve(fr.polygon.nvert[1]);
   polytope_vert_.reserve(fr.polytope.nvert[1]);
-  */
   meshes_.clear();
   nmeshes_ = 0;
 }
@@ -78,35 +76,42 @@ void ConvexSetGenerator::LoadMeshesFromObjFiles(
   nmeshes_ = static_cast<int>(meshes_.size());
 }
 
+inline Real ConvexSetGenerator::GetMargin() {
+  return rng_.CoinFlip(fr_.pos_margin_prob) ? rng_.Random({0.0, fr_.margin})
+                                            : 0.0;
+}
+
 ConvexSetPtr<2> ConvexSetGenerator::GetPrimitiveSet(Primitive2D type) {
+  const Real margin = GetMargin();
+
   switch (type) {
     case Primitive2D::Ellipse:
       return std::make_shared<Ellipse>(rng_.Random(fr_.ellipse.hlx),
-                                       rng_.Random(fr_.ellipse.hly), 0.0);
+                                       rng_.Random(fr_.ellipse.hly), margin);
 
-      /*
-      case Primitive2D::Polygon: {
-        polygon_vert_.clear();
+    case Primitive2D::Polygon: {
+      polygon_vert_.clear();
 
-        const int nvert = rng_.RandomInt(fr_.polygon.nvert);
-        for (int i = 0; i < nvert; ++i) {
-          Vec2r v(rng_.Random(), rng_.Random());
-          v = v * fr_.polygon.size / (v.lpNorm<4>() + kEps);
-          polygon_vert_.push_back(v);
-        }
-        CenterVertices(polygon_vert_);
-
-        return std::make_shared<Polygon>(polygon_vert_, kEps, 0.0);
+      const int nvert = rng_.RandomInt(fr_.polygon.nvert);
+      Vec2r v;
+      for (int i = 0; i < nvert; ++i) {
+        v = Vec2r(rng_.Random(), rng_.Random());
+        v = v * fr_.polygon.size / (v.lpNorm<4>() + kEps);
+        polygon_vert_.push_back(v);
       }
-      */
+      CenterVertices(polygon_vert_);
+
+      return std::make_shared<Polygon>(polygon_vert_, kEps, margin);
+    }
 
     case Primitive2D::Rectangle:
       return std::make_shared<Rectangle>(rng_.Random(fr_.rectangle.hlx),
-                                         rng_.Random(fr_.rectangle.hly), 0.0);
+                                         rng_.Random(fr_.rectangle.hly),
+                                         margin);
 
     case Primitive2D::Stadium:
       return std::make_shared<Stadium>(rng_.Random(fr_.capsule.hlx),
-                                       rng_.Random(fr_.capsule.radius), 0.0);
+                                       rng_.Random(fr_.capsule.radius), margin);
 
     case Primitive2D::Circle:
       return std::make_shared<Circle>(rng_.Random(fr_.sphere.radius));
@@ -117,28 +122,31 @@ ConvexSetPtr<2> ConvexSetGenerator::GetPrimitiveSet(Primitive2D type) {
 }
 
 ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(CurvedPrimitive3D type) {
+  const Real margin = GetMargin();
+
   switch (type) {
     case CurvedPrimitive3D::Capsule:
       return std::make_shared<Capsule>(rng_.Random(fr_.capsule.hlx),
-                                       rng_.Random(fr_.capsule.radius), 0.0);
+                                       rng_.Random(fr_.capsule.radius), margin);
 
     case CurvedPrimitive3D::Cone:
       return std::make_shared<Cone>(rng_.Random(fr_.cone.radius),
-                                    rng_.Random(fr_.cone.height), 0.0);
+                                    rng_.Random(fr_.cone.height), margin);
 
     case CurvedPrimitive3D::Cylinder:
       return std::make_shared<Cylinder>(rng_.Random(fr_.cylinder.hlx),
-                                        rng_.Random(fr_.cylinder.radius), 0.0);
+                                        rng_.Random(fr_.cylinder.radius),
+                                        margin);
 
     case CurvedPrimitive3D::Ellipsoid:
-      return std::make_shared<Ellipsoid>(rng_.Random(fr_.ellipsoid.hlx),
-                                         rng_.Random(fr_.ellipsoid.hly),
-                                         rng_.Random(fr_.ellipsoid.hlz), 0.0);
+      return std::make_shared<Ellipsoid>(
+          rng_.Random(fr_.ellipsoid.hlx), rng_.Random(fr_.ellipsoid.hly),
+          rng_.Random(fr_.ellipsoid.hlz), margin);
 
     case CurvedPrimitive3D::Frustum:
       return std::make_shared<Frustum>(rng_.Random(fr_.frustum.base_radius),
                                        rng_.Random(fr_.frustum.top_radius),
-                                       rng_.Random(fr_.frustum.height), 0.0);
+                                       rng_.Random(fr_.frustum.height), margin);
 
     case CurvedPrimitive3D::Sphere:
       return std::make_shared<Sphere>(rng_.Random(fr_.sphere.radius));
@@ -149,40 +157,41 @@ ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(CurvedPrimitive3D type) {
 }
 
 ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(FlatPrimitive3D type) {
+  const Real margin = GetMargin();
+
   switch (type) {
     case FlatPrimitive3D::Cuboid:
       return std::make_shared<Cuboid>(rng_.Random(fr_.cuboid.hlx),
                                       rng_.Random(fr_.cuboid.hly),
-                                      rng_.Random(fr_.cuboid.hlz), 0.0);
+                                      rng_.Random(fr_.cuboid.hlz), margin);
 
-      /*
-      case FlatPrimitive3D::Polytope: {
-        polytope_vert_.clear();
+    case FlatPrimitive3D::Polytope: {
+      polytope_vert_.clear();
 
-        if (meshes_.empty()) {
-          const int nvert = rng_.RandomInt(fr_.polytope.nvert);
-          for (int i = 0; i < nvert; ++i) {
-            Vec3r v(rng_.Random(), rng_.Random(), rng_.Random());
-            v = v * fr_.polytope.size / (v.lpNorm<4>() + kEps);
-            polytope_vert_.push_back(v);
-          }
-        } else {
-          const int mesh_idx = rng_.RandomInt({0, nmeshes_ - 1});
-          const int nvert_m = meshes_[mesh_idx]->nvertices();
-          for (int i = 0; i < 4; ++i) {
-            polytope_vert_.push_back(
-                meshes_[mesh_idx]->vertices()[(i * nvert_m) / 3]);
-          }
-          for (int i = 4; i < fr_.polytope.nvert[1]; ++i) {
-            const int idx = rng_.RandomInt({0, nvert_m - 1});
-            polytope_vert_.push_back(meshes_[mesh_idx]->vertices()[idx]);
-          }
+      if (meshes_.empty()) {
+        const int nvert = rng_.RandomInt(fr_.polytope.nvert);
+        Vec3r v;
+        for (int i = 0; i < nvert; ++i) {
+          v = Vec3r(rng_.Random(), rng_.Random(), rng_.Random());
+          v = v * fr_.polytope.size / (v.lpNorm<4>() + kEps);
+          polytope_vert_.push_back(v);
         }
-        CenterVertices(polytope_vert_);
-
-        return std::make_shared<Polytope>(polytope_vert_, kEps, 0.0);
+      } else {
+        const int mesh_idx = rng_.RandomInt({0, nmeshes_ - 1});
+        const int nvert_m = meshes_[mesh_idx]->nvertices();
+        for (int i = 0; i < 4; ++i) {
+          polytope_vert_.push_back(
+              meshes_[mesh_idx]->vertices()[(i * (nvert_m - 1)) / 3]);
+        }
+        for (int i = 4; i < fr_.polytope.nvert[1]; ++i) {
+          const int idx = rng_.RandomInt({0, nvert_m - 1});
+          polytope_vert_.push_back(meshes_[mesh_idx]->vertices()[idx]);
+        }
       }
-      */
+      CenterVertices(polytope_vert_);
+
+      return std::make_shared<Polytope>(polytope_vert_, kEps, margin);
+    }
 
     default:
       throw std::invalid_argument("Invalid flat 3D primitive type");

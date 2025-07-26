@@ -27,7 +27,7 @@ using MeshPtr = std::shared_ptr<Mesh>;
 // Primitive enumerations.
 enum class Primitive2D {
   Ellipse,
-  // Polygon,
+  Polygon,
   Rectangle,
   Stadium,
   Circle,
@@ -46,7 +46,7 @@ enum class CurvedPrimitive3D {
 
 enum class FlatPrimitive3D {
   Cuboid,
-  // Polytope,
+  Polytope,
   Count_,
 };
 
@@ -64,7 +64,7 @@ struct ConvexSetFeatureRange {
 
   struct {
     std::array<int, 2> nvert{6, 16};
-    Real size = 0.4;
+    Real size = 0.5;
   } polygon;
 
   // 3D convex sets.
@@ -110,6 +110,9 @@ struct ConvexSetFeatureRange {
   struct {
     std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
   } sphere;
+
+  Real margin = Real(0.25);
+  Real pos_margin_prob = Real(0.5);
 };
 
 // Convex set generator.
@@ -122,25 +125,28 @@ class ConvexSetGenerator {
   // Sets default RNG seed.
   void SetDefaultRngSeed() { rng_.SetDefaultSeed(); };
 
-  // Load meshes from .obj files.
+  // Loads meshes from .obj files.
   void LoadMeshesFromObjFiles(const std::vector<std::string>& filenames);
 
-  // Generate a random convex set of a primitive type.
+  // Gets a margin value.
+  Real GetMargin();
+
+  // Generates a random convex set of a primitive type.
   ConvexSetPtr<2> GetPrimitiveSet(Primitive2D type);
 
   ConvexSetPtr<3> GetPrimitiveSet(CurvedPrimitive3D type);
 
   ConvexSetPtr<3> GetPrimitiveSet(FlatPrimitive3D type);
 
-  // Get random primitive convex sets.
+  // Gets random primitive convex sets.
   ConvexSetPtr<3> GetRandomCurvedPrimitive3DSet();
 
   ConvexSetPtr<3> GetRandomPrimitive3DSet();
 
-  // Retrieve a random Mesh set with index.
+  // Retrieves a random Mesh set with index.
   ConvexSetPtr<3> GetRandomMeshSet(int* idx = nullptr);
 
-  // Get a random convex set.
+  // Gets a random convex set.
   ConvexSetPtr<2> GetRandom2DSet();
 
   ConvexSetPtr<3> GetRandom3DSet();
@@ -151,10 +157,8 @@ class ConvexSetGenerator {
 
  private:
   std::vector<MeshPtr> meshes_;
-  /*
-  std::vector<Vec2r> polygon_vert_; // Temporary.
-  std::vector<Vec3r> polytope_vert_; // Temporary.
-  */
+  std::vector<Vec2r> polygon_vert_;   // Temporary.
+  std::vector<Vec3r> polytope_vert_;  // Temporary.
   const ConvexSetFeatureRange fr_;
   Rng rng_;
   const int count2_, ccount3_, fcount3_;

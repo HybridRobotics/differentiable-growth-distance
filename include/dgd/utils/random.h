@@ -62,6 +62,11 @@ class Rng {
   ///@}
 
   /**
+   * @brief Returns 1 with probability prob, and 0 with probability 1 - prob.
+   */
+  int CoinFlip(Real prob = 0.5);
+
+  /**
    * @name Random integer functions
    * @brief Returns a random integer in the specified range.
    */
@@ -137,6 +142,8 @@ inline Real Rng::Random(Real range) { return Random(-range, range); }
 inline Real Rng::Random(const std::array<Real, 2>& range) {
   return Random(range[0], range[1]);
 }
+
+inline int Rng::CoinFlip(Real prob) { return Random(0.0, 1.0) < prob ? 1 : 0; }
 
 inline int Rng::RandomInt(int range_low, int range_high) {
   if (range_low > range_high) {
