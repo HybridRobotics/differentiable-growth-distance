@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_2D_RECTANGLE_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -54,6 +55,8 @@ class Rectangle : public ConvexSet<2> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real hlx_;    /**< Half x-axis side length. */
@@ -94,6 +97,13 @@ inline Real Rectangle::SupportFunction(const Vec2r& n,
 inline bool Rectangle::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Rectangle::IsPolytopic() const { return (margin_ == 0.0); }
+
+inline void Rectangle::PrintInfo() const {
+  std::cout << "Type: Rectangle (dim = 2)" << std::endl
+            << "  Half axis lengths: (x: " << hlx_ << ", y: " << hly_ << ")"
+            << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 }  // namespace dgd
 

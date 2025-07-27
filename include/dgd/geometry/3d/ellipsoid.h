@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_3D_ELLIPSOID_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -54,6 +55,8 @@ class Ellipsoid : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real hlx2_;   /**< Square of the half x-axis length. */
@@ -103,6 +106,14 @@ inline Real Ellipsoid::SupportFunction(const Vec3r& n,
 inline bool Ellipsoid::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Ellipsoid::IsPolytopic() const { return false; }
+
+inline void Ellipsoid::PrintInfo() const {
+  std::cout << "Type: Ellipsoid (dim = 3)" << std::endl
+            << "  Half axis lengths: (x: " << std::sqrt(hlx2_)
+            << ", y: " << std::sqrt(hly2_) << ", z: " << std::sqrt(hlz2_) << ")"
+            << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 }  // namespace dgd
 

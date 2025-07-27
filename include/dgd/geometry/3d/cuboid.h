@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_3D_CUBOID_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -54,6 +55,8 @@ class Cuboid : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real hlx_;    /**< Half x-axis side length. */
@@ -96,6 +99,13 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
 inline bool Cuboid::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Cuboid::IsPolytopic() const { return (margin_ == 0.0); }
+
+inline void Cuboid::PrintInfo() const {
+  std::cout << "Type: Cuboid (dim = 3)" << std::endl
+            << "  Half axis lengths: (x: " << hlx_ << ", y: " << hly_
+            << ", z: " << hlz_ << ")" << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 }  // namespace dgd
 

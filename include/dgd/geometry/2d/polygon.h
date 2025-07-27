@@ -22,6 +22,7 @@
 #ifndef DGD_GEOMETRY_2D_POLYGON_H_
 #define DGD_GEOMETRY_2D_POLYGON_H_
 
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -61,6 +62,8 @@ class Polygon : public ConvexSet<2> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const std::vector<Vec2r> vert_; /**< Polygon vertices. */
@@ -120,6 +123,16 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
 inline bool Polygon::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Polygon::IsPolytopic() const { return (margin_ == 0.0); }
+
+inline void Polygon::PrintInfo() const {
+  std::cout << "Type: Polygon (dim = 2)" << std::endl
+            << "  #Vertices: " << vert_.size() << std::endl;
+  for (const auto& v : vert_) {
+    std::cout << "    (" << v(0) << ", " << v(1) << ")" << std::endl;
+  }
+  std::cout << "  Inradius: " << inradius_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 }  // namespace dgd
 

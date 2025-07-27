@@ -51,15 +51,17 @@ enum class FlatPrimitive3D {
 };
 
 struct ConvexSetFeatureRange {
+  static constexpr Real kScale = 1e-1;
+
   // 2D convex sets.
   struct {
-    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
+    std::array<Real, 2> hly{0.25 * kScale, 0.25};
   } ellipse;
 
   struct {
-    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
+    std::array<Real, 2> hly{0.25 * kScale, 0.25};
   } rectangle;
 
   struct {
@@ -69,31 +71,31 @@ struct ConvexSetFeatureRange {
 
   // 3D convex sets.
   struct {
-    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> height{0.5 * 1e-2, 0.5};
+    std::array<Real, 2> radius{0.25 * kScale, 0.25};
+    std::array<Real, 2> height{0.5 * kScale, 0.5};
   } cone;
 
   struct {
-    std::array<Real, 2> hlx{0.4 * 1e-2, 0.4};
-    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.4 * kScale, 0.4};
+    std::array<Real, 2> radius{0.25 * kScale, 0.25};
   } cylinder;
 
   struct {
-    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> hlz{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
+    std::array<Real, 2> hly{0.25 * kScale, 0.25};
+    std::array<Real, 2> hlz{0.25 * kScale, 0.25};
   } ellipsoid;
 
   struct {
-    std::array<Real, 2> base_radius{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> top_radius{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> height{0.5 * 1e-2, 0.5};
+    std::array<Real, 2> base_radius{0.25 * kScale, 0.25};
+    std::array<Real, 2> top_radius{0.25 * kScale, 0.25};
+    std::array<Real, 2> height{0.5 * kScale, 0.5};
   } frustum;
 
   struct {
-    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> hly{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> hlz{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
+    std::array<Real, 2> hly{0.25 * kScale, 0.25};
+    std::array<Real, 2> hlz{0.25 * kScale, 0.25};
   } cuboid;
 
   struct {
@@ -103,12 +105,12 @@ struct ConvexSetFeatureRange {
 
   // XD convex sets.
   struct {
-    std::array<Real, 2> hlx{0.25 * 1e-2, 0.25};
-    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
+    std::array<Real, 2> radius{0.25 * kScale, 0.25};
   } capsule;
 
   struct {
-    std::array<Real, 2> radius{0.25 * 1e-2, 0.25};
+    std::array<Real, 2> radius{0.25 * kScale, 0.25};
   } sphere;
 
   Real margin = Real(0.25);
@@ -124,6 +126,9 @@ class ConvexSetGenerator {
 
   // Sets default RNG seed.
   void SetDefaultRngSeed() { rng_.SetDefaultSeed(); };
+
+  // Sets a random seed.
+  void SetRandomRngSeed() { rng_.SetRandomSeed(); };
 
   // Loads meshes from .obj files.
   void LoadMeshesFromObjFiles(const std::vector<std::string>& filenames);

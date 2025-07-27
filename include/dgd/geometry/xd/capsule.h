@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_XD_CAPSULE_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -61,6 +62,8 @@ class CapsuleImpl : public ConvexSet<dim> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real hlx_;    /**< Half axis length. */
@@ -111,6 +114,14 @@ inline bool CapsuleImpl<dim>::RequireUnitNormal() const {
 template <int dim>
 inline bool CapsuleImpl<dim>::IsPolytopic() const {
   return false;
+}
+
+template <int dim>
+inline void CapsuleImpl<dim>::PrintInfo() const {
+  std::cout << "Type: Capsule (dim = " << dim << ")" << std::endl
+            << "  Half axis length: " << hlx_ << std::endl
+            << "  Radius: " << radius_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
 }
 
 using Stadium = CapsuleImpl<2>;

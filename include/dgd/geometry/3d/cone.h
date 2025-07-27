@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_3D_CONE_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -62,6 +63,8 @@ class Cone : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
   /**
    * @brief Gets the z-offset of the base of the cone.
@@ -145,6 +148,13 @@ inline Real Cone::SupportFunction(const Vec3r& n,
 inline bool Cone::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Cone::IsPolytopic() const { return false; }
+
+inline void Cone::PrintInfo() const {
+  std::cout << "Type: Cone (dim = 3)" << std::endl
+            << "  Radius: " << r_ << std::endl
+            << "  Height: " << h_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 inline Real Cone::offset() const { return rho_; }
 

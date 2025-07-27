@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_2D_ELLIPSE_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -54,6 +55,8 @@ class Ellipse : public ConvexSet<2> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real hlx2_;   /**< Square of the half x-axis length. */
@@ -93,6 +96,13 @@ inline Real Ellipse::SupportFunction(const Vec2r& n,
 inline bool Ellipse::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Ellipse::IsPolytopic() const { return false; }
+
+inline void Ellipse::PrintInfo() const {
+  std::cout << "Type: Ellipse (dim = 2)" << std::endl
+            << "  Half axis lengths: (x: " << std::sqrt(hlx2_)
+            << ", y: " << std::sqrt(hly2_) << ")" << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 }  // namespace dgd
 

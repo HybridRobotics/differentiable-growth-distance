@@ -22,6 +22,7 @@
 #ifndef DGD_GEOMETRY_XD_SPHERE_H_
 #define DGD_GEOMETRY_XD_SPHERE_H_
 
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -55,6 +56,8 @@ class SphereImpl : public ConvexSet<dim> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real radius_; /**< Radius. */
@@ -95,6 +98,12 @@ inline bool SphereImpl<dim>::RequireUnitNormal() const {
 template <int dim>
 inline bool SphereImpl<dim>::IsPolytopic() const {
   return false;
+}
+
+template <int dim>
+inline void SphereImpl<dim>::PrintInfo() const {
+  std::cout << "Type: Sphere (dim = " << dim << ")" << std::endl
+            << "  Radius: " << radius_ << std::endl;
 }
 
 using Circle = SphereImpl<2>;

@@ -24,6 +24,7 @@
 
 // #include <Eigen/Dense>
 #include <cassert>
+#include <iostream>
 #include <stdexcept>
 #include <vector>
 
@@ -62,6 +63,8 @@ class Polytope : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
   const std::vector<Vec3r>& vertices() const;
 
@@ -155,6 +158,17 @@ inline Real Polytope::SupportFunction(const Vec3r& n,
 inline bool Polytope::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Polytope::IsPolytopic() const { return (margin_ == 0.0); }
+
+inline void Polytope::PrintInfo() const {
+  std::cout << "Type: Polytope (dim = 3)" << std::endl
+            << "  #Vertices: " << vert_.size() << std::endl;
+  for (const auto& v : vert_) {
+    std::cout << "    (" << v(0) << ", " << v(1) << ", " << v(2) << ")"
+              << std::endl;
+  }
+  std::cout << "  Inradius: " << margin_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 inline const std::vector<Vec3r>& Polytope::vertices() const { return vert_; }
 

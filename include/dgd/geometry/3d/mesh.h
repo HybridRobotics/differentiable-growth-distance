@@ -24,7 +24,9 @@
 
 #include <cassert>
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "dgd/data_types.h"
@@ -54,7 +56,7 @@ class Mesh : public ConvexSet<3> {
    */
   explicit Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
                 Real inradius, Real margin = 0.0, Real thresh = Real(0.9),
-                int guess_level = 1);
+                int guess_level = 1, const std::string& name = "__Mesh__");
 
   ~Mesh() = default;
 
@@ -74,6 +76,8 @@ class Mesh : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
   const std::vector<Vec3r>& vertices() const;
 
@@ -96,16 +100,20 @@ class Mesh : public ConvexSet<3> {
   const Real thresh_;        /**< Support function warm start threshold. */
   std::vector<int> idx_ws0_; /**< Initial guesses for idx_ws_. */
   const int nvert_;          /**< Number of vertices. */
+
+  std::string name_; /**< Mesh name. */
 };
 
 inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
-                  Real inradius, Real margin, Real thresh, int guess_level)
+                  Real inradius, Real margin, Real thresh, int guess_level,
+                  const std::string& name)
     : ConvexSet<3>(margin + inradius),
       vert_(vert),
       graph_(graph),
       margin_(margin),
       thresh_(thresh),
-      nvert_(static_cast<int>(vert.size())) {
+      nvert_(static_cast<int>(vert.size())),
+      name_(name) {
   if ((inradius <= 0.0) || (margin < 0.0)) {
     throw std::domain_error("Invalid inradius or margin");
   }
@@ -230,6 +238,14 @@ inline Real Mesh::SupportFunction(const Vec3r& n,
 inline bool Mesh::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Mesh::IsPolytopic() const { return (margin_ == 0.0); }
+
+inline void Mesh::PrintInfo() const {
+  std::cout << "Type: Mesh (dim = 3)" << std::endl
+            << "  Name: " << name_ << std::endl
+            << "  #Vertices: " << vert_.size() << std::endl;
+  std::cout << "  Inradius: " << inradius_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 inline const std::vector<Vec3r>& Mesh::vertices() const { return vert_; }
 

@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_3D_FRUSTUM_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -70,6 +71,8 @@ class Frustum : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
   /**
    * @brief Gets the z-offset of the base of the frustum.
@@ -169,6 +172,14 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
 inline bool Frustum::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Frustum::IsPolytopic() const { return false; }
+
+inline void Frustum::PrintInfo() const {
+  std::cout << "Type: Frustum (dim = 3)" << std::endl
+            << "  Base radius: " << rb_ << std::endl
+            << "  Top radius: " << rt_ << std::endl
+            << "  Height: " << h_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 inline Real Frustum::offset() const { return offset_; }
 

@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_3D_CYLINDER_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -57,6 +58,8 @@ class Cylinder : public ConvexSet<3> {
   bool RequireUnitNormal() const final override;
 
   bool IsPolytopic() const final override;
+
+  void PrintInfo() const final override;
 
  private:
   const Real hlx_;    /**< Half axis length. */
@@ -107,6 +110,13 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
 inline bool Cylinder::RequireUnitNormal() const { return (margin_ > 0.0); }
 
 inline bool Cylinder::IsPolytopic() const { return false; }
+
+inline void Cylinder::PrintInfo() const {
+  std::cout << "Type: Cylinder (dim = 3)" << std::endl
+            << "  Half axis length: " << hlx_ << std::endl
+            << "  Radius: " << radius_ << std::endl
+            << "  Margin: " << margin_ << std::endl;
+}
 
 }  // namespace dgd
 

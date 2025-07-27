@@ -23,6 +23,7 @@
 #define DGD_GEOMETRY_CONVEX_SET_H_
 
 #include <cmath>
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -157,6 +158,8 @@ class ConvexSet {
    */
   virtual bool IsPolytopic() const = 0;
 
+  virtual void PrintInfo() const;
+
   static constexpr int dimension();
 
   Real inradius() const;
@@ -207,6 +210,12 @@ inline Real ConvexSet<dim>::SupportFunction(
     SupportFunctionHint<dim>* hint) const {
   deriv.differentiable = false;
   return SupportFunction(n, deriv.sp, hint);
+}
+
+template <int dim>
+inline void ConvexSet<dim>::PrintInfo() const {
+  std::cout << "Type: Abstract Convex Set (dim = " << dim << ")" << std::endl
+            << "  Inradius: " << inradius_ << std::endl;
 }
 
 template <int dim>
