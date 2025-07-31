@@ -137,33 +137,25 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
   deriv.sp = margin_ * n;
   if (diff >= Real(0.0)) {
     // The support point lies in the frustum top.
-    if (rt_ * k < Real(0.5) * eps_diff()) {
+    if (std::max(Real(2.0) * rt_ * k, diff) < eps_diff()) {
       deriv.differentiable = false;
     } else {
-      if (diff < eps_diff()) {
-        deriv.differentiable = false;
-      } else {
-        deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-        deriv.Dsp.block<2, 2>(0, 0) += rt_ / (k2 * k) * t * t.transpose();
-        deriv.differentiable = true;
-      }
-      deriv.sp.head<2>() += rt_ * n.head<2>() / k;
+      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.Dsp.block<2, 2>(0, 0) += rt_ / (k2 * k) * t * t.transpose();
+      deriv.differentiable = true;
     }
+    if (k >= kEps) deriv.sp.head<2>() += rt_ * n.head<2>() / k;
     deriv.sp(2) += (h_ - offset_);
   } else {
     // The support point lies in the frustum base.
-    if (rb_ * k < Real(0.5) * eps_diff()) {
+    if (std::max(Real(2.0) * rb_ * k, -diff) < eps_diff()) {
       deriv.differentiable = false;
     } else {
-      if (diff > -eps_diff()) {
-        deriv.differentiable = false;
-      } else {
-        deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-        deriv.Dsp.block<2, 2>(0, 0) += rb_ / (k2 * k) * t * t.transpose();
-        deriv.differentiable = true;
-      }
-      deriv.sp.head<2>() += rb_ * n.head<2>() / k;
+      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.Dsp.block<2, 2>(0, 0) += rb_ / (k2 * k) * t * t.transpose();
+      deriv.differentiable = true;
     }
+    if (k >= kEps) deriv.sp.head<2>() += rb_ * n.head<2>() / k;
     deriv.sp(2) -= offset_;
   }
   return deriv.sp.dot(n);

@@ -89,20 +89,17 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
                                       SupportFunctionHint<3>* /*hint*/) const {
   const Real k2 = n(1) * n(1) + n(2) * n(2);
   const Real k = std::sqrt(k2);
-  deriv.sp = margin_ * n;
-  if (radius_ * k < Real(0.5) * eps_diff()) {
+  const Real diff = std::max(radius_ * k, std::abs(hlx_ * n(0)));
+  if (diff < Real(0.5) * eps_diff()) {
     deriv.differentiable = false;
   } else {
-    if (hlx_ * std::abs(n(0)) < Real(0.5) * eps_diff()) {
-      deriv.differentiable = false;
-    } else {
-      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      const Vec2r t = Vec2r(n(2), -n(1));
-      deriv.Dsp.block<2, 2>(1, 1) += radius_ / (k2 * k) * t * t.transpose();
-      deriv.differentiable = true;
-    }
-    deriv.sp.tail<2>() += radius_ * n.tail<2>() / k;
+    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    const Vec2r t = Vec2r(n(2), -n(1));
+    deriv.Dsp.block<2, 2>(1, 1) += radius_ / (k2 * k) * t * t.transpose();
+    deriv.differentiable = true;
   }
+  deriv.sp = margin_ * n;
+  if (k >= kEps) deriv.sp.tail<2>() += radius_ * n.tail<2>() / k;
   deriv.sp(0) += std::copysign(hlx_, n(0));
   return deriv.sp.dot(n);
 }

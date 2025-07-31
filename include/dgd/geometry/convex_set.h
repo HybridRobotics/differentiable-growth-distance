@@ -151,12 +151,12 @@ class ConvexSet {
    *
    * @see SupportFunction
    */
-  virtual bool RequireUnitNormal() const = 0;
+  virtual bool RequireUnitNormal() const;
 
   /**
    * @brief Returns true if the convex set is polytopic.
    */
-  virtual bool IsPolytopic() const = 0;
+  virtual bool IsPolytopic() const;
 
   virtual void PrintInfo() const;
 
@@ -210,6 +210,16 @@ inline Real ConvexSet<dim>::SupportFunction(
     SupportFunctionHint<dim>* hint) const {
   deriv.differentiable = false;
   return SupportFunction(n, deriv.sp, hint);
+}
+
+template <int dim>
+inline bool ConvexSet<dim>::RequireUnitNormal() const {
+  return true;
+}
+
+template <int dim>
+inline bool ConvexSet<dim>::IsPolytopic() const {
+  return false;
 }
 
 template <int dim>

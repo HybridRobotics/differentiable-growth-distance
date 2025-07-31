@@ -242,8 +242,8 @@ inline bool Mesh::IsPolytopic() const { return (margin_ == 0.0); }
 inline void Mesh::PrintInfo() const {
   std::cout << "Type: Mesh (dim = 3)" << std::endl
             << "  Name: " << name_ << std::endl
-            << "  #Vertices: " << vert_.size() << std::endl;
-  std::cout << "  Inradius: " << inradius_ << std::endl
+            << "  #Vertices: " << vert_.size() << std::endl
+            << "  Inradius: " << inradius_ << std::endl
             << "  Margin: " << margin_ << std::endl;
 }
 
