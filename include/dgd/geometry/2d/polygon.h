@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file polygon.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-04-11
  * @brief 2D convex polygon class.
  */
 
@@ -30,9 +28,7 @@
 
 namespace dgd {
 
-/**
- * @brief 2D convex polygon class.
- */
+/// @brief 2D convex polygon class.
 class Polygon : public ConvexSet<2> {
  public:
   /**
@@ -42,7 +38,7 @@ class Polygon : public ConvexSet<2> {
    * @see GrahamScan
    * @see ComputePolygonInradius
    *
-   * @param vert     Vector of n two-dimensional vertices.
+   * @param vert     Vector of n two-dimensional vertices in CCW order.
    * @param inradius Polygon inradius.
    * @param margin   Safety margin.
    */

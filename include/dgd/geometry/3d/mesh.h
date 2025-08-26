@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file mesh.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-30
  * @brief 3D mesh class.
  */
 

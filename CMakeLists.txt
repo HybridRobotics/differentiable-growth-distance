@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(
   DifferentiableGrowthDistance
-  VERSION 1.0.0
+  VERSION 1.0.1
   DESCRIPTION "Differentiable growth distance algorithm for convex sets"
 )
 
@@ -64,6 +64,11 @@ if(DGD_INSTALL_LIBS AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT DGD_USE_32BI
   )
   install(
     FILES "${PROJECT_BINARY_DIR}/${DGD_LIB}ConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${DGD_LIB}"
+  )
+  # Install FindQhull.cmake file
+  install(
+    FILES "${CMAKE_CURRENT_SOURCE_DIR}/cmake/FindQhull.cmake"
     DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${DGD_LIB}"
   )
 

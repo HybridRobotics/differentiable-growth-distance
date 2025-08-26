@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file error_metrics.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-02-18
  * @brief Error metrics for the growth distance and collision detection
  * functions.
  */
@@ -29,9 +27,7 @@
 
 namespace dgd {
 
-/**
- * @brief Solution error metrics.
- */
+/// @brief Solution error metrics.
 struct SolutionError {
   /**
    * @brief Relative primal-dual gap.
@@ -89,14 +85,13 @@ SolutionError ComputeSolutionError(const ConvexSet<dim>* set1,
     return err;
   }
 
-  const Vecr<dim> p1 = tf1.template block<dim, 1>(0, dim);
-  const Vecr<dim> p2 = tf2.template block<dim, 1>(0, dim);
-  const Rotationr<dim> rot1 = tf1.template block<dim, dim>(0, 0);
-  const Rotationr<dim> rot2 = tf2.template block<dim, dim>(0, 0);
+  const Vecr<dim> p1 = Affine(tf1), p2 = Affine(tf2);
 
   Vecr<dim> sp;
-  const Real sv1 = set1->SupportFunction(rot1.transpose() * out.normal, sp);
-  const Real sv2 = set2->SupportFunction(-rot2.transpose() * out.normal, sp);
+  const Real sv1 =
+      set1->SupportFunction(Linear(tf1).transpose() * out.normal, sp);
+  const Real sv2 =
+      set2->SupportFunction(-Linear(tf2).transpose() * out.normal, sp);
   const Real lb = (p2 - p1).dot(out.normal) / (sv1 + sv2);
 
   err.prim_dual_gap = out.growth_dist_ub / lb - 1.0;
@@ -127,10 +122,7 @@ bool AssertCollisionStatus(const ConvexSet<dim>* set1,
     return !collision;
   }
 
-  const Vecr<dim> p1 = tf1.template block<dim, 1>(0, dim);
-  const Vecr<dim> p2 = tf2.template block<dim, 1>(0, dim);
-  const Rotationr<dim> rot1 = tf1.template block<dim, dim>(0, 0);
-  const Rotationr<dim> rot2 = tf2.template block<dim, dim>(0, 0);
+  const Vecr<dim> p1 = Affine(tf1), p2 = Affine(tf2);
 
   if (collision) {
     const Real prim_infeas_err =
@@ -139,8 +131,10 @@ bool AssertCollisionStatus(const ConvexSet<dim>* set1,
            (prim_infeas_err <= max_prim_infeas_err);
   } else {
     Vecr<dim> sp;
-    const Real sv1 = set1->SupportFunction(rot1.transpose() * out.normal, sp);
-    const Real sv2 = set2->SupportFunction(-rot2.transpose() * out.normal, sp);
+    const Real sv1 =
+        set1->SupportFunction(Linear(tf1).transpose() * out.normal, sp);
+    const Real sv2 =
+        set2->SupportFunction(-Linear(tf2).transpose() * out.normal, sp);
     return (out.growth_dist_lb > 1.0) &&
            (p2.dot(out.normal) - sv2 > p1.dot(out.normal) + sv1);
   }

@@ -8,10 +8,8 @@
 
 #include "dgd/data_types.h"
 #include "dgd/error_metrics.h"
-#include "dgd/geometry/2d/ellipse.h"
-#include "dgd/geometry/2d/polygon.h"
-#include "dgd/geometry/3d/cone.h"
-#include "dgd/geometry/3d/mesh.h"
+#include "dgd/geometry/geometry_2d.h"
+#include "dgd/geometry/geometry_3d.h"
 #include "dgd/graham_scan.h"
 #include "dgd/mesh_loader.h"
 #include "dgd/utils/random.h"
@@ -95,8 +93,8 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    rng.RandomRigidBodyTransform(-2.0, 2.0, tf1);
-    rng.RandomRigidBodyTransform(-2.0, 2.0, tf2);
+    rng.RandomTransform(-2.0, 2.0, tf1);
+    rng.RandomTransform(-2.0, 2.0, tf2);
     const Vec2r v(rng.Random(), rng.Random());
     const Real w = rng.Random(kPi);
     const Rotation2r dR = Eigen::AngleAxis<Real>(w * dt, Vec3r::UnitZ())
@@ -111,13 +109,13 @@ TEST(GrowthDistanceTest, EllipsePolygon) {
       ASSERT_NEAR(err.prim_infeas_err, 0.0, kTol);
       ASSERT_NEAR(err.prim_dual_gap, 0.0, kTol);
 
-      tf1.topLeftCorner<2, 2>() *= dR;
-      tf1.topRightCorner<2, 1>() += v * dt;
+      Linear(tf1) *= dR;
+      Affine(tf1) += v * dt;
     }
   }
 }
 
-TEST(CollisionCheckTest, EllipsePolygon) {
+TEST(DetectCollisionTest, EllipsePolygon) {
   Rng rng;
   rng.SetDefaultSeed();
   const int nsamples_cold = 100;
@@ -133,8 +131,8 @@ TEST(CollisionCheckTest, EllipsePolygon) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    rng.RandomRigidBodyTransform(-5.0, 5.0, tf1);
-    rng.RandomRigidBodyTransform(-5.0, 5.0, tf2);
+    rng.RandomTransform(-5.0, 5.0, tf1);
+    rng.RandomTransform(-5.0, 5.0, tf2);
     const Vec2r v(rng.Random(), rng.Random());
     const Real w = rng.Random(kPi);
     const Rotation2r dR = Eigen::AngleAxis<Real>(w * dt, Vec3r::UnitZ())
@@ -149,8 +147,8 @@ TEST(CollisionCheckTest, EllipsePolygon) {
                                                    tf2, out, collision);
       ASSERT_TRUE(assertion);
 
-      tf1.topLeftCorner<2, 2>() *= dR;
-      tf1.topRightCorner<2, 1>() += v * dt;
+      Linear(tf1) *= dR;
+      Affine(tf1) += v * dt;
     }
   }
 }
@@ -174,8 +172,8 @@ TEST(GrowthDistanceTest, ConeMesh) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    rng.RandomRigidBodyTransform(-3.0, 3.0, tf1);
-    rng.RandomRigidBodyTransform(-3.0, 3.0, tf2);
+    rng.RandomTransform(-3.0, 3.0, tf1);
+    rng.RandomTransform(-3.0, 3.0, tf2);
     const Vec3r v(rng.Random(), rng.Random(), rng.Random());
     const Vec3r euler(rng.Random(kPi), rng.Random(kPi), rng.Random(kPi));
     Rotation3r dR;
@@ -189,13 +187,13 @@ TEST(GrowthDistanceTest, ConeMesh) {
       ASSERT_NEAR(err.prim_infeas_err, 0.0, kTol);
       ASSERT_NEAR(err.prim_dual_gap, 0.0, kTol);
 
-      tf1.topLeftCorner<3, 3>() *= dR;
-      tf1.topRightCorner<3, 1>() += v * dt;
+      Linear(tf1) *= dR;
+      Affine(tf1) += v * dt;
     }
   }
 }
 
-TEST(CollisionCheckTest, ConeMesh) {
+TEST(DetectCollisionTest, ConeMesh) {
   // Qhull computations can be unstable with float.
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
@@ -214,8 +212,8 @@ TEST(CollisionCheckTest, ConeMesh) {
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    rng.RandomRigidBodyTransform(-6.0, 6.0, tf1);
-    rng.RandomRigidBodyTransform(-6.0, 6.0, tf2);
+    rng.RandomTransform(-6.0, 6.0, tf1);
+    rng.RandomTransform(-6.0, 6.0, tf2);
     const Vec3r v(rng.Random(), rng.Random(), rng.Random());
     const Vec3r euler(rng.Random(kPi), rng.Random(kPi), rng.Random(kPi));
     Rotation3r dR;
@@ -229,10 +227,41 @@ TEST(CollisionCheckTest, ConeMesh) {
                                                    tf2, out, collision);
       ASSERT_TRUE(assertion);
 
-      tf1.topLeftCorner<3, 3>() *= dR;
-      tf1.topRightCorner<3, 1>() += v * dt;
+      Linear(tf1) *= dR;
+      Affine(tf1) += v * dt;
     }
   }
+}
+
+TEST(GrowthDistanceTest, CuboidHalfspace) {
+  // Set 1: Cuboid.
+  const ConvexSetPtr<3> setc =
+      std::make_unique<Cuboid>(Real(1.0), Real(2.0), Real(3.0), Real(0.1));
+  // Set 2: Half-space.
+  const auto seth = std::make_unique<Halfspace<3>>(Real(0.4));
+
+  // Compute growth distance for random transformations.
+  Transform3r tfc = Transform3r::Identity();
+  const Transform3r tfh = Transform3r::Identity();
+  Settings settings{};
+  Output<3> out;
+
+  Affine(tfc) = Vec3r(8.0, -7.0, 0.7);
+  const Real gd =
+      GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
+  ASSERT_TRUE(out.status == SolutionStatus::Optimal);
+  ASSERT_NEAR(gd, 0.2, kTol);
+  Output<3> out_swap;
+  const Real gd_swap = GrowthDistance(seth.get(), tfh, setc.get(), tfc,
+                                      settings, out_swap, false);
+  ASSERT_TRUE(out_swap.status == SolutionStatus::Optimal);
+  ASSERT_NEAR(gd_swap, gd, kTol);
+  ASSERT_NEAR((out.normal + out_swap.normal).norm(), 0.0, kTol);
+  ASSERT_NEAR((out.z1 - out_swap.z2).norm(), 0.0, kTol);
+
+  Affine(tfc) = Vec3r(8.0, -7.0, -Real(0.1));
+  GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
+  ASSERT_TRUE(out.status == SolutionStatus::CoincidentCenters);
 }
 
 }  // namespace

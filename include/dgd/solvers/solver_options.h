@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file solver_options.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-12
  * @brief Growth distance solver types and settings.
  */
 
@@ -31,20 +29,23 @@ namespace dgd {
 
 namespace detail {
 
-// Nonsmooth solver types for the computing the growth distance.
+/// @brief Nonsmooth solver types for the computing the growth distance.
 enum class SolverType {
-  // Cutting plane solver.
+  /// @brief Cutting plane solver.
   CuttingPlane,
 
-  // Proximal bundle solver with constant or adaptive regularization.
-  // Note: The proximal bundle method can have slow convergence in general.
+  /**
+   * @brief Proximal bundle solver with constant or adaptive regularization.
+   *
+   * @note The proximal bundle method can have slow convergence in general.
+   */
   ProximalBundle,
 
-  // Trust region Newton solver with partial or full solution.
+  /// @brief Trust region Newton solver with partial or full solution.
   TrustRegionNewton,
 };
 
-// Derivative order required for each solver type.
+/// @brief Derivative order required for each solver type.
 template <SolverType S>
 inline constexpr int SolverOrder() {
   if constexpr (S == SolverType::TrustRegionNewton) {
@@ -54,28 +55,33 @@ inline constexpr int SolverOrder() {
   }
 }
 
-// Proximal regularization type.
+/// @brief Proximal regularization type.
 enum class ProximalRegularization {
-  // Constant regularization.
+  /// @brief Constant regularization.
   kConstant,
 
-  // Adaptive regularization, proportional to the iteration number.
+  /// @brief Adaptive regularization, proportional to the iteration number.
   kAdaptive,
 };
 
-// Trust region Newton solution level.
+/// @brief Trust region Newton solution level.
 enum class TrustRegionNewtonLevel {
-  // Return cutting plane solution if the Newton step does not lie in the trust
-  // region.
+  /**
+   * @brief Return cutting plane solution if the Newton step does not lie in the
+   * trust region.
+   */
   kPartial,
 
-  // Return full trust region Newton solution.
-  // Note: The full solution is not implemented for the three-dimensional growth
-  // distance problem.
+  /**
+   * @brief Return full trust region Newton solution.
+   *
+   * @note The full solution is not implemented for the three-dimensional growth
+   * distance problem.
+   */
   kFull,
 };
 
-// Solver settings.
+/// @brief Solver settings.
 struct SolverSettings {
   // [Debug]
   // Whether to print convergence information at each iteration.
@@ -91,7 +97,7 @@ struct SolverSettings {
   // Projected simplex area tolerance for barycentric coordinate computation.
   static constexpr Real kEpsArea3 = kEps;
   // Constant added to the normal vector to ensure dual feasibility.
-  static constexpr Real kEpsNormal3 = kEps * kEps;
+  static constexpr Real kEpsNormal3 = 0;  // kEps;
 
   // [3D proximal bundle and trust region Newton]
   // Threshold for lower bound increase.
@@ -108,15 +114,17 @@ struct SolverSettings {
   // [Trust region Newton]
   // [3D] Trust region Newton solution level.
   static constexpr auto kTrnLevel = TrustRegionNewtonLevel::kPartial;
+  // [3D] Skip the trust region Newton solution if the Hessian is singular.
+  static constexpr bool kSkipTrnIfSingularHess3 = true;
   // Tolerance for the Newton step computation.
   static constexpr Real kHessMin2 = kSqrtEps;
   static constexpr Real kPinvTol3 = kSqrtEps;
   static constexpr Real kPinvResErr3 = kEps;
 };
 
-// Solver name.
+/// @brief Returns the solver name.
 template <SolverType S>
-inline std::string SolverName() {
+inline constexpr std::string SolverName() {
   if constexpr (S == SolverType::CuttingPlane) {
     return "Cutting plane";
   } else if constexpr (S == SolverType::ProximalBundle) {

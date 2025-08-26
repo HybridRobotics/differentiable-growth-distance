@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file debug.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-02-24
  * @brief Debug printing functions.
  */
 

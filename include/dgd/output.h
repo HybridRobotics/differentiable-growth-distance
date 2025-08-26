@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file output.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-02-18
  * @brief Growth distance algorithm output.
  */
 
@@ -27,9 +25,7 @@
 
 namespace dgd {
 
-/**
- * @brief Solution status at the termination of the algorithm.
- */
+/// @brief Solution status at the termination of the algorithm.
 enum class SolutionStatus {
   /**
    * @brief Optimal solution reached according to the relative tolerance
@@ -75,9 +71,7 @@ struct Output {
   Matr<dim, dim> s2 = Matr<dim, dim>::Zero();
   ///@}
 
-  /**
-   * @brief Barycentric coordinates corresponding to the optimal simplex.
-   */
+  /// @brief Barycentric coordinates corresponding to the optimal simplex.
   Vecr<dim> bc = Vecr<dim>::Zero();
 
   /**
@@ -89,7 +83,7 @@ struct Output {
    */
   Vecr<dim> normal = Vecr<dim>::Zero();
 
-  // Support function hints (internal).
+  /// @brief Support function hints (internal).
   SupportFunctionHint<dim> hint1_{}, hint2_{};
 
   /**
@@ -118,25 +112,21 @@ struct Output {
    */
   Real growth_dist_lb = 0.0;
 
-  // Convex set inradii.
+  /// @brief Convex set inradii (internal).
   Real r1_ = kEps, r2_ = kEps;
 
-  /**
-   * @brief Number of solver iterations.
-   */
+  /// @brief Number of solver iterations.
   int iter = 0;
 
-  // Unit normal vector flag.
+  /// @brief Unit normal vector flag (internal).
   bool normalize_2norm_ = true;
 
-  /**
-   * @brief Solution status.
-   */
+  /// @brief Solution status.
   SolutionStatus status = SolutionStatus::MaxIterReached;
 };
 
-using Output2d = Output<2>;
-using Output3d = Output<3>;
+using Output2 = Output<2>;
+using Output3 = Output<3>;
 
 }  // namespace dgd
 

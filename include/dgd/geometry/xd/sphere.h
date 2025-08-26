@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file sphere.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-01
  * @brief 2D/3D sphere class.
  */
 

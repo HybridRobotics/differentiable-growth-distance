@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file random.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-10
  * @brief Random number generation utilities.
  */
 
@@ -32,21 +30,15 @@
 
 namespace dgd {
 
-/**
- * @brief Random number generator class.
- */
+/// @brief Random number generator class.
 class Rng {
  public:
   explicit Rng();
 
-  /**
-   * @brief Sets a default seed for the generator.
-   */
+  /// @brief Sets a default seed for the generator.
   void SetDefaultSeed();
 
-  /**
-   * @brief Sets a true random seed for the generator.
-   */
+  /// @brief Sets a true random seed for the generator.
   void SetRandomSeed();
 
   /**
@@ -61,9 +53,7 @@ class Rng {
   Real Random(const std::array<Real, 2>& range);
   ///@}
 
-  /**
-   * @brief Returns 1 with probability prob, and 0 with probability 1 - prob.
-   */
+  /// @brief Returns 1 with probability prob, and 0 with probability 1 - prob.
   int CoinFlip(Real prob = 0.5);
 
   /**
@@ -76,14 +66,10 @@ class Rng {
   int RandomInt(const std::array<int, 2>& range);
   ///@}
 
-  /**
-   * @brief Returns a sample from a Gaussian distribution.
-   */
+  /// @brief Returns a sample from a Gaussian distribution.
   Real RandomGaussian(Real mean = 0.0, Real stddev = 1.0);
 
-  /**
-   * @brief Sets a random uniformly distributed unit vector.
-   */
+  /// @brief Sets a random uniformly distributed unit vector.
   template <int dim>
   void RandomUnitVector(Vecr<dim>& n);
 
@@ -109,13 +95,11 @@ class Rng {
    */
   ///@{
   template <int dim>
-  void RandomRigidBodyTransform(const Vecr<dim>& range_low,
-                                const Vecr<dim>& range_high,
-                                Matr<dim + 1, dim + 1>& tf);
+  void RandomTransform(const Vecr<dim>& range_low, const Vecr<dim>& range_high,
+                       Matr<dim + 1, dim + 1>& tf);
 
-  template <int dimh>
-  void RandomRigidBodyTransform(Real range_low, Real range_high,
-                                Matr<dimh, dimh>& tf);
+  template <int hdim>
+  void RandomTransform(Real range_low, Real range_high, Matr<hdim, hdim>& tf);
   ///@}
 
  private:
@@ -188,16 +172,16 @@ inline void Rng::RandomRotation(Rotation3r& rot, Real ang_max) {
 }
 
 template <int dim>
-inline void Rng::RandomRigidBodyTransform(const Vecr<dim>& range_low,
-                                          const Vecr<dim>& range_high,
-                                          Matr<dim + 1, dim + 1>& tf) {
+inline void Rng::RandomTransform(const Vecr<dim>& range_low,
+                                 const Vecr<dim>& range_high,
+                                 Matr<dim + 1, dim + 1>& tf) {
   static_assert((dim == 2) || (dim == 3), "Dimension must be 2 or 3");
   if ((range_low.array() > range_high.array()).any()) {
     throw std::range_error("Invalid range");
   }
   Rotationr<dim> rot;
   RandomRotation(rot);
-  tf.template block<dim, dim>(0, 0) = rot;
+  Linear(tf) = rot;
   for (int i = 0; i < dim; ++i) {
     tf(i, dim) = Random(range_low(i), range_high(i));
   }
@@ -205,11 +189,11 @@ inline void Rng::RandomRigidBodyTransform(const Vecr<dim>& range_low,
   tf(dim, dim) = 1.0;
 }
 
-template <int dimh>
-inline void Rng::RandomRigidBodyTransform(Real range_low, Real range_high,
-                                          Matr<dimh, dimh>& tf) {
-  RandomRigidBodyTransform<dimh - 1>(Vecr<dimh - 1>::Constant(range_low),
-                                     Vecr<dimh - 1>::Constant(range_high), tf);
+template <int hdim>
+inline void Rng::RandomTransform(Real range_low, Real range_high,
+                                 Matr<hdim, hdim>& tf) {
+  RandomTransform<hdim - 1>(Vecr<hdim - 1>::Constant(range_low),
+                            Vecr<hdim - 1>::Constant(range_high), tf);
 }
 
 }  // namespace dgd

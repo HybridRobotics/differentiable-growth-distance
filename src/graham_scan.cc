@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file graham_scan.cc
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-04-02
  * @brief Graham scan implementation.
  */
 

@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file settings.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-02-18
  * @brief Growth distance algorithm settings.
  */
 
@@ -26,9 +24,7 @@
 
 namespace dgd {
 
-/**
- * @brief Settings for the growth distance algorithm.
- */
+/// @brief Settings for the growth distance algorithm.
 struct Settings {
   /**
    * @brief Minimum distance between the center points of the convex sets.
@@ -49,9 +45,7 @@ struct Settings {
    */
   Real rel_tol = Real(1.0) + kSqrtEps;
 
-  /**
-   * @brief Maximum number of solver iterations.
-   */
+  /// @brief Maximum number of solver iterations.
   int max_iter = 100;
 };
 

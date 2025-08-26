@@ -17,9 +17,7 @@
 // limitations under the License.
 
 /**
- * @file mesh_loader.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-04-01
  * @brief 3D mesh loader class.
  */
 
@@ -170,9 +168,7 @@ class MeshLoader {
    */
   Real ComputeInradius(Vec3r& interior_point, bool use_given_ip = false);
 
-  /**
-   * @brief Number of points in the mesh.
-   */
+  /// @brief Number of points in the mesh.
   int npts() const;
 
   ~MeshLoader() = default;

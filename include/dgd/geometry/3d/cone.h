@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file cone.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-01
  * @brief 3D cone class.
  */
 

@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file ellipse.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-02-28
  * @brief 2D ellipse class.
  */
 
@@ -31,9 +29,7 @@
 
 namespace dgd {
 
-/**
- * @brief Axis-aligned 2D ellipse class.
- */
+/// @brief Axis-aligned 2D ellipse class.
 class Ellipse : public ConvexSet<2> {
  public:
   /**

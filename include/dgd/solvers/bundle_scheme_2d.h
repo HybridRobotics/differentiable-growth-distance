@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file bundle_scheme_2d.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-14
  * @brief Bundle schemes for the two-dimensional growth distance problem.
  */
 
@@ -119,6 +117,7 @@ inline Real WarmStart(const MinkowskiDiffProp<2>& mdp, Matr<2, 2>& s, Vec2r& n,
   // if constexpr (detect_collision) InitializeSetSimplices(mdp, out);
   InitializeSetSimplices(mdp, out);
   for (int i = 0; i < 2; ++i) {
+    // Simplex points having a small contribution are not considered.
     if (out.bc(i) > SolverSettings::kEpsMinBc) {
       sp.noalias() = mdp.rot1 * s1.col(i) - mdp.rot2 * s2.col(i);
       if (n.dot(sp - s.col(0)) > Real(0.0)) {
@@ -186,7 +185,7 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
     InitializeSimplex(s, n, mdp.r, out);
     // Note: There can be some edge case numerical issues with the primal
     // infeasibility error if the convex set simplices are not initialized.
-    // These issues do not seem to occur with the cutting plane method.
+    // These issues don't occur with the cutting plane method.
     // if constexpr (detect_collision) InitializeSetSimplices(mdp, out);
     InitializeSetSimplices(mdp, out);
   }

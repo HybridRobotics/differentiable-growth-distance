@@ -9,12 +9,12 @@ namespace dgd {
 namespace internal {
 
 // Sets random rigid body transforms for a pair of rigid bodies.
-template <int dimh>
-inline void SetRandomRigidBodyTransforms(Rng& rng, Matr<dimh, dimh>& tf1,
-                                         Matr<dimh, dimh>& tf2, Real range_from,
-                                         Real range_to) {
-  rng.RandomRigidBodyTransform(range_from, range_to, tf1);
-  rng.RandomRigidBodyTransform(range_from, range_to, tf2);
+template <int hdim>
+inline void SetRandomTransforms(Rng& rng, Matr<hdim, hdim>& tf1,
+                                Matr<hdim, hdim>& tf2, Real range_from,
+                                Real range_to) {
+  rng.RandomTransform(range_from, range_to, tf1);
+  rng.RandomTransform(range_from, range_to, tf2);
 }
 
 // Sets a random displacement.
@@ -28,11 +28,10 @@ inline void SetRandomDisplacement(Rng& rng, Vecr<dim>& dx, Matr<dim, dim>& drot,
 
 // Updates the rigid body transform using the screw.
 template <int dim>
-inline void UpdateRigidBodyTransform(Matr<dim + 1, dim + 1>& tf,
-                                     const Vecr<dim>& dx,
-                                     const Matr<dim, dim>& drot) {
-  tf.template block<dim, 1>(0, dim) += dx;
-  tf.template block<dim, dim>(0, 0) *= drot;
+inline void UpdateTransform(Matr<dim + 1, dim + 1>& tf, const Vecr<dim>& dx,
+                            const Matr<dim, dim>& drot) {
+  Affine(tf) += dx;
+  Linear(tf) *= drot;
 }
 
 }  // namespace internal

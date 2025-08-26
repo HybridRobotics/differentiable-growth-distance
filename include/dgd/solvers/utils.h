@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file utils.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-12
  * @brief Common utility functions for the solvers.
  */
 
@@ -63,8 +61,8 @@ inline Real SetZeroOutput(const Transformr<dim>& tf1,
                           const Transformr<dim>& tf2, Output<dim>& out) {
   out.normal = Vecr<dim>::Zero();
   out.growth_dist_ub = out.growth_dist_lb = 0.0;
-  out.z1 = tf1.template block<dim, 1>(0, dim);
-  out.z2 = tf2.template block<dim, 1>(0, dim);
+  out.z1 = Affine(tf1);
+  out.z2 = Affine(tf2);
   out.status = SolutionStatus::CoincidentCenters;
   return 0.0;
 }
@@ -84,10 +82,8 @@ template <int dim>
 inline Real ComputePrimalSolution(const Transformr<dim>& tf1,
                                   const Transformr<dim>& tf2, Real cdist,
                                   Real lb, Output<dim>& out) {
-  out.z1.noalias() = tf1.template block<dim, dim>(0, 0) * out.s1 * out.bc +
-                     tf1.template block<dim, 1>(0, dim);
-  out.z2.noalias() = tf2.template block<dim, dim>(0, 0) * out.s2 * out.bc +
-                     tf2.template block<dim, 1>(0, dim);
+  out.z1.noalias() = Linear(tf1) * out.s1 * out.bc + Affine(tf1);
+  out.z2.noalias() = Linear(tf2) * out.s2 * out.bc + Affine(tf2);
   return out.growth_dist_ub = cdist / lb;
 }
 
@@ -139,8 +135,7 @@ struct MinkowskiDiffProp {
   // Sets p21 and cdist.
   void SetCenterDistance(const Transformr<dim>& tf1,
                          const Transformr<dim>& tf2) {
-    p21 =
-        tf2.template block<dim, 1>(0, dim) - tf1.template block<dim, 1>(0, dim);
+    p21 = Affine(tf2) - Affine(tf1);
     cdist = p21.norm();
   }
 
@@ -148,8 +143,8 @@ struct MinkowskiDiffProp {
   void SetRotationMatrices(const Transformr<dim>& tf1,
                            const Transformr<dim>& tf2) {
     RotationToZAxis(p21 / cdist, rot);
-    rot1.noalias() = rot * tf1.template block<dim, dim>(0, 0);
-    rot2.noalias() = rot * tf2.template block<dim, dim>(0, 0);
+    rot1.noalias() = rot * Linear(tf1);
+    rot2.noalias() = rot * Linear(tf2);
   }
 };
 

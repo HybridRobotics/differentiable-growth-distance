@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file numerical_differentiation.cc
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-24
  * @brief Numerical differentiation implementation.
  */
 

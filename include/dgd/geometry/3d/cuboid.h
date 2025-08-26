@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file cuboid.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-01
  * @brief 3D cuboid class.
  */
 
@@ -31,9 +29,7 @@
 
 namespace dgd {
 
-/**
- * @brief Axis-aligned 3D cuboid class.
- */
+/// @brief Axis-aligned 3D cuboid class.
 class Cuboid : public ConvexSet<3> {
  public:
   /**

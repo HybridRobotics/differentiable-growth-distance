@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file cylinder.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-06
  * @brief 3D cylinder class.
  */
 

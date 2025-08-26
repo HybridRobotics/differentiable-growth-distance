@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file transformations.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-10
  * @brief Rotation transformation functions.
  */
 

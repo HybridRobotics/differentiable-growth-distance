@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file timer.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-10
  * @brief Timer class.
  */
 
@@ -34,29 +32,19 @@ namespace dgd {
  */
 class Timer {
  public:
-  /**
-   * @brief Constructs a new Timer object.
-   */
+  /// @brief Constructs a new Timer object.
   explicit Timer(bool start_on_construction = true);
 
-  /**
-   * @brief Restarts the timer from zero, if it is not already running.
-   */
+  /// @brief Restarts the timer from zero, if it is not already running.
   void Start();
 
-  /**
-   * @brief Stops the timer if it is running.
-   */
+  /// @brief Stops the timer if it is running.
   void Stop();
 
-  /**
-   * @brief Resumes the timer if it is not already running.
-   */
+  /// @brief Resumes the timer if it is not already running.
   void Resume();
 
-  /**
-   * @brief Returns the elapsed time since the last start in microseconds.
-   */
+  /// @brief Returns the elapsed time since the last start in microseconds.
   double Elapsed() const;
 
  private:

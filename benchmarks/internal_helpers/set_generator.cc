@@ -5,18 +5,8 @@
 #include <string>
 #include <vector>
 
-#include "dgd/geometry/2d/ellipse.h"
-#include "dgd/geometry/2d/polygon.h"
-#include "dgd/geometry/2d/rectangle.h"
-#include "dgd/geometry/3d/cone.h"
-#include "dgd/geometry/3d/cuboid.h"
-#include "dgd/geometry/3d/cylinder.h"
-#include "dgd/geometry/3d/ellipsoid.h"
-#include "dgd/geometry/3d/frustum.h"
-#include "dgd/geometry/3d/mesh.h"
-#include "dgd/geometry/3d/polytope.h"
-#include "dgd/geometry/xd/capsule.h"
-#include "dgd/geometry/xd/sphere.h"
+#include "dgd/geometry/geometry_2d.h"
+#include "dgd/geometry/geometry_3d.h"
 #include "dgd/graham_scan.h"
 #include "dgd/utils/random.h"
 #include "internal_helpers/mesh_loader.h"
@@ -122,7 +112,7 @@ ConvexSetPtr<2> ConvexSetGenerator::GetPrimitiveSet(Primitive2D type) {
 }
 
 ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(CurvedPrimitive3D type) {
-  const Real margin = GetMargin();
+  Real margin = GetMargin();
 
   switch (type) {
     case CurvedPrimitive3D::Capsule:
@@ -187,10 +177,12 @@ ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(FlatPrimitive3D type) {
           const int idx = rng_.RandomInt({0, nvert_m - 1});
           polytope_vert_.push_back(meshes_[mesh_idx]->vertices()[idx]);
         }
+        // Add a small margin to ensure that the set is solid.
+        margin += 1e-2;
       }
       CenterVertices(polytope_vert_);
 
-      return std::make_shared<Polytope>(polytope_vert_, kEps, margin);
+      return std::make_shared<Polytope>(polytope_vert_, kSqrtEps, margin);
     }
 
     default:

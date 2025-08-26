@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file bundle_scheme_3d.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-14
  * @brief Bundle schemes for the three-dimensional growth distance problem.
  */
 
@@ -55,9 +53,6 @@ struct BundleScheme3Context {
   // Normal vector.
   Vec3r n;
 
-  // Maximum squared norm of the projected simplex vertices.
-  Real max_s2;
-
   // Twice the area of the projected simplex (> 0).
   Real area;
 };
@@ -73,8 +68,7 @@ inline void InitializeSimplex(BundleScheme3Context& bsc, Real r,
   bsc.s.col(1) = r * Vec3r(-0.5, 0.5, 0.0);
   bsc.s.col(2) = Vec3r(0.0, -r, 0.0);
   bsc.n = Vec3r::UnitZ();
-  bsc.max_s2 = r * r;
-  bsc.area = Real(1.5) * bsc.max_s2;
+  bsc.area = Real(1.5) * r * r;
   out.bc = Vec3r::Constant(Real(1.0 / 3.0));
 }
 
@@ -100,9 +94,6 @@ inline void InitializeSetSimplices(const MinkowskiDiffProp<3>& mdp,
 inline constexpr int Ccw3(int idx) { return (idx == 2) ? 0 : idx + 1; }
 
 inline constexpr int Cw3(int idx) { return (idx == 0) ? 2 : idx - 1; }
-
-// Returns the index in {0, 1, 2} \ {idx1, idx2}, assuming idx1 is not idx2.
-inline constexpr int Compl3(int idx1, int idx2) { return 3 - idx1 - idx2; }
 
 // Swaps two columns of the simplex matrix.
 inline void SwapSimplexColumns(Matr<3, 3>& s, int i, int j) {
@@ -171,7 +162,7 @@ inline Real UpdateOriginCoordinates(BundleScheme3Context& bsc, Vec3r& bc) {
   bc(1) = std::abs(bsc.s(0, 2) * bsc.s(1, 0) - bsc.s(1, 2) * bsc.s(0, 0));
   bc(2) = std::abs(bsc.s(0, 0) * bsc.s(1, 1) - bsc.s(1, 0) * bsc.s(0, 1));
   bsc.area = bc.sum();
-  if (bsc.area > bsc.max_s2 * SolverSettings::kEpsArea3) {
+  if (bsc.area > SolverSettings::kEpsArea3) {
     bc /= bsc.area;
     return bsc.s.row(2) * bc;
   } else {  // The projected simplex is degenerate.
@@ -190,13 +181,12 @@ inline Real UpdateSimplex(const Vec3r& sp, const Vec3r& sp1, const Vec3r& sp2,
                           BundleScheme3Context& bsc, Output<3>& out,
                           int* idxn = nullptr) {
   int exiting_idx = 0;
-  if (bsc.area > bsc.max_s2 * SolverSettings::kEpsArea3) {
+  if (bsc.area > SolverSettings::kEpsArea3) {
     ComputePointCoordinates(sp.head<2>(), bsc);
     // Perform one iteration of the Simplex algorithm.
     Real value = 1.0;
     for (int i = 0; i < 3; ++i) {
-      if ((bsc.bc(i) > SolverSettings::kEpsMinBc) &&
-          (out.bc(i) < bsc.bc(i) * value)) {
+      if ((out.bc(i) < bsc.bc(i)) && (out.bc(i) < bsc.bc(i) * value)) {
         value = out.bc(i) / bsc.bc(i);
         exiting_idx = i;
       }
@@ -215,7 +205,6 @@ inline Real UpdateSimplex(const Vec3r& sp, const Vec3r& sp1, const Vec3r& sp2,
 
   // Replace the exiting simplex point with the support point.
   bsc.s.col(exiting_idx) = sp;
-  bsc.max_s2 = std::max(bsc.max_s2, sp.squaredNorm());
   out.s1.col(exiting_idx) = sp1;
   out.s2.col(exiting_idx) = sp2;
   if (idxn) *idxn = exiting_idx;
@@ -239,155 +228,40 @@ inline void UpdateNormalCuttingPlane(const BundleScheme3Context& bsc,
  * Proximal bundle method functions.
  */
 
-// Computes the pseudoinverse of the cost matrix, assuming it is nonzero.
-inline void ComputePseudoinverse(const Matr<2, 2>& Q, Matr<2, 2>& Qinv) {
-  if (Q.determinant() > SolverSettings::kPinvTol3) {
-    Qinv = Q.inverse();
-  } else {
-    // Q is rank 1.
-    const Real trace = Q.trace();
-    Qinv = Q / (trace * trace);
-  }
-}
-
-// Local context for the active set QP solver.
-struct Qp3Context {
-  // Projected simplex edge vectors in the aligned coordinates.
-  // [s1 - s0, s2 - s1, s0 - s2].
-  Matr<2, 3> se;
-
-  // Pseudoinverse of the cost matrix.
-  Matr<2, 2> Qinv;
-
-  // Dual corresponding to the cutting plane normal vector.
-  Vec2r lmb_cp;
-  // Dual corresponding to the current normal vector (with respect to the
-  // cutting plane dual).
-  Vec2r lmb;
-  // Dual optimal solution.
-  Vec2r lmb_opt;
-};
-
-inline void SetProjectedSimplexEdges(const Matr<3, 3>& s, Matr<2, 3>& se) {
-  se.col(0) = (s.col(1) - s.col(0)).head<2>();
-  se.col(1) = (s.col(2) - s.col(1)).head<2>();
-  se.col(2) = (s.col(0) - s.col(2)).head<2>();
-}
-
-// Checks the KKT conditions when the active set = {act}.
-inline bool CheckQpActiveSet1(const Matr<3, 3>& s, const Matr<2, 2>& Q,
-                              Qp3Context& qpc, int act) {
-  // Compute dual solution.
-  const Vec2r grad = s.col(act).head<2>();
-  qpc.lmb_opt.noalias() = qpc.lmb - qpc.Qinv * grad;
-  // Check dual feasibility and residual error.
-  const Real res_err2 = (Q * (qpc.lmb_opt - qpc.lmb) + grad).squaredNorm();
-  return (res_err2 < SolverSettings::kPinvResErr3) &&
-         (qpc.lmb_opt.dot(qpc.se.col(act)) <= Real(0.0)) &&
-         (qpc.lmb_opt.dot(qpc.se.col(Cw3(act))) >= Real(0.0));
-}
-
-// Checks the KKT conditions when the active set = {1, 2, 3} \ {inact}.
-// bc3 is the primal solution when all constraints are active.
-// Returns -1 if optimal, else the active constraint to be removed.
-inline int CheckQpActiveSet2(const Matr<2, 2>& Q, const Vec3r& bc3,
-                             Qp3Context& qpc, int inact) {
-  const int act1 = Ccw3(inact), act2 = Cw3(inact);
-  // Compute dual solution by converting into a 1D problem.
-  const Vec2r d = Vec2r(qpc.se(1, act1), -qpc.se(0, act1));
-  const Real u = -bc3(inact) * qpc.se.col(inact).dot(d) / d.dot(Q * d);
-  qpc.lmb_opt = u * d;
-  // Check primal feasibility (dual feasibility is guaranteed).
-  const Real mu_act2 =
-      bc3(act2) -
-      qpc.se.col(act1).dot(qpc.se.col(inact) * bc3(inact) + Q * qpc.lmb_opt) /
-          d.squaredNorm();
-  if (mu_act2 < Real(0.0)) {
-    return act2;  // act2 is inactive.
-  } else if (mu_act2 > Real(1.0)) {
-    return act1;  // act1 is inactive.
-  } else {
-    return -1;  // {act1, act2} is optimal.
-  }
-}
-
-// Updates the normal vector to the proximal point value.
-// The cost matrix should be nonzero; otherwise, use the cutting plane update.
-inline void UpdateNormalProximalPoint(const Matr<2, 2>& Q, const Vec3r& n_cp,
-                                      BundleScheme3Context& bsc) {
-  Qp3Context qpc;
-  qpc.lmb_cp = n_cp.head<2>();
-  qpc.lmb = bsc.n.head<2>() / bsc.n(2) - qpc.lmb_cp;
-
-  /*
-  {
-    // Solve min_x (c'x + 0.5 x'Px), s.t. Aineq x + bineq >= 0.
-    RtMatrixX<3, 3>::d P = kEps * Matr<3, 3>::Identity();
-    P.block<2, 2>(0, 0) = Q;
-    RtVectorX<3>::d c = Vec3r::Zero();
-    c.head<2>().noalias() = -(Q + kEps * Matr<2, 2>::Identity()) * qpc.lmb;
-    c(2) = 1.0;
-    const RtMatrixX<0, 3>::d Aeq;
-    const RtVectorX<0>::d beq(0);
-    RtMatrixX<3, 3>::d Aineq;
-    Aineq.leftCols<2>() = -bsc.s.topRows<2>().transpose();
-    Aineq.col(2) = Vec3r::Ones();
-    const RtVectorX<3>::d bineq = Vec3r::Zero();
-    RtVectorX<3>::d x = Vec3r::Zero();
-
-    using namespace eiquadprog::solvers;
-    RtEiquadprog<3, 0, 3> qp;
-    [[maybe_unused]] RtEiquadprog_status status;
-    status = qp.solve_quadprog(P, c, Aeq, beq, Aineq, bineq, x);
-    assert(status == RT_EIQUADPROG_OPTIMAL);
-
-    bsc.n(0) = static_cast<Real>(x(0)) + qpc.lmb_cp(0);
-    bsc.n(1) = static_cast<Real>(x(1)) + qpc.lmb_cp(1);
-    bsc.n(2) = 1.0;
-    return;
-  }
-  */
-
-  // Compute primal solution when all constraints are active.
-  ComputePointCoordinates(Q * qpc.lmb, bsc);
-  // Check primal feasibility.
-  int min_idx;
-  const Real min = bsc.bc.minCoeff(&min_idx);
-  bool solved = true;
-  if (min >= Real(0.0)) {  // Dual optimal solution found.
-    qpc.lmb_opt = Vec2r::Zero();
-  } else {
-    SetProjectedSimplexEdges(bsc.s, qpc.se);
-    // Check KKT conditions for active set = {1, 2, 3} \ {min_idx}.
-    const int inact1 = CheckQpActiveSet2(Q, bsc.bc, qpc, min_idx);
-    if (inact1 != -1) {  // inact1 can be removed from the set of constraints.
-      ComputePseudoinverse(Q, qpc.Qinv);
-      if (bsc.bc(inact1) >= Real(0.0)) {
-        // {1, 2, 3} \ {inact1} is not optimal. The optimal active set is a
-        // singleton subset of {1, 2, 3} \ {inact1}.
-        solved = CheckQpActiveSet1(bsc.s, Q, qpc, Compl3(inact1, min_idx));
-        if (!solved) {
-          solved = CheckQpActiveSet1(bsc.s, Q, qpc, min_idx);
-        }
-      } else {
-        // Check KKT conditions for active set = {1, 2, 3} \ {inact1}.
-        const int inact2 = CheckQpActiveSet2(Q, bsc.bc, qpc, inact1);
-        if (inact2 != -1) {
-          // The optimal active set is {1, 2, 3} \ {inact1, inact2}.
-          solved = CheckQpActiveSet1(bsc.s, Q, qpc, Compl3(inact1, inact2));
-        }
-      }
-    }
-  }
-
-  if (solved) {
-    bsc.n.head<2>() = qpc.lmb_opt + qpc.lmb_cp;
-    bsc.n(2) = 1.0;
-  } else {
-    assert(false);
-    bsc.n = n_cp;
-  }
-}
+// // Updates the normal vector to the proximal point value.
+// // The cost matrix should be nonzero; otherwise, use the cutting plane
+// // update.
+// inline void UpdateNormalProximalPoint(const Matr<2, 2>& Q, const Vec3r& n_cp,
+//                                       BundleScheme3Context& bsc) {
+//   const Vec2r lmb_cp = n_cp.head<2>();
+//   const Vec2r lmb = bsc.n.head<2>() / bsc.n(2) - lmb_cp;
+//
+//   // Solve min_x (c'x + 0.5 x'Px), s.t. Aineq x + bineq >= 0.
+//   RtMatrixX<3, 3>::d P = kEps * Matr<3, 3>::Identity();
+//   P.block<2, 2>(0, 0) = Q;
+//   RtVectorX<3>::d c = Vec3r::Zero();
+//   c.head<2>().noalias() = -(Q + kEps * Matr<2, 2>::Identity()) * lmb;
+//   c(2) = 1.0;
+//   const RtMatrixX<0, 3>::d Aeq;
+//   const RtVectorX<0>::d beq(0);
+//   RtMatrixX<3, 3>::d Aineq;
+//   Aineq.leftCols<2>() = -bsc.s.topRows<2>().transpose();
+//   Aineq.col(2) = Vec3r::Ones();
+//   const RtVectorX<3>::d bineq = Vec3r::Zero();
+//   RtVectorX<3>::d x = Vec3r::Zero();
+//
+//   {
+//     using namespace eiquadprog::solvers;
+//     RtEiquadprog<3, 0, 3> qp;
+//     [[maybe_unused]] RtEiquadprog_status status;
+//     status = qp.solve_quadprog(P, c, Aeq, beq, Aineq, bineq, x);
+//     assert(status == RT_EIQUADPROG_OPTIMAL);
+//   }
+//
+//   bsc.n(0) = static_cast<Real>(x(0)) + lmb_cp(0);
+//   bsc.n(1) = static_cast<Real>(x(1)) + lmb_cp(1);
+//   bsc.n(2) = 1.0;
+// }
 
 /*
  * Trust region Newton method functions.
@@ -396,13 +270,31 @@ inline void UpdateNormalProximalPoint(const Matr<2, 2>& Q, const Vec3r& n_cp,
 // Partial trust region Newton solution.
 inline void UpdateNormalPartialNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
                                       BundleScheme3Context& bsc, int idx) {
+  // Compute the pseudoinverse of the cost matrix, assuming it is nonzero.
   Matr<2, 2> hess_inv;
-  ComputePseudoinverse(hess, hess_inv);
+  const Real det = hess.determinant();
+  if (det > SolverSettings::kPinvTol3) {
+    const Real det_inv = Real(1.0) / det;
+    hess_inv(0, 0) = hess(1, 1) * det_inv;
+    hess_inv(0, 1) = hess_inv(1, 0) = -hess(1, 0) * det_inv;
+    hess_inv(1, 1) = hess(0, 0) * det_inv;
+  } else {  // The Hessian is rank 1.
+    if constexpr (SolverSettings::kSkipTrnIfSingularHess3) {
+      bsc.n = n_cp;
+      return;
+    }
+    const Real trace = hess.trace();
+    hess_inv = hess / (trace * trace);
+  }
+
   // Newton step solution.
   const Vec2r grad = bsc.s.col(idx).head<2>(), lmb = bsc.n.head<2>() / bsc.n(2);
   const Vec2r lmb_opt = lmb - hess_inv * grad;
   // Residual error should be on the order of machine epsilon squared.
-  const Real res_err2 = (hess * (lmb_opt - lmb) + grad).squaredNorm();
+  Real res_err2 = 0.0;
+  if constexpr (!SolverSettings::kSkipTrnIfSingularHess3) {
+    res_err2 = (hess * (lmb_opt - lmb) + grad).squaredNorm();
+  }
   // Check trust region feasibility and residual error.
   const Vec3r sv =
       bsc.s.topRows<2>().transpose() * lmb_opt + bsc.s.row(2).transpose();
@@ -420,49 +312,47 @@ inline void UpdateNormalPartialNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
   }
 }
 
-/*
-// Full trust region Newton solution.
-inline void UpdateNormalFullNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
-                                   BundleScheme3Context& bsc, int idx) {
-  const Vec2r lmb = bsc.n.head<2>() / bsc.n(2) - n_cp.head<2>();
-  const Vec2r grad = bsc.s.col(idx).head<2>() - hess * lmb;
-
-  // Setup trust region Newton QP problem.
-  const RtMatrixX<2, 2>::d Q =
-      hess + SolverSettings::kPinvTol3 * Matr<2, 2>::Identity();
-  const RtVectorX<2>::d c = grad - SolverSettings::kPinvTol3 * lmb;
-  const RtMatrixX<0, 2>::d Aeq;
-  const RtVectorX<0>::d beq(0);
-  RtMatrixX<2, 2>::d Aineq;
-  Aineq.row(0) = (bsc.s.col(idx) - bsc.s.col(Ccw3(idx))).head<2>();
-  Aineq.row(1) = (bsc.s.col(idx) - bsc.s.col(Cw3(idx))).head<2>();
-  const RtVectorX<2>::d bineq = Vecr<2>::Zero();
-  RtVectorX<2>::d x = Vecr<2>::Zero();
-
-  // Solve problem.
-  {
-    using namespace eiquadprog::solvers;
-    RtEiquadprog<2, 0, 2> qp;
-    [[maybe_unused]] RtEiquadprog_status status =
-        qp.solve_quadprog(Q, c, Aeq, beq, Aineq, bineq, x);
-    assert(status == RT_EIQUADPROG_OPTIMAL);
-  }
-
-  const Vec2r lmb_opt = Vec2r(static_cast<Real>(x(0)), static_cast<Real>(x(1)));
-  bsc.n.head<2>() = lmb_opt + n_cp.head<2>();
-  bsc.n(2) = 1.0;
-  // return grad.dot(lmb_opt) + Real(0.5) * lmb_opt.dot(hess * lmb_opt);
-}
-*/
+// // Full trust region Newton solution.
+// inline void UpdateNormalFullNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
+//                                    BundleScheme3Context& bsc, int idx) {
+//   const Vec2r lmb = bsc.n.head<2>() / bsc.n(2) - n_cp.head<2>();
+//   const Vec2r grad = bsc.s.col(idx).head<2>() - hess * lmb;
+//
+//   // Setup trust region Newton QP problem.
+//   const RtMatrixX<2, 2>::d Q =
+//       hess + SolverSettings::kPinvTol3 * Matr<2, 2>::Identity();
+//   const RtVectorX<2>::d c = grad - SolverSettings::kPinvTol3 * lmb;
+//   const RtMatrixX<0, 2>::d Aeq;
+//   const RtVectorX<0>::d beq(0);
+//   RtMatrixX<2, 2>::d Aineq;
+//   Aineq.row(0) = (bsc.s.col(idx) - bsc.s.col(Ccw3(idx))).head<2>();
+//   Aineq.row(1) = (bsc.s.col(idx) - bsc.s.col(Cw3(idx))).head<2>();
+//   const RtVectorX<2>::d bineq = Vecr<2>::Zero();
+//   RtVectorX<2>::d x = Vecr<2>::Zero();
+//
+//   // Solve problem.
+//   {
+//     using namespace eiquadprog::solvers;
+//     RtEiquadprog<2, 0, 2> qp;
+//     [[maybe_unused]] RtEiquadprog_status status =
+//         qp.solve_quadprog(Q, c, Aeq, beq, Aineq, bineq, x);
+//     assert(status == RT_EIQUADPROG_OPTIMAL);
+//   }
+//
+//   const Vec2r lmb_opt = Vec2r(static_cast<Real>(x(0)),
+//   static_cast<Real>(x(1))); bsc.n.head<2>() = lmb_opt + n_cp.head<2>();
+//   bsc.n(2) = 1.0;
+//   // return grad.dot(lmb_opt) + Real(0.5) * lmb_opt.dot(hess * lmb_opt);
+// }
 
 // Updates the normal vector for the trust region Newton method.
 inline void UpdateNormalNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
                                BundleScheme3Context& bsc, int idx) {
   if constexpr (SolverSettings::kTrnLevel == TrustRegionNewtonLevel::kPartial) {
     UpdateNormalPartialNewton(hess, n_cp, bsc, idx);
-  } /* else {
-    UpdateNormalFullNewton(hess, n_cp, bsc, idx);
-  } */
+  }  // else {
+  //   UpdateNormalFullNewton(hess, n_cp, bsc, idx);
+  // }
 }
 
 /*
@@ -481,6 +371,7 @@ inline Real WarmStart(const MinkowskiDiffProp<3>& mdp,
   // if constexpr (detect_collision) InitializeSetSimplices(mdp, out);
   InitializeSetSimplices(mdp, out);
   for (int i = 0; i < 3; ++i) {
+    // Simplex points having a small contribution are not considered.
     if (out.bc(i) > SolverSettings::kEpsMinBc) {
       sp.noalias() = mdp.rot1 * s1.col(i) - mdp.rot2 * s2.col(i);
       if (bsc.n.dot(sp - bsc.s.col(0)) > Real(0.0)) {
@@ -520,13 +411,15 @@ template <class C1, class C2, SolverType S, bool detect_collision>
 Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
                   const Transform3r& tf2, const Settings& settings,
                   Output<3>& out, bool warm_start) {
-  if constexpr (S == SolverType::TrustRegionNewton) {
-    if constexpr (SolverSettings::kTrnLevel == TrustRegionNewtonLevel::kFull) {
-      static_assert(
-          always_false<S>::value,
-          "The full trust region Newton method for the three-dimensional "
-          "growth distance problem is not implemented");
-    }
+  if constexpr ((S == SolverType::TrustRegionNewton) &&
+                (SolverSettings::kTrnLevel == TrustRegionNewtonLevel::kFull)) {
+    static_assert(
+        always_false<S>::value,
+        "The full trust region Newton method for dim = 3 is disabled");
+  }
+  if constexpr (S == SolverType::ProximalBundle) {
+    static_assert(always_false<S>::value,
+                  "The proximal bundle method for dim = 3 is disabled");
   }
 
   if (!warm_start) InitializeOutput(set1, set2, out);
@@ -559,7 +452,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
     InitializeSimplex(bsc, mdp.r, out);
     // Note: There can be some edge case numerical issues with the primal
     // infeasibility error if the convex set simplices are not initialized.
-    // These issues do not seem to occur with the cutting plane method.
+    // These issues don't occur with the cutting plane method.
     // if constexpr (detect_collision) InitializeSetSimplices(mdp, out);
     InitializeSetSimplices(mdp, out);
   }
@@ -648,7 +541,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
         if (use_qp_update) {
           Q = ComputeGammaProximalBundle(ub, mdp.r, iter) *
               Matr<2, 2>::Identity();
-          UpdateNormalProximalPoint(Q, n_cp, bsc);
+          // UpdateNormalProximalPoint(Q, n_cp, bsc);
         } else {
           bsc.n = n_cp;
         }

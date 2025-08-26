@@ -7,10 +7,8 @@
 
 #include "dgd/data_types.h"
 #include "dgd/error_metrics.h"
-#include "dgd/geometry/3d/ellipsoid.h"
-#include "dgd/geometry/3d/frustum.h"
-#include "dgd/geometry/3d/mesh.h"
-#include "dgd/geometry/convex_set.h"
+#include "dgd/geometry/geometry_2d.h"
+#include "dgd/geometry/geometry_3d.h"
 #include "dgd/growth_distance.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
@@ -21,11 +19,12 @@
 #include "internal_helpers/set_generator.h"
 
 // Benchmarks to run.
-// const bool dynamic_dispatch = false;
+const bool dynamic_dispatch = false;
 const bool cold_start = true;
 const bool warm_start = true;
 const bool two_dim_sets = true;
 const bool three_dim_sets = true;
+const bool trust_region_newton = true;
 
 // Printing.
 const bool print_suboptimal_run = true;
@@ -36,11 +35,11 @@ const double position_lim = 5.0;
 const double dx_max = 0.1, ang_max = dgd::kPi / 18.0;
 
 //  Number of pairs of sets to benchmark.
-const int npair = 10000;
+const int npair = 1000;
 //  Number of poses per set pair for cold-start.
-const int npose_c = 1000;
+const int npose_c = 100;
 //  Number of poses per set pair for warm-start.
-const int npose_w = 1000;
+const int npose_w = 100;
 //  Number of cold-start function calls for a given pair of sets and poses.
 const int ncold = 100;
 //  Number of warm-start function calls for a given pair of sets.
@@ -49,30 +48,9 @@ const int nwarm = 100;
 template <class C>
 using SetPtr = std::shared_ptr<C>;
 
-template <int dim>
-struct OptimalSolution {
-  dgd::Vecr<dim> z1, z2, normal;
-  dgd::Real gd;
-  dgd::SolutionStatus status;
+using dgd::detail::SolverType;
 
-  void SetFromOutput(const dgd::Output<dim> out) {
-    z1 = out.z1;
-    z2 = out.z2;
-    normal = out.normal;
-    gd = out.growth_dist_ub;
-    status = out.status;
-  }
-
-  void SetOutput(dgd::Output<dim>& out) const {
-    out.z1 = z1;
-    out.z2 = z2;
-    out.normal = normal;
-    out.growth_dist_ub = gd;
-    out.status = status;
-  }
-};
-
-template <int dim, class C1, class C2>
+template <int dim, class C1, class C2, SolverType S = SolverType::CuttingPlane>
 void ColdStart(std::function<const SetPtr<C1>()> generator1,
                std::function<const SetPtr<C2>()> generator2, dgd::Rng& rng,
                int npair, int npose) {
@@ -92,13 +70,15 @@ void ColdStart(std::function<const SetPtr<C1>()> generator1,
     const SetPtr<C1> set1 = generator1();
     const SetPtr<C2> set2 = generator2();
     for (int j = 0; j < npose; ++j) {
-      dgd::internal::SetRandomRigidBodyTransforms(rng, tf1, tf2, -position_lim,
-                                                  position_lim);
+      dgd::internal::SetRandomTransforms(rng, tf1, tf2, -position_lim,
+                                         position_lim);
       // Initial call to reduce cache misses.
-      dgd::GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
+      dgd::GrowthDistanceImpl<dim, C1, C2, S>(set1.get(), tf1, set2.get(), tf2,
+                                              settings, out, false);
       timer.Start();
       for (int k = 0; k < ncold; ++k) {
-        dgd::GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
+        dgd::GrowthDistanceImpl<dim, C1, C2, S>(set1.get(), tf1, set2.get(),
+                                                tf2, settings, out, false);
       }
       timer.Stop();
       const auto err =
@@ -108,7 +88,7 @@ void ColdStart(std::function<const SetPtr<C1>()> generator1,
         if (out.status == dgd::SolutionStatus::MaxIterReached) {
           dgd::internal::PrintSetup(set1.get(), tf1, set2.get(), tf2, settings,
                                     out, err);
-          if (exit_on_suboptimal_run) return;
+          if (exit_on_suboptimal_run) exit(EXIT_FAILURE);
         }
       }
 
@@ -129,7 +109,7 @@ void ColdStart(std::function<const SetPtr<C1>()> generator1,
                                  avg_iter, nsubopt);
 }
 
-template <int dim, class C1, class C2>
+template <int dim, class C1, class C2, SolverType S = SolverType::CuttingPlane>
 void WarmStart(std::function<const SetPtr<C1>()> generator1,
                std::function<const SetPtr<C2>()> generator2, dgd::Rng& rng,
                int npair, int npose) {
@@ -147,24 +127,25 @@ void WarmStart(std::function<const SetPtr<C1>()> generator1,
   dgd::Rotationr<dim> drot;
   dgd::Settings settings;
   dgd::Output<dim> out;
-  std::vector<OptimalSolution<dim>> opt_sols(nwarm);
+  std::vector<dgd::Output<dim>> outs(nwarm);
   for (int i = 0; i < npair; ++i) {
     const SetPtr<C1> set1 = generator1();
     const SetPtr<C2> set2 = generator2();
     for (int j = 0; j < npose; ++j) {
-      dgd::internal::SetRandomRigidBodyTransforms(rng, tf1, tf2, -position_lim,
-                                                  position_lim);
+      dgd::internal::SetRandomTransforms(rng, tf1, tf2, -position_lim,
+                                         position_lim);
       tf1_c = tf1;
       dgd::internal::SetRandomDisplacement(rng, dx, drot, dx_max, ang_max);
       // Initial cold-start call.
-      dgd::GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
+      dgd::GrowthDistanceImpl<dim, C1, C2, S>(set1.get(), tf1, set2.get(), tf2,
+                                              settings, out, false);
       int total_iter = 0;
       timer.Start();
       for (int k = 0; k < nwarm; ++k) {
-        dgd::internal::UpdateRigidBodyTransform(tf1, dx, drot);
-        dgd::GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out,
-                            true);
-        opt_sols[k].SetFromOutput(out);
+        dgd::internal::UpdateTransform(tf1, dx, drot);
+        dgd::GrowthDistanceImpl<dim, C1, C2, S>(set1.get(), tf1, set2.get(),
+                                                tf2, settings, out, true);
+        outs[k] = out;
         total_iter += out.iter;
       }
       timer.Stop();
@@ -173,8 +154,8 @@ void WarmStart(std::function<const SetPtr<C1>()> generator1,
 
       tf1 = tf1_c;
       for (int k = 0; k < nwarm; ++k) {
-        dgd::internal::UpdateRigidBodyTransform(tf1, dx, drot);
-        opt_sols[k].SetOutput(out);
+        dgd::internal::UpdateTransform(tf1, dx, drot);
+        out = outs[k];
 
         const auto err =
             dgd::ComputeSolutionError(set1.get(), tf1, set2.get(), tf2, out);
@@ -186,11 +167,11 @@ void WarmStart(std::function<const SetPtr<C1>()> generator1,
                                              settings, out, err);
             } else {
               dgd::Output<dim> out_prev;
-              opt_sols[k - 1].SetOutput(out_prev);
+              out_prev = outs[k - 1];
               dgd::internal::PrintSetup(set1.get(), tf1, set2.get(), tf2,
                                         settings, out, err, &out_prev, true);
             }
-            if (exit_on_suboptimal_run) return;
+            if (exit_on_suboptimal_run) exit(EXIT_FAILURE);
           }
         }
 
@@ -244,8 +225,7 @@ int main(int argc, char** argv) {
   };
 
   // Benchmarks.
-  /*
-  //  1. Dynamic dispatch: (frustum + ellipsoid, cold-start).
+  //  1a. Dynamic dispatch: (cutting plane, cold-start, frustum + ellipsoid).
   if (dynamic_dispatch) {
     set_default_seed();
     auto generator1 = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
@@ -254,12 +234,13 @@ int main(int argc, char** argv) {
     auto generator2 = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetPrimitiveSet(dgd::internal::CurvedPrimitive3D::Ellipsoid);
     };
-    std::cout << "Dynamic dispatch: (frustum + ellipsoid, cold-start)"
-              << std::endl;
+    std::cout
+        << "Dynamic dispatch: (cutting plane, cold-start, frustum + ellipsoid)"
+        << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator1, generator2,
                                                        rng, npair, npose_c);
   }
-  //  2. Inline call: (frustum + ellipsoid, cold-start).
+  //  1b. Inline call: (cutting plane, cold-start, frustum + ellipsoid).
   if (dynamic_dispatch) {
     set_default_seed();
     auto generator1 = [&gen]() -> const SetPtr<dgd::Frustum> {
@@ -272,101 +253,199 @@ int main(int argc, char** argv) {
           gen.GetPrimitiveSet(dgd::internal::CurvedPrimitive3D::Ellipsoid);
       return std::static_pointer_cast<dgd::Ellipsoid>(set2);
     };
-    std::cout << "Inline call     : (frustum + ellipsoid, cold-start)"
-              << std::endl;
+    std::cout
+        << "Inline call     : (cutting plane, cold-start, frustum + ellipsoid)"
+        << std::endl;
     ColdStart<3, dgd::Frustum, dgd::Ellipsoid>(generator1, generator2, rng,
                                                npair, npose_c);
   }
 
-  //  3. Dynamic dispatch: (mesh + mesh, cold-start).
+  //  2a. Dynamic dispatch: (cutting plane, cold-start, mesh + mesh).
   if (dynamic_dispatch && (gen.nmeshes() > 0)) {
     set_default_seed();
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetRandomMeshSet();
     };
-    std::cout << "Dynamic dispatch: (mesh + mesh, cold-start)" << std::endl;
+    std::cout << "Dynamic dispatch: (cutting plane, cold-start, mesh + mesh)"
+              << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
                                                        rng, npair, npose_c);
   }
-  //  4. Inline call: (mesh + mesh, cold-start).
+  //  2b. Inline call: (cutting plane, cold-start, mesh + mesh).
   if (dynamic_dispatch && (gen.nmeshes() > 0)) {
     set_default_seed();
     auto generator = [&gen]() -> const SetPtr<dgd::Mesh> {
       return std::static_pointer_cast<dgd::Mesh>(gen.GetRandomMeshSet());
     };
-    std::cout << "Inline call     : (mesh + mesh, cold-start)" << std::endl;
+    std::cout << "Inline call     : (cutting plane, cold-start, mesh + mesh)"
+              << std::endl;
     ColdStart<3, dgd::Mesh, dgd::Mesh>(generator, generator, rng, npair,
                                        npose_c);
   }
-  */
 
   std::cout << std::string(50, '-') << std::endl;
   set_random_seed();
-  //  5. Cold-start: (2D primitive + 2D primitive).
+  //  3a. Cold-start: (cutting plane, 2D primitive + 2D primitive).
   if (cold_start && two_dim_sets) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<2>> {
       return gen.GetRandom2DSet();
     };
-    std::cout << "Cold-start: (2D primitive + 2D primitive)" << std::endl;
+    std::cout << "Cold-start: (cutting plane, 2D primitive + 2D primitive)"
+              << std::endl;
     ColdStart<2, dgd::ConvexSet<2>, dgd::ConvexSet<2>>(generator, generator,
                                                        rng, npair, npose_c);
   }
-  //  6. Cold-start: (3D curved primitive + 3D curved primitive).
+  //  3b. Cold-start: (trust region Newton, 2D primitive + 2D primitive).
+  if (cold_start && two_dim_sets && trust_region_newton) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<2>> {
+      return gen.GetRandom2DSet();
+    };
+    std::cout
+        << "Cold-start: (trust region Newton, 2D primitive + 2D primitive)"
+        << std::endl;
+    ColdStart<2, dgd::ConvexSet<2>, dgd::ConvexSet<2>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_c);
+  }
+
+  //  4a. Cold-start: (cutting plane, 3D curved primitive + 3D curved
+  //  primitive).
   if (cold_start && three_dim_sets) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetRandomCurvedPrimitive3DSet();
     };
-    std::cout << "Cold-start: (3D curved primitive + 3D curved primitive)"
+    std::cout << "Cold-start: (cutting plane, 3D curved primitive + 3D curved "
+                 "primitive)"
               << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
                                                        rng, npair, npose_w);
   }
-  //  7. Cold-start: (3D primitive + 3D primitive).
+  //  4b. Cold-start: (trust region Newton, 3D curved primitive + 3D curved
+  //  primitive).
+  if (cold_start && three_dim_sets && trust_region_newton) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
+      return gen.GetRandomCurvedPrimitive3DSet();
+    };
+    std::cout << "Cold-start: (trust region Newton, 3D curved primitive + 3D "
+                 "curved primitive)"
+              << std::endl;
+    ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_w);
+  }
+
+  //  5a. Cold-start: (cutting plane, 3D primitive + 3D primitive).
   if (cold_start && three_dim_sets) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetRandomPrimitive3DSet();
     };
-    std::cout << "Cold-start: (3D primitive + 3D primitive)" << std::endl;
+    std::cout << "Cold-start: (cutting plane, 3D primitive + 3D primitive)"
+              << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
                                                        rng, npair, npose_w);
   }
-  //  8. Cold-start: (mesh + mesh).
+  //  5b. Cold-start: (trust region Newton, 3D primitive + 3D primitive).
+  if (cold_start && three_dim_sets && trust_region_newton) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
+      return gen.GetRandomPrimitive3DSet();
+    };
+    std::cout
+        << "Cold-start: (trust region Newton, 3D primitive + 3D primitive)"
+        << std::endl;
+    ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_w);
+  }
+
+  //  6a. Cold-start: (cutting plane, mesh + mesh).
   if (cold_start && three_dim_sets && (gen.nmeshes() > 0)) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetRandomMeshSet();
     };
-    std::cout << "Cold-start: (mesh + mesh)" << std::endl;
+    std::cout << "Cold-start: (cutting plane, mesh + mesh)" << std::endl;
     ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
                                                        rng, npair, npose_c);
   }
+  //  6b. Cold-start: (trust region Newton, mesh + mesh).
+  if (cold_start && three_dim_sets && trust_region_newton &&
+      (gen.nmeshes() > 0)) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
+      return gen.GetRandomMeshSet();
+    };
+    std::cout << "Cold-start: (trust region Newton, mesh + mesh)" << std::endl;
+    ColdStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_c);
+  }
 
   std::cout << std::string(50, '-') << std::endl;
-  //  9. Warm-start: (2D primitive + 2D primitive).
+  //  7a. Warm-start: (cutting plane, 2D primitive + 2D primitive).
   if (warm_start && two_dim_sets) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<2>> {
       return gen.GetRandom2DSet();
     };
-    std::cout << "Warm-start: (2D primitive + 2D primitive)" << std::endl;
+    std::cout << "Warm-start: (cutting plane, 2D primitive + 2D primitive)"
+              << std::endl;
     WarmStart<2, dgd::ConvexSet<2>, dgd::ConvexSet<2>>(generator, generator,
                                                        rng, npair, npose_w);
   }
-  //  10. Warm-start: (3D curved primitive + 3D curved primitive).
+  //  7b. Warm-start: (trust region Newton, 2D primitive + 2D primitive).
+  if (warm_start && two_dim_sets && trust_region_newton) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<2>> {
+      return gen.GetRandom2DSet();
+    };
+    std::cout
+        << "Warm-start: (trust region Newton, 2D primitive + 2D primitive)"
+        << std::endl;
+    WarmStart<2, dgd::ConvexSet<2>, dgd::ConvexSet<2>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_w);
+  }
+
+  //  8a. Warm-start: (cutting plane, 3D curved primitive + 3D curved
+  //  primitive).
   if (warm_start && three_dim_sets) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetRandomCurvedPrimitive3DSet();
     };
-    std::cout << "Warm-start: (3D curved primitive + 3D curved primitive)"
+    std::cout << "Warm-start: (cutting plane, 3D curved primitive + 3D curved "
+                 "primitive)"
               << std::endl;
     WarmStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
                                                        rng, npair, npose_w);
   }
-  //  11. Warm-start: (mesh + mesh).
+  //  8b. Warm-start: (trust region Newton, 3D curved primitive + 3D curved
+  //  primitive).
+  if (warm_start && three_dim_sets && trust_region_newton) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
+      return gen.GetRandomCurvedPrimitive3DSet();
+    };
+    std::cout << "Warm-start: (trust region Newton, 3D curved primitive + 3D "
+                 "curved primitive)"
+              << std::endl;
+    WarmStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_w);
+  }
+
+  //  9a. Warm-start: (cutting plane, mesh + mesh).
   if (warm_start && three_dim_sets && (gen.nmeshes() > 0)) {
     auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
       return gen.GetRandomMeshSet();
     };
-    std::cout << "Warm-start: (mesh + mesh)" << std::endl;
+    std::cout << "Warm-start: (cutting plane, mesh + mesh)" << std::endl;
     WarmStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>>(generator, generator,
                                                        rng, npair, npose_w);
+  }
+  //  9b. Warm-start: (trust region Newton, mesh + mesh).
+  if (warm_start && three_dim_sets && (gen.nmeshes() > 0) &&
+      trust_region_newton) {
+    auto generator = [&gen]() -> const SetPtr<dgd::ConvexSet<3>> {
+      return gen.GetRandomMeshSet();
+    };
+    std::cout << "Warm-start: (trust region Newton, mesh + mesh)" << std::endl;
+    WarmStart<3, dgd::ConvexSet<3>, dgd::ConvexSet<3>,
+              SolverType::TrustRegionNewton>(generator, generator, rng, npair,
+                                             npose_w);
   }
 }

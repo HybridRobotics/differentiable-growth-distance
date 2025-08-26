@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file ellipsoid.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-01
  * @brief 3D ellipse class.
  */
 
@@ -31,9 +29,7 @@
 
 namespace dgd {
 
-/**
- * @brief Axis-aligned 3D ellipsoid class.
- */
+/// @brief Axis-aligned 3D ellipsoid class.
 class Ellipsoid : public ConvexSet<3> {
  public:
   /**

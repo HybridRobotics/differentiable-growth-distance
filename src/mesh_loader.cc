@@ -17,9 +17,7 @@
 // limitations under the License.
 
 /**
- * @file mesh_loader.cc
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-04-01
  * @brief 3D mesh loader class implementation.
  */
 

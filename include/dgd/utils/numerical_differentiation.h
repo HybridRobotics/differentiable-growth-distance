@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file numerical_differentiation.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-07-24
  * @brief Numerical differentiation class.
  */
 
@@ -30,9 +28,7 @@
 
 namespace dgd {
 
-/**
- * @brief Numerical differentiator using the central difference method.
- */
+/// @brief Numerical differentiator using the central difference method.
 class NumericalDifferentiator {
  public:
   // Function mapping reals to reals.

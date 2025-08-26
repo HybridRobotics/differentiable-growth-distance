@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file polytope.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-01
  * @brief 3D polytope class.
  */
 
@@ -33,9 +31,7 @@
 
 namespace dgd {
 
-/**
- * @brief 3D convex polytope class.
- */
+/// @brief 3D convex polytope class.
 class Polytope : public ConvexSet<3> {
  public:
   /**

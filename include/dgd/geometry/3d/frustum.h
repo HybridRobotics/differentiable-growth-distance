@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file frustum.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-05-01
  * @brief 3D frustum class.
  */
 

@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file convex_set.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-02-18
  * @brief Convex set abstract class implementation.
  */
 
@@ -37,14 +35,10 @@ namespace dgd {
  */
 template <int dim>
 struct SupportFunctionHint {
-  /**
-   * @brief Normal vector (in local coordinates) at the previous iteration.
-   */
+  /// @brief Normal vector (in local coordinates) at the previous iteration.
   Vecr<dim> n_prev = Vecr<dim>::Zero();
 
-  /**
-   * @brief Integer hint for support function computation.
-   */
+  /// @brief Integer hint for support function computation.
   int idx_ws = -1;
 };
 
@@ -67,14 +61,10 @@ struct SupportFunctionDerivatives {
    */
   Matr<dim, dim> Dsp;
 
-  /**
-   * @brief Support point.
-   */
+  /// @brief Support point.
   Vecr<dim> sp;
 
-  /**
-   * @brief Differentiability of the support point at the given normal vector.
-   */
+  /// @brief Differentiability of the support point at the given normal vector.
   bool differentiable;
 };
 
@@ -152,9 +142,7 @@ class ConvexSet {
    */
   virtual bool RequireUnitNormal() const;
 
-  /**
-   * @brief Returns true if the convex set is polytopic.
-   */
+  /// @brief Returns true if the convex set is polytopic.
   virtual bool IsPolytopic() const;
 
   virtual void PrintInfo() const;

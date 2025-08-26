@@ -13,9 +13,7 @@
 // limitations under the License.
 
 /**
- * @file rectangle.h
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @date 2025-03-01
  * @brief 2D rectangle class.
  */
 
@@ -31,9 +29,7 @@
 
 namespace dgd {
 
-/**
- * @brief Axis-aligned 2D rectangle class.
- */
+/// @brief Axis-aligned 2D rectangle class.
 class Rectangle : public ConvexSet<2> {
  public:
   /**

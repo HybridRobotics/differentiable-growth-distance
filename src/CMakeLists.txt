@@ -2,7 +2,6 @@
 add_library(${DGD_LIB} STATIC
   "${CMAKE_CURRENT_SOURCE_DIR}/graham_scan.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/mesh_loader.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/growth_distance.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/utils/numerical_differentiation.cc"
 )
 
