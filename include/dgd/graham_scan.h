@@ -29,39 +29,42 @@
 namespace dgd {
 
 /**
- * @brief Convex hull of points in the 2D plane using Graham scan algorithm.
+ * @brief Computes the convex hull of points in the 2D plane using Graham scan
+ * algorithm.
  *
  * See https://en.wikipedia.org/wiki/Graham_scan#Pseudocode
  *
  * @param[in]  pts  Points in the 2D plane.
- * @param[out] vert CCW sorted convex hull vertex vector.
+ * @param[out] vert CCW-sorted convex hull vertices.
  * @return     Number of points in the convex hull.
  */
 int GrahamScan(const std::vector<Vec2r>& pts, std::vector<Vec2r>& vert);
 
 /**
- * @brief Computes the inradius with respect to an interior point given the
- * convex hull vertices and an interior point.
+ * @brief Computes the inradius of a polygon at an interior point, given
+ * CCW-sorted vertices and an interior point.
  *
- * @param  vert           Convex hull vertices in CCW order.
- * @param  interior_point A point in the convex hull interior.
- * @return Inradius about the interior point. Inradius is negative when
- *         the interior point is not in the convex hull.
+ * Inradius is negative when the interior point is not in the convex hull.
+ *
+ * @param  vert           Polygon vertices in CCW order.
+ * @param  interior_point A point in the polygon interior.
+ * @return Inradius at the interior point.
  */
 inline Real ComputePolygonInradius(const std::vector<Vec2r>& vert,
                                    const Vec2r& interior_point) {
-  if (vert.size() < 3) return 0.0;
+  if (vert.size() < 3) return Real(0.0);
 
-  Vec2r t, n, prev = vert.end()[-1];
+  Vec2r e, n;
+  Vec2r prev = vert.back();
   Real max = -kInf;
-  for (auto it = vert.begin(); it != vert.end(); ++it) {
-    t = *it - prev;
-    if (t.norm() < kEps) {
+  for (const auto& v : vert) {
+    e = v - prev;
+    if (e.squaredNorm() < kEps * kEps) {
       throw std::domain_error("Convex hull contains coincident vertices");
     }
-    n = Vec2r(t(1), -t(0)).normalized();
-    max = std::max(max, n.dot(interior_point - *it));
-    prev = *it;
+    n = Vec2r(e(1), -e(0)).normalized();
+    max = std::max(max, n.dot(interior_point - v));
+    prev = v;
   }
 
   return -max;
