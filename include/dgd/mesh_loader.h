@@ -50,7 +50,7 @@ class MeshLoader {
   explicit MeshLoader(int maxhullvert = 10000);
 
   /**
-   * @brief Loads a mesh object from file or parses from string.
+   * @brief Loads a mesh object from file or parses from object string.
    *
    * @note This function internally calls ProcessPoints.
    *
@@ -58,25 +58,20 @@ class MeshLoader {
    * https://github.com/tinyobjloader/tinyobjloader/blob/release/loader_example.cc
    *
    * @param input   Mesh wavefront filename (*.obj) or object string.
-   * @param is_file Whether input is a filename.
+   * @param is_file Whether input is a filename or an object string.
    */
   void LoadObj(const std::string& input, bool is_file = true);
 
   /**
    * @brief Converts points to double precision and removes duplicates.
    *
-   * @tparam T   Floating-point type (float or double).
-   * @param  pts Vector of 3D point coordinates as a 1D vector.
+   * T can be float, double, or Vec3r.
+   *
+   * @tparam T   Floating-point or 3D vector type.
+   * @param  pts Vector of 3D point coordinates.
    */
   template <typename T>
   void ProcessPoints(const std::vector<T>& pts);
-
-  /**
-   * @brief Converts points to double precision and removes duplicates.
-   *
-   * @param pts Vector of 3D point coordinates.
-   */
-  void ProcessPoints(const std::vector<Vec3r>& pts);
 
   /**
    * @brief Constructs convex hull (in V-rep) and vertex adjacency graph from
@@ -141,27 +136,27 @@ class MeshLoader {
                       std::vector<int>& graph, Vec3r& interior_point);
 
   /**
-   * @brief Computes the inradius of a polytope at an interior point, given
-   * its H-rep and the interior point.
+   * @brief Computes the inradius of a polytope at an interior point, given its
+   * H-rep and the interior point.
    *
    * @param  normal         Facet normals of the convex hull.
    * @param  offset         Facet offsets of the convex hull.
    * @param  interior_point A point in the convex hull interior.
-   * @return Inradius of the polytope about the interior point.
+   * @return Inradius of the polytope at the interior point.
    */
   Real ComputeInradius(const std::vector<Vec3r>& normal,
                        const std::vector<Real>& offset,
                        const Vec3r& interior_point) const;
 
   /**
-   * @brief Computes an interior point and the inradius (with respect to the
-   * interior point) for the stored vector of points.
+   * @brief Computes an interior point and the inradius (at the interior point)
+   * for the stored vector of points.
    *
    * @note Use this function if normals and offsets are not available. This
    * function internally calls MakeFacetGraph.
    *
    * @param[in,out] interior_point A point in the convex hull interior.
-   * @param         use_given_ip   Whether to compute the inradius about
+   * @param         use_given_ip   Whether to compute the inradius at
    *                               interior_point or to compute a new interior
    *                               point.
    * @return        Inradius at the interior point.
@@ -188,95 +183,114 @@ inline MeshLoader::MeshLoader(int maxhullvert)
       face_(0),
       facenormal_(0) {}
 
-// point key for hash map
+namespace detail {
+
+/// @brief Point key struct for hash map.
 template <typename T>
 struct PointKey {
   T p[3];
+
+  bool IsFinite() const {
+    return std::isfinite(p[0]) && std::isfinite(p[1]) && std::isfinite(p[2]);
+  }
 
   bool operator==(const PointKey<T>& other) const {
     return (p[0] == other.p[0] && p[1] == other.p[1] && p[2] == other.p[2]);
   }
 
   std::size_t operator()(const PointKey<T>& ptk) const {
-    // combine all three hash values into a single hash value
+    // Combine all three hash values into a single hash value.
     return ((std::hash<T>()(ptk.p[0]) ^ (std::hash<T>()(ptk.p[1]) << 1)) >> 1) ^
            (std::hash<T>()(ptk.p[2]) << 1);
   }
 };
 
-// converts points to double precision and removes repeated points
+/// @brief Scalar extractor for point types.
+template <typename T, typename = void>
+struct ScalarExtractor {
+  using type = T;
+};
+
+/// @brief Scalar extractor specialization for Eigen types.
+template <typename T>
+struct ScalarExtractor<T, std::void_t<typename T::Scalar>> {
+  using type = typename T::Scalar;
+};
+
+}  // namespace detail
+
 template <typename T>
 void MeshLoader::ProcessPoints(const std::vector<T>& pts) {
-  static_assert(std::is_same<T, float>::value || std::is_same<T, double>::value,
-                "points should be of float or double types");
+  static_assert(std::is_same<T, float>::value ||
+                    std::is_same<T, double>::value ||
+                    std::is_same<T, Vec3r>::value,
+                "Points should be of float or double types");
+  using R = typename detail::ScalarExtractor<T>::type;
+
+  constexpr bool is_T_Vec3r = std::is_same<T, Vec3r>::value;
+  auto pptr = [&pts](int i) -> const R* {
+    if constexpr (is_T_Vec3r) {
+      return &pts[i](0);
+    } else {
+      return &pts[3 * i];
+    }
+  };
 
   pts_.clear();
   int npts = static_cast<int>(pts.size());
+  if constexpr (is_T_Vec3r) npts *= 3;
 
   if (npts % 3) {
-    throw std::length_error("point data must be a multiple of 3");
+    throw std::length_error("Point data must be a multiple of 3");
   }
   if (face_.size() % 3) {
-    throw std::length_error("face data must be a multiple of 3");
+    throw std::length_error("Face data must be a multiple of 3");
   }
 
-  int index = 0;
-  std::unordered_map<PointKey<T>, int, PointKey<T>> point_map;
+  int idx = 0;
+  std::unordered_map<detail::PointKey<R>, int, detail::PointKey<R>> point_map;
 
-  // populate point map with new point indices
-  for (int i = 0; i < npts; i += 3) {
-    const T* p = &pts[i];
+  // Populate point map with new point indices.
+  for (int i = 0; i < (npts / 3); ++i) {
+    const R* p = pptr(i);
+    detail::PointKey<R> key = {p[0], p[1], p[2]};
 
-    if (!std::isfinite(p[0]) || !std::isfinite(p[1]) || !std::isfinite(p[2])) {
-      std::string err = std::string("point coordinate ") + std::to_string(i) +
-                        std::string(" is not finite");
-      throw std::runtime_error(err);
+    if (!key.IsFinite()) {
+      throw std::runtime_error("Point coordinate " + std::to_string(i) +
+                               " is not finite");
     }
 
-    PointKey<T> key = {p[0], p[1], p[2]};
     if (point_map.find(key) == point_map.end()) {
-      point_map.insert({key, index});
-      ++index;
+      point_map.insert({key, idx});
+      ++idx;
     }
   }
 
-  // no repeated points (just copy point data)
-  if (3 * index == npts) {
+  if (3 * idx == npts) {
+    // No repeated points (just copy point data).
     pts_.reserve(npts);
-    for (T p : pts) {
-      pts_.push_back(p);
+    for (int i = 0; i < (npts / 3); ++i) {
+      const R* p = pptr(i);
+      for (int j = 0; j < 3; ++j) pts_.push_back(p[j]);
     }
     return;
   }
 
-  // update face point indices
+  // Update face point indices.
   for (int i = 0; i < static_cast<int>(face_.size()); ++i) {
-    PointKey<T> key = {pts[3 * face_[i]], pts[3 * face_[i] + 1],
-                       pts[3 * face_[i] + 2]};
+    const R* p = pptr(face_[i]);
+    detail::PointKey<R> key = {p[0], p[1], p[2]};
     face_[i] = point_map[key];
   }
 
-  // repopulate point data
-  pts_.resize(3 * index);
+  // Repopulate point data.
+  pts_.resize(3 * idx);
   for (const auto& pair : point_map) {
-    const PointKey<T>& key = pair.first;
-    int index = pair.second;
-
-    // double precision
-    pts_[3 * index + 0] = key.p[0];
-    pts_[3 * index + 1] = key.p[1];
-    pts_[3 * index + 2] = key.p[2];
+    const detail::PointKey<R>& key = pair.first;
+    const int idx = pair.second;
+    // Double precision.
+    for (int j = 0; j < 3; ++j) pts_[3 * idx + j] = key.p[j];
   }
-}
-
-inline void MeshLoader::ProcessPoints(const std::vector<Vec3r>& pts) {
-  std::vector<Real> p(3 * pts.size());
-  for (int i = 0; i < static_cast<int>(pts.size()); ++i) {
-    p[3 * i] = pts[i](0);
-    p[3 * i + 1] = pts[i](1);
-    p[3 * i + 2] = pts[i](2);
-  }
-  ProcessPoints<Real>(p);
 }
 
 inline int MeshLoader::npts() const {
