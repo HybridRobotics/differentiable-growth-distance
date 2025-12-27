@@ -29,7 +29,7 @@
 namespace dgd {
 
 /**
- * @brief Support function hint; used internally.
+ * @brief Support function hint.
  *
  * @tparam dim Dimension of the convex sets.
  */
@@ -52,10 +52,10 @@ struct SupportFunctionDerivatives {
   /**
    * @brief Support point derivative with respect to the normal vector.
    *
-   * @attention The support point derivative is equal to the support function
-   * Hessian, and it exists almost everywhere. Whenever it exists, it must be
-   * positive semi-definite. Note that the normal vector lies in the null space
-   * of the support point derivative.
+   * @attention The support point map derivative is equal to the support
+   * function Hessian, and it exists almost everywhere. Whenever it exists, it
+   * must be positive semi-definite. Note that the normal vector lies in the
+   * null space of the support point derivative.
    *
    * @see differentiable
    */
@@ -64,7 +64,10 @@ struct SupportFunctionDerivatives {
   /// @brief Support point.
   Vecr<dim> sp;
 
-  /// @brief Differentiability of the support point at the given normal vector.
+  /**
+   * @brief Differentiability of the support point map at the given normal
+   * vector.
+   */
   bool differentiable;
 };
 
@@ -88,18 +91,18 @@ class ConvexSet {
    *
    * Implements the support function for the convex set \f$C\f$, which is given
    * by: \f{align*}{
-   * sv & = \max_{x \in C} \langle n, x\rangle, \\
-   * sp & \in \arg \max_{x \in C} \langle n, x\rangle,
+   * s_v[C](n) & = \max_{x \in C} \langle n, x\rangle, \\
+   * s_p[C](n) & \in \arg \max_{x \in C} \langle n, x\rangle,
    * \f}
-   * where \f$sv\f$ is the return value of the function.
+   * where \f$s_v[C](\cdot)\f$ is the return value of the function.
    *
    * @note If the normal vector n is required to have unit 2-norm, the function
    * RequireUnitNormal should return true.
    *
    * @note Safety margins (in the 2-norm) can be directly included in the
    * support function computation (when n has unit 2-norm) as: \f{align*}{
-   * sv & \leftarrow sv + m, \\
-   * sp & \leftarrow sp + m \cdot n,
+   * s_v[C + B_m(0)](n) & = s_v[C](n) + m, \\
+   * s_p[C + B_m(0)](n) & = s_p[C](n) + m \cdot n,
    * \f}
    * where \f$m\f$ is the safety margin. Note that the safety margin also
    * increases the inradius. A nonzero safety margin can result in slower
@@ -108,8 +111,8 @@ class ConvexSet {
    * @see RequireUnitNormal
    *
    * @param[in]     n    Normal vector.
-   * @param[out]    sp   Support point. Any point at which the maximum for the
-   *                     support function is attained.
+   * @param[out]    sp   Support point (any point at which the maximum for the
+   *                     support function is attained).
    * @param[in,out] hint Additional hints.
    * @return        Support function value at the normal vector.
    */
@@ -145,12 +148,16 @@ class ConvexSet {
   /// @brief Returns true if the convex set is polytopic.
   virtual bool IsPolytopic() const;
 
+  /// @brief Prints information about the convex set.
   virtual void PrintInfo() const;
 
+  /// @brief Returns the dimension of the convex set.
   static constexpr int dimension();
 
+  /// @brief Returns the inradius of the convex set.
   Real inradius() const;
 
+  /// @brief Sets the inradius of the convex set.
   void set_inradius(Real inradius);
 
  protected:
@@ -159,14 +166,15 @@ class ConvexSet {
   ConvexSet(Real inradius);
 
   /**
-   * @brief Support function differentiability constant.
+   * @brief Support function differentiability tolerance.
    *
-   * The support point function is considered (numerically) differentiable if
-   * the support point at a given normal vector n is unique, the support point
-   * function is differentiable at n, and
-   * sv = n.dot(sp) >= n.dot(p) + eps_diff(),
-   * where sv and sp are the support value and support point, and p is, loosely
-   * speaking, any point not smoothly connected to sp.
+   * The support point map is considered differentiable at a unit normal vector
+   * \f$n\f$ if the support point is unique and differentiable for all unit
+   * normal vectors \f$n'\f$ such that \f{align*}{
+   * s_v[C](n') - \langle n', s_p[C](n) \rangle < k \cdot \text{eps_diff()},
+   * \f}
+   * where \f$k > 1\f$ is a constant, \f$s_v[C](\cdot)\f$ is the support
+   * function, and \f$s_p[C](\cdot)\f$ is the support point map.
    */
   static constexpr Real eps_diff();
 
@@ -186,7 +194,7 @@ inline ConvexSet<dim>::ConvexSet() : ConvexSet(kEps) {}
 
 template <int dim>
 inline ConvexSet<dim>::ConvexSet(Real inradius) : inradius_(inradius) {
-  if (inradius <= 0.0) {
+  if (inradius <= Real(0.0)) {
     throw std::domain_error("Inradius is not positive");
   }
 }
@@ -227,7 +235,7 @@ inline Real ConvexSet<dim>::inradius() const {
 
 template <int dim>
 inline void ConvexSet<dim>::set_inradius(Real inradius) {
-  if (inradius <= 0.0) {
+  if (inradius <= Real(0.0)) {
     throw std::domain_error("Inradius is not positive");
   }
   inradius_ = inradius;
@@ -237,6 +245,21 @@ template <int dim>
 constexpr Real ConvexSet<dim>::eps_diff() {
   return dim * std::pow(kEps, Real(1.0 / 3.0));
 }
+
+namespace detail {
+
+/// @brief Convex set validator.
+template <int dim, class C, bool check_dim = true>
+struct ConvexSetValidator {
+  static_assert((!check_dim) || (dim == 2) || (dim == 3),
+                "Dimension must be 2 or 3");
+  static_assert(std::is_base_of<ConvexSet<dim>, C>::value,
+                "The convex set must inherit from ConvexSet");
+
+  static constexpr bool valid = true;
+};
+
+}  // namespace detail
 
 }  // namespace dgd
 
