@@ -21,7 +21,6 @@
 #define DGD_DATA_TYPES_H_
 
 #include <Eigen/Core>
-#include <Eigen/Geometry>
 #include <cmath>
 #include <limits>
 
@@ -39,12 +38,12 @@ constexpr Real kInf = std::numeric_limits<Real>::infinity();
 /// @brief Machine epsilon.
 constexpr Real kEps = std::numeric_limits<Real>::epsilon();
 /// @brief Square root of machine epsilon.
-constexpr Real kSqrtEps = std::sqrt(kEps);
+inline const Real kSqrtEps = std::sqrt(kEps);
 /// @brief Pi.
-constexpr Real kPi = static_cast<Real>(EIGEN_PI);
+inline const Real kPi = static_cast<Real>(EIGEN_PI);
 
 /**
- * @brief Fixed-dimension vector.
+ * @brief Fixed-size vector.
  *
  * @tparam T   Floating-point type.
  * @tparam dim Dimension of the vector.
@@ -55,7 +54,9 @@ template <int dim>
 using Vecr = Vec<Real, dim>;
 using Vec2r = Vecr<2>;
 using Vec3r = Vecr<3>;
-using VecXr = Vecr<Eigen::Dynamic>;
+
+/// @brief Dynamic-size real-valued vector.
+using VecXr = Eigen::Matrix<Real, Eigen::Dynamic, 1>;
 
 /**
  * @brief Fixed-size real-valued matrix.
@@ -67,7 +68,12 @@ using VecXr = Vecr<Eigen::Dynamic>;
  */
 template <int row, int col>
 using Matr = Eigen::Matrix<Real, row, col>;
-using MatXr = Matr<Eigen::Dynamic, Eigen::Dynamic>;
+
+/// @brief Dynamic row-size real-valued matrix.
+template <int dim>
+using MatXr = Eigen::Matrix<Real, dim, Eigen::Dynamic>;
+/// @brief Dynamic-size real-valued matrix.
+using MatXXr = Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic>;
 
 /**
  * @brief Rotation matrix.
@@ -101,24 +107,26 @@ using Transform3r = Transformr<3>;
  */
 ///@{
 template <int hdim>
-inline Eigen::Ref<Vecr<hdim - 1>> Affine(Matr<hdim, hdim>& tf) {
+inline auto Affine(Matr<hdim, hdim>& tf)
+    -> decltype(tf.template topRightCorner<hdim - 1, 1>()) {
   return tf.template topRightCorner<hdim - 1, 1>();
 }
 
 template <int hdim>
-inline const Eigen::Ref<const Vecr<hdim - 1>> Affine(
-    const Matr<hdim, hdim>& tf) {
+inline auto Affine(const Matr<hdim, hdim>& tf)
+    -> decltype(tf.template topRightCorner<hdim - 1, 1>()) {
   return tf.template topRightCorner<hdim - 1, 1>();
 }
 
 template <int hdim>
-inline Eigen::Ref<Rotationr<hdim - 1>> Linear(Matr<hdim, hdim>& tf) {
+inline auto Linear(Matr<hdim, hdim>& tf)
+    -> decltype(tf.template topLeftCorner<hdim - 1, hdim - 1>()) {
   return tf.template topLeftCorner<hdim - 1, hdim - 1>();
 }
 
 template <int hdim>
-inline const Eigen::Ref<const Rotationr<hdim - 1>> Linear(
-    const Matr<hdim, hdim>& tf) {
+inline auto Linear(const Matr<hdim, hdim>& tf)
+    -> decltype(tf.template topLeftCorner<hdim - 1, hdim - 1>()) {
   return tf.template topLeftCorner<hdim - 1, hdim - 1>();
 }
 ///@}
