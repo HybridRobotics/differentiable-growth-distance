@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Dense>
 #include <cmath>
 #include <vector>
 
@@ -114,7 +115,7 @@ TEST(GrahamScanTest, TwoDim) {
 
 TEST(GrahamScanTest, CcwOrientation) {
   Rng rng;
-  rng.SetDefaultSeed();
+  rng.SetSeed();
   const int nruns = 100;
   const int npts = 1000;
   const Real side_len = 10.0;
@@ -125,14 +126,16 @@ TEST(GrahamScanTest, CcwOrientation) {
 
   std::vector<Vec2r> pts(npts), vert;
   for (int i = 0; i < nruns; ++i) {
-    for (int j = 0; j < npts; ++j)
+    for (int j = 0; j < npts; ++j) {
       pts[j] << rng.Random(side_len), rng.Random(side_len);
+    }
     const int nvert = GrahamScan(pts, vert);
 
     // Orientation test.
     if (nvert > 2) {
-      for (int j = 0; j < nvert - 2; ++j)
+      for (int j = 0; j < nvert - 2; ++j) {
         ASSERT_GT(ccw(vert[j], vert[j + 1], vert[j + 2]), 0.0);
+      }
       ASSERT_GT(ccw(vert.end()[-2], vert.end()[-1], vert[0]), 0.0);
       ASSERT_GT(ccw(vert.end()[-1], vert[0], vert[1]), 0.0);
     }
@@ -142,7 +145,7 @@ TEST(GrahamScanTest, CcwOrientation) {
 // Support functions of a set and its convex hull are the same.
 TEST(GrahamScanTest, SupportFunction) {
   Rng rng;
-  rng.SetDefaultSeed();
+  rng.SetSeed();
   const int nruns = 100;
   const int ndir = 100;
   const int npts = 1000;
@@ -159,8 +162,9 @@ TEST(GrahamScanTest, SupportFunction) {
         idx = i;
         sv = s;
         multiple = false;
-      } else if (s == sv)
+      } else if (s == sv) {
         multiple = true;
+      }
     }
     sp = p[idx];
     return multiple;
@@ -169,8 +173,9 @@ TEST(GrahamScanTest, SupportFunction) {
   std::vector<Vec2r> pts(npts), vert;
   Vec2r sp, spt, dir;
   for (int i = 0; i < nruns; ++i) {
-    for (int j = 0; j < npts; ++j)
+    for (int j = 0; j < npts; ++j) {
       pts[j] << rng.Random(side_len), rng.Random(side_len);
+    }
     GrahamScan(pts, vert);
 
     // Support function test.
