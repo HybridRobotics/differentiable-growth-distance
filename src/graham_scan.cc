@@ -19,6 +19,7 @@
 
 #include "dgd/graham_scan.h"
 
+#include <Eigen/Dense>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -27,6 +28,14 @@
 #include "dgd/data_types.h"
 
 namespace dgd {
+
+namespace {
+
+inline Real Ccw(const Vec2r& u, const Vec2r& v, const Vec2r& w) {
+  return (v - u).cross(w - u);
+}
+
+}  // namespace
 
 int GrahamScan(const std::vector<Vec2r>& pts, std::vector<Vec2r>& vert) {
   vert.clear();
@@ -41,11 +50,12 @@ int GrahamScan(const std::vector<Vec2r>& pts, std::vector<Vec2r>& vert) {
 
   // Copy the vector while removing any duplicates of the minimal point.
   std::vector<Vec2r> pts_c;
+  pts_c.reserve(pts.size());
   pts_c.push_back(p0);
   for (const auto& p : pts) {
-    if ((p - p0).lpNorm<1>() > kEps) pts_c.push_back(p);
+    if ((p - p0).squaredNorm() > kEps * kEps) pts_c.push_back(p);
   }
-  int len = static_cast<int>(pts_c.size());
+  const int len = static_cast<int>(pts_c.size());
   if (len == 1) {
     vert = pts_c;
     return 1;
@@ -53,21 +63,18 @@ int GrahamScan(const std::vector<Vec2r>& pts, std::vector<Vec2r>& vert) {
 
   // Sort points by polar angles with respect to p0; when equal, sort by
   // distance to p0.
-  auto ccw = [](const Vec2r& u, const Vec2r& v, const Vec2r& w) -> Real {
-    return (v - u).cross(w - u);
-  };
   std::sort(pts_c.begin() + 1, pts_c.end(),
-            [&ccw, &p0](const Vec2r& p1, const Vec2r& p2) -> bool {
-              const Real cross = ccw(p0, p1, p2);
+            [&p0](const Vec2r& p1, const Vec2r& p2) -> bool {
+              const Real cross = Ccw(p0, p1, p2);
               return (std::abs(cross) > kEps)
-                         ? cross > 0.0
+                         ? cross > Real(0.0)
                          : (p1 - p0).squaredNorm() < (p2 - p0).squaredNorm();
             });
 
   // Replace collinear points along a polar angle by the farthest point.
   int idx = 1;
   for (int i = 2; i < len; ++i) {
-    if (ccw(p0, pts_c[idx], pts_c[i]) > kEps) {
+    if (Ccw(p0, pts_c[idx], pts_c[i]) > kEps) {
       pts_c[++idx] = pts_c[i];
     } else {
       pts_c[idx] = pts_c[i];
@@ -76,8 +83,10 @@ int GrahamScan(const std::vector<Vec2r>& pts, std::vector<Vec2r>& vert) {
   pts_c.resize(++idx);
 
   // Find convex hull based on turning direction.
+  vert.reserve(pts_c.size());
   for (const auto& p : pts_c) {
-    while (vert.size() > 1 && ccw(vert.end()[-2], vert.end()[-1], p) <= 0.0) {
+    while (vert.size() > 1 &&
+           Ccw(vert.end()[-2], vert.end()[-1], p) <= Real(0.0)) {
       vert.pop_back();
     }
     vert.push_back(p);

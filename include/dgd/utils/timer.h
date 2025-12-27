@@ -49,18 +49,19 @@ class Timer {
 
  private:
   std::chrono::time_point<std::chrono::steady_clock> start_, end_;
-  double elapsed_;
+  double elapsed_us_;  // In microseconds.
   bool running_;
 };
 
-inline Timer::Timer(bool start_on_construction) : running_(false) {
+inline Timer::Timer(bool start_on_construction)
+    : elapsed_us_(0.0), running_(false) {
   if (start_on_construction) Start();
 }
 
 inline void Timer::Start() {
   if (!running_) {
     running_ = true;
-    elapsed_ = 0.0;
+    elapsed_us_ = 0.0;
     start_ = std::chrono::steady_clock::now();
   }
 }
@@ -69,7 +70,7 @@ inline void Timer::Stop() {
   if (running_) {
     end_ = std::chrono::steady_clock::now();
     running_ = false;
-    elapsed_ +=
+    elapsed_us_ +=
         static_cast<double>(
             std::chrono::duration_cast<std::chrono::nanoseconds>(end_ - start_)
                 .count()) *
@@ -88,13 +89,14 @@ inline double Timer::Elapsed() const {
   const auto current = std::chrono::steady_clock::now();
 
   if (running_) {
-    return elapsed_ + static_cast<double>(
-                          std::chrono::duration_cast<std::chrono::nanoseconds>(
-                              current - start_)
-                              .count()) *
-                          1e-3;
+    return elapsed_us_ +
+           static_cast<double>(
+               std::chrono::duration_cast<std::chrono::nanoseconds>(current -
+                                                                    start_)
+                   .count()) *
+               1e-3;
   } else {
-    return elapsed_;
+    return elapsed_us_;
   }
 }
 
