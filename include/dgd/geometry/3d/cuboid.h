@@ -36,7 +36,7 @@ class Cuboid : public ConvexSet<3> {
    * @param hlx,hly,hlz Half side lengths.
    * @param margin      Safety margin.
    */
-  explicit Cuboid(Real hlx, Real hly, Real hlz, Real margin = 0.0);
+  explicit Cuboid(Real hlx, Real hly, Real hlz, Real margin = Real(0.0));
 
   ~Cuboid() = default;
 
@@ -63,7 +63,8 @@ class Cuboid : public ConvexSet<3> {
 
 inline Cuboid::Cuboid(Real hlx, Real hly, Real hlz, Real margin)
     : ConvexSet<3>(), hlx_(hlx), hly_(hly), hlz_(hlz), margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (hlz <= 0.0) || (margin < 0.0)) {
+  if ((hlx <= Real(0.0)) || (hly <= Real(0.0)) || (hlz <= Real(0.0)) ||
+      (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis lengths or margin");
   }
   set_inradius(std::min({hlx, hly, hlz}) + margin);
@@ -92,9 +93,9 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
   return SupportFunction(n, deriv.sp);
 }
 
-inline bool Cuboid::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Cuboid::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline bool Cuboid::IsPolytopic() const { return (margin_ == 0.0); }
+inline bool Cuboid::IsPolytopic() const { return (margin_ == Real(0.0)); }
 
 inline void Cuboid::PrintInfo() const {
   std::cout << "Type: Cuboid (dim = 3)" << std::endl

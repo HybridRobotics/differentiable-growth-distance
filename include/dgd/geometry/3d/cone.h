@@ -46,7 +46,7 @@ class Cone : public ConvexSet<3> {
    * @param height Height.
    * @param margin Safety margin.
    */
-  explicit Cone(Real radius, Real height, Real margin = 0.0);
+  explicit Cone(Real radius, Real height, Real margin = Real(0.0));
 
   ~Cone() = default;
 
@@ -82,7 +82,7 @@ class Cone : public ConvexSet<3> {
 
 inline Cone::Cone(Real radius, Real height, Real margin)
     : ConvexSet<3>(), r_(radius), h_(height), margin_(margin) {
-  if ((radius <= 0.0) || (height <= 0.0) || (margin < 0.0)) {
+  if ((radius <= Real(0.0)) || (height <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid radius, height, or margin");
   }
   tha_ = r_ / h_;
@@ -129,8 +129,8 @@ inline Real Cone::SupportFunction(const Vec3r& n,
       deriv.differentiable = false;
     } else {
       deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      const Vec2r t = Vec2r(n(1), -n(0));
-      deriv.Dsp.block<2, 2>(0, 0) += r_ / (k2 * k) * t * t.transpose();
+      deriv.Dsp.block<2, 2>(0, 0) +=
+          r_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
       deriv.differentiable = true;
     }
     if (k >= kEps) deriv.sp.head<2>() += r_ * n.head<2>() / k;
@@ -139,7 +139,7 @@ inline Real Cone::SupportFunction(const Vec3r& n,
   }
 }
 
-inline bool Cone::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Cone::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
 inline bool Cone::IsPolytopic() const { return false; }
 

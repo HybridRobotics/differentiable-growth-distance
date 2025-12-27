@@ -45,7 +45,7 @@ class CapsuleImpl : public ConvexSet<dim> {
    * @param radius Radius.
    * @param margin Safety margin.
    */
-  explicit CapsuleImpl(Real hlx, Real radius, Real margin = 0.0);
+  explicit CapsuleImpl(Real hlx, Real radius, Real margin = Real(0.0));
 
   ~CapsuleImpl() = default;
 
@@ -76,7 +76,7 @@ inline CapsuleImpl<dim>::CapsuleImpl(Real hlx, Real radius, Real margin)
       radius_(radius),
       margin_(margin) {
   static_assert((dim == 2) || (dim == 3), "dim is not 2 or 3");
-  if ((hlx <= 0.0) || (radius <= 0.0) || (margin < 0.0)) {
+  if ((hlx <= Real(0.0)) || (radius <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis length, radius, or margin");
   }
 }

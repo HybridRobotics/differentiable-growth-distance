@@ -43,7 +43,7 @@ class Polygon : public ConvexSet<2> {
    * @param margin   Safety margin.
    */
   explicit Polygon(const std::vector<Vec2r>& vert, Real inradius,
-                   Real margin = 0.0);
+                   Real margin = Real(0.0));
 
   ~Polygon() = default;
 
@@ -69,7 +69,7 @@ class Polygon : public ConvexSet<2> {
 inline Polygon::Polygon(const std::vector<Vec2r>& vert, Real inradius,
                         Real margin)
     : ConvexSet<2>(margin + inradius), vert_(vert), margin_(margin) {
-  if ((margin < 0.0) || (inradius <= 0.0)) {
+  if ((margin < Real(0.0)) || (inradius <= Real(0.0))) {
     throw std::domain_error("Invalid margin or inradius");
   }
 }
@@ -81,7 +81,7 @@ inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
   // 2. Hill-climbing algorithm.
   // 3. Bisection method.
   int idx = 0;
-  Real s = 0.0, sv = n.dot(vert_[idx]);
+  Real s = Real(0.0), sv = n.dot(vert_[idx]);
 
   for (int i = 1; i < static_cast<int>(vert_.size()); ++i) {
     s = n.dot(vert_[i]);
@@ -109,16 +109,15 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
   if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) > sv - eps_diff()) {
     deriv.differentiable = false;
   } else {
-    const Vec2r t = Vec2r(n(1), -n(0));
-    deriv.Dsp = margin_ * t * t.transpose();
+    deriv.Dsp = margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
     deriv.differentiable = true;
   }
   return sv;
 }
 
-inline bool Polygon::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Polygon::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline bool Polygon::IsPolytopic() const { return (margin_ == 0.0); }
+inline bool Polygon::IsPolytopic() const { return (margin_ == Real(0.0)); }
 
 inline void Polygon::PrintInfo() const {
   std::cout << "Type: Polygon (dim = 2)" << std::endl

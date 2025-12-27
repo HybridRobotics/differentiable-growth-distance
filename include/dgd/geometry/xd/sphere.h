@@ -65,7 +65,7 @@ template <int dim>
 inline SphereImpl<dim>::SphereImpl(Real radius)
     : ConvexSet<dim>(radius), radius_(radius) {
   static_assert((dim == 2) || (dim == 3), "dim is not 2 or 3");
-  if (radius <= 0.0) {
+  if (radius <= Real(0.0)) {
     throw std::domain_error("Radius is nonpositive");
   }
 }

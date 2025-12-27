@@ -41,7 +41,7 @@ class Cylinder : public ConvexSet<3> {
    * @param radius Radius.
    * @param margin Safety margin.
    */
-  explicit Cylinder(Real hlx, Real radius, Real margin = 0.0);
+  explicit Cylinder(Real hlx, Real radius, Real margin = Real(0.0));
 
   ~Cylinder() = default;
 
@@ -67,7 +67,7 @@ class Cylinder : public ConvexSet<3> {
 
 inline Cylinder::Cylinder(Real hlx, Real radius, Real margin)
     : ConvexSet<3>(), hlx_(hlx), radius_(radius), margin_(margin) {
-  if ((hlx <= 0.0) || (radius <= 0.0) || (margin < 0.0)) {
+  if ((hlx <= Real(0.0)) || (radius <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis length, radius, or margin");
   }
   set_inradius(std::min(hlx, radius) + margin);
@@ -92,8 +92,8 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
     deriv.differentiable = false;
   } else {
     deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-    const Vec2r t = Vec2r(n(2), -n(1));
-    deriv.Dsp.block<2, 2>(1, 1) += radius_ / (k2 * k) * t * t.transpose();
+    deriv.Dsp.block<2, 2>(1, 1) += radius_ / (k2 * k) * Vec2r(n(2), -n(1)) *
+                                   Vec2r(n(2), -n(1)).transpose();
     deriv.differentiable = true;
   }
   deriv.sp = margin_ * n;
@@ -102,7 +102,9 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
   return deriv.sp.dot(n);
 }
 
-inline bool Cylinder::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Cylinder::RequireUnitNormal() const {
+  return (margin_ > Real(0.0));
+}
 
 inline bool Cylinder::IsPolytopic() const { return false; }
 
