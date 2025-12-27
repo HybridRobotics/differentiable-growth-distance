@@ -14,8 +14,7 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Error metrics for the growth distance and collision detection
- * functions.
+ * @brief Error metrics for growth distance and collision detection solutions.
  */
 
 #ifndef DGD_ERROR_METRICS_H_
@@ -27,7 +26,7 @@
 
 namespace dgd {
 
-/// @brief Solution error metrics.
+/// @brief Growth distance solution error metrics.
 struct SolutionError {
   /**
    * @brief Relative primal-dual gap.
@@ -45,14 +44,14 @@ struct SolutionError {
   double prim_dual_gap;
 
   /**
-   * @brief Primal infeasibility error.
+   * @brief Normalized primal infeasibility error.
    *
    * The primal infeasibility error is given by
    * \f[
    * \text{prim_infeas_err}
-   * = | p_1 - p_2 + \text{growth_dist_ub} \cdot (z_1 - p_1 - (z_2 - p_2))|_2,
+   * = | p_1 - p_2 + \text{growth_dist_ub} \cdot (z_1 - p_1 - (z_2 - p_2))|_2.
    * \f]
-   * where \f$p_1\f$ and \f$p_2\f$ are the center points of the convex sets.
+   * The error is normalized by \f$|p_1 - p_2|_2\f$.
    */
   double prim_infeas_err;
 
@@ -66,12 +65,12 @@ struct SolutionError {
 };
 
 /**
- * @brief Computes the primal-dual relative gap and the primal infeasibility
- * error.
+ * @brief Computes the primal-dual relative gap and the normalized primal
+ * infeasibility error.
  *
- * @param  set1,set2 Convex Sets.
- * @param  tf1,tf2   Rigid body transformations for the convex sets.
- * @param  out       Growth distance algorithm output.
+ * @param set1,set2 Convex Sets.
+ * @param tf1,tf2   Rigid body transformations for the convex sets.
+ * @param out       Growth distance algorithm output.
  */
 template <int dim>
 SolutionError ComputeSolutionError(const ConvexSet<dim>* set1,
@@ -85,7 +84,8 @@ SolutionError ComputeSolutionError(const ConvexSet<dim>* set1,
     return err;
   }
 
-  const Vecr<dim> p1 = Affine(tf1), p2 = Affine(tf2);
+  const Vecr<dim> p1 = Affine(tf1);
+  const Vecr<dim> p2 = Affine(tf2);
 
   Vecr<dim> sp;
   const Real sv1 =
@@ -94,9 +94,10 @@ SolutionError ComputeSolutionError(const ConvexSet<dim>* set1,
       set2->SupportFunction(-Linear(tf2).transpose() * out.normal, sp);
   const Real lb = (p2 - p1).dot(out.normal) / (sv1 + sv2);
 
-  err.prim_dual_gap = out.growth_dist_ub / lb - 1.0;
-  err.prim_infeas_err =
-      (p1 - p2 + out.growth_dist_ub * (out.z1 - p1 - out.z2 + p2)).norm();
+  err.prim_dual_gap = static_cast<double>(out.growth_dist_ub / lb) - 1.0;
+  err.prim_infeas_err = static_cast<double>(
+      (p1 - p2 + out.growth_dist_ub * (out.z1 - p1 - out.z2 + p2)).norm() /
+      (p1 - p2).norm());
   return err;
 }
 
@@ -107,7 +108,7 @@ SolutionError ComputeSolutionError(const ConvexSet<dim>* set1,
  * @param  tf1,tf2             Rigid body transformations for the convex sets.
  * @param  out                 Growth distance algorithm output.
  * @param  collision           Output of the collision detection function.
- * @param  max_prim_infeas_err Maximum primal infeasibility error.
+ * @param  max_prim_infeas_err Maximum normalized primal infeasibility error.
  * @return true, if the collision status is correct; false otherwise.
  */
 template <int dim>
@@ -120,15 +121,17 @@ bool AssertCollisionStatus(const ConvexSet<dim>* set1,
   if (out.status == SolutionStatus::CoincidentCenters) {
     return collision;
   } else if (out.status == SolutionStatus::MaxIterReached) {
-    return !collision;
+    return false;
   }
 
-  const Vecr<dim> p1 = Affine(tf1), p2 = Affine(tf2);
+  const Vecr<dim> p1 = Affine(tf1);
+  const Vecr<dim> p2 = Affine(tf2);
 
   if (collision) {
     const Real prim_infeas_err =
-        (p1 - p2 + out.growth_dist_ub * (out.z1 - p1 - out.z2 + p2)).norm();
-    return (out.growth_dist_ub <= 1.0) &&
+        (p1 - p2 + out.growth_dist_ub * (out.z1 - p1 - out.z2 + p2)).norm() /
+        (p1 - p2).norm();
+    return (out.growth_dist_ub <= Real(1.0)) &&
            (prim_infeas_err <= max_prim_infeas_err);
   } else {
     Vecr<dim> sp;
@@ -136,7 +139,7 @@ bool AssertCollisionStatus(const ConvexSet<dim>* set1,
         set1->SupportFunction(Linear(tf1).transpose() * out.normal, sp);
     const Real sv2 =
         set2->SupportFunction(-Linear(tf2).transpose() * out.normal, sp);
-    return (out.growth_dist_lb > 1.0) &&
+    return (out.growth_dist_lb > Real(1.0)) &&
            (p2.dot(out.normal) - sv2 > p1.dot(out.normal) + sv1);
   }
 }
