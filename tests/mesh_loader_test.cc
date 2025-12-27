@@ -58,8 +58,7 @@ TEST(MeshLoaderTest, StringParse) {
 }
 
 TEST(MeshLoaderTest, InputFile) {
-  GTEST_SKIP();
-  std::string file = "../tinyobjloader/models/cube.obj";
+  std::string file = "../tests/cube.obj";
 
   MeshLoader ml{};
   ml.LoadObj(file);
@@ -154,7 +153,7 @@ TEST(MeshLoaderTest, SupportFunction) {
   if (typeid(Real) == typeid(float)) GTEST_SKIP();
 
   Rng rng;
-  rng.SetDefaultSeed();
+  rng.SetSeed();
   const int nruns = 10;
   const int ndir_xy = 100, ndir_z = 10;
   const int npts = 1000;
@@ -171,8 +170,9 @@ TEST(MeshLoaderTest, SupportFunction) {
         idx = i;
         sv = s;
         multiple = false;
-      } else if (s == sv)
+      } else if (s == sv) {
         multiple = true;
+      }
     }
     sp = p[idx];
     return multiple;
@@ -183,9 +183,10 @@ TEST(MeshLoaderTest, SupportFunction) {
   std::vector<int> graph;
   Vec3r sp, spt, dir;
   for (int i = 0; i < nruns; ++i) {
-    for (int j = 0; j < npts; ++j)
+    for (int j = 0; j < npts; ++j) {
       pts[j] << rng.Random(side_len), rng.Random(side_len),
           rng.Random(side_len);
+    }
     ml.ProcessPoints(pts);
     bool valid = ml.MakeVertexGraph(vert, graph);
 
