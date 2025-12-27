@@ -54,7 +54,7 @@ class Frustum : public ConvexSet<3> {
    * @param margin      Safety margin.
    */
   explicit Frustum(Real base_radius, Real top_radius, Real height,
-                   Real margin = 0.0);
+                   Real margin = Real(0.0));
 
   ~Frustum() = default;
 
@@ -96,8 +96,8 @@ inline Frustum::Frustum(Real base_radius, Real top_radius, Real height,
       rt_(top_radius),
       h_(height),
       margin_(margin) {
-  if ((std::max(base_radius, top_radius) <= 0.0) || (height <= 0.0) ||
-      (margin < 0.0)) {
+  if ((base_radius < Real(0.0)) || (top_radius < Real(0.0)) ||
+      (height <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid radii, height, or margin");
   }
   tha_ = (rb_ - rt_) / h_;
@@ -130,7 +130,6 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
                                      SupportFunctionHint<3>* /*hint*/) const {
   const Real k2 = n(0) * n(0) + n(1) * n(1);
   const Real k = std::sqrt(k2);
-  const Vec2r t = Vec2r(n(1), -n(0));
   const Real diff = h_ * n(2) - (rb_ - rt_) * k;
   deriv.sp = margin_ * n;
   if (diff >= Real(0.0)) {
@@ -139,7 +138,8 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
       deriv.differentiable = false;
     } else {
       deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.Dsp.block<2, 2>(0, 0) += rt_ / (k2 * k) * t * t.transpose();
+      deriv.Dsp.block<2, 2>(0, 0) +=
+          rt_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
       deriv.differentiable = true;
     }
     if (k >= kEps) deriv.sp.head<2>() += rt_ * n.head<2>() / k;
@@ -150,7 +150,8 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
       deriv.differentiable = false;
     } else {
       deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.Dsp.block<2, 2>(0, 0) += rb_ / (k2 * k) * t * t.transpose();
+      deriv.Dsp.block<2, 2>(0, 0) +=
+          rb_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
       deriv.differentiable = true;
     }
     if (k >= kEps) deriv.sp.head<2>() += rb_ * n.head<2>() / k;
@@ -159,7 +160,7 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
   return deriv.sp.dot(n);
 }
 
-inline bool Frustum::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Frustum::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
 inline bool Frustum::IsPolytopic() const { return false; }
 

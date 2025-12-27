@@ -53,7 +53,7 @@ class Mesh : public ConvexSet<3> {
    * @param guess_level Guess level for the warm start index.
    */
   explicit Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
-                Real inradius, Real margin = 0.0, Real thresh = Real(0.9),
+                Real inradius, Real margin = Real(0.0), Real thresh = Real(0.9),
                 int guess_level = 1, const std::string& name = "__Mesh__");
 
   ~Mesh() = default;
@@ -112,7 +112,7 @@ inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
       thresh_(thresh),
       nvert_(static_cast<int>(vert.size())),
       name_(name) {
-  if ((inradius <= 0.0) || (margin < 0.0)) {
+  if ((inradius <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid inradius or margin");
   }
   if ((guess_level < 0) || (guess_level > 2)) {
@@ -131,7 +131,7 @@ inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
   //  Select (0, 8, 20) uniformly distributed normal vectors.
   std::vector<Vec3r> normals;
   Vec3r n;
-  Real f[2] = {1.0, -1.0};
+  Real f[2] = {Real(1.0), Real(-1.0)};
   if (guess_level > 0) {
     // Add cube vertices.
     for (int i = 0; i < 8; ++i) {
@@ -147,11 +147,11 @@ inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
     // Add regular dodecahedron vertices.
     // See https://en.wikipedia.org/wiki/Dodecahedron#Cartesian_coordinates
     for (int i = 0; i < 4; ++i) {
-      n = Vec3r(0.0, f[i % 2] * ha, f[(i / 2) % 2] * hb);
+      n = Vec3r(Real(0.0), f[i % 2] * ha, f[(i / 2) % 2] * hb);
       normals.push_back(n.normalized());
-      n = Vec3r(f[i % 2] * ha, f[(i / 2) % 2] * hb, 0.0);
+      n = Vec3r(f[i % 2] * ha, f[(i / 2) % 2] * hb, Real(0.0));
       normals.push_back(n.normalized());
-      n = Vec3r(f[i % 2] * hb, 0.0, f[(i / 2) % 2] * ha);
+      n = Vec3r(f[i % 2] * hb, Real(0.0), f[(i / 2) % 2] * ha);
       normals.push_back(n.normalized());
     }
   }
@@ -174,7 +174,7 @@ inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
     if (idx_ws0_.empty()) {
       idx_ws = 0;
     } else {
-      Real s = 0.0, smax = -kInf;
+      Real s = Real(0.0), smax = -kInf;
       for (int i : idx_ws0_) {
         if ((s = n.dot(vert_[i])) > smax) {
           idx_ws = i;
@@ -188,7 +188,7 @@ inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
   // Current best index, neighbour index, previous best index.
   int idx = idx_ws, nidx = -1, pidx = -1;
   // Current support value, current best support value.
-  Real s = 0.0, sv = n.dot(vert_[idx]);
+  Real s = Real(0.0), sv = n.dot(vert_[idx]);
 
   // Hill-climbing.
   do {
@@ -233,9 +233,9 @@ inline Real Mesh::SupportFunction(const Vec3r& n,
   return sv;
 }
 
-inline bool Mesh::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Mesh::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline bool Mesh::IsPolytopic() const { return (margin_ == 0.0); }
+inline bool Mesh::IsPolytopic() const { return (margin_ == Real(0.0)); }
 
 inline void Mesh::PrintInfo() const {
   std::cout << "Type: Mesh (dim = 3)" << std::endl

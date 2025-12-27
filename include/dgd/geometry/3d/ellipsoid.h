@@ -36,7 +36,7 @@ class Ellipsoid : public ConvexSet<3> {
    * @param hlx,hly,hlz Half axis lengths.
    * @param margin      Safety margin.
    */
-  explicit Ellipsoid(Real hlx, Real hly, Real hlz, Real margin = 0.0);
+  explicit Ellipsoid(Real hlx, Real hly, Real hlz, Real margin = Real(0.0));
 
   ~Ellipsoid() = default;
 
@@ -67,7 +67,8 @@ inline Ellipsoid::Ellipsoid(Real hlx, Real hly, Real hlz, Real margin)
       hly2_(hly * hly),
       hlz2_(hlz * hlz),
       margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (hlz <= 0.0) || (margin < 0.0)) {
+  if ((hlx <= Real(0.0)) || (hly <= Real(0.0)) || (hlz <= Real(0.0)) ||
+      (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis lengths or margin");
   }
   set_inradius(std::min({hlx, hly, hlz}) + margin);
@@ -77,29 +78,29 @@ inline Real Ellipsoid::SupportFunction(const Vec3r& n, Vec3r& sp,
                                        SupportFunctionHint<3>* /*hint*/) const {
   const Real k = std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1) +
                            hlz2_ * n(2) * n(2));
-  sp(0) = (hlx2_ / k + margin_) * n(0);
-  sp(1) = (hly2_ / k + margin_) * n(1);
-  sp(2) = (hlz2_ / k + margin_) * n(2);
+  sp.array() = n.array() * (margin_ + Vec3r(hlx2_, hly2_, hlz2_).array() / k);
   return k + margin_;
 }
 
 inline Real Ellipsoid::SupportFunction(const Vec3r& n,
                                        SupportFunctionDerivatives<3>& deriv,
                                        SupportFunctionHint<3>* /*hint*/) const {
-  const Real k2 =
-      hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1) + hlz2_ * n(2) * n(2);
-  const Real k = std::sqrt(k2);
-  const Vec3r g = Vec3r(hlx2_, hly2_, hlz2_) / k;
+  const Real k = std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1) +
+                           hlz2_ * n(2) * n(2));
+  const Real k_inv = Real(1.0) / k;
+  const Vec3r g = Vec3r(hlx2_, hly2_, hlz2_) * k_inv;
   const Vec3r gn = g.cwiseProduct(n);
   deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose()) -
-              gn * gn.transpose() / k;
+              gn * gn.transpose() * k_inv;
   deriv.Dsp += g.asDiagonal();
   deriv.sp = gn + margin_ * n;
   deriv.differentiable = true;
   return k + margin_;
 }
 
-inline bool Ellipsoid::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Ellipsoid::RequireUnitNormal() const {
+  return (margin_ > Real(0.0));
+}
 
 inline bool Ellipsoid::IsPolytopic() const { return false; }
 

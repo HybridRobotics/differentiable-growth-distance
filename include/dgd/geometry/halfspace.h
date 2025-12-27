@@ -47,7 +47,7 @@ struct Halfspace {
 template <int dim>
 inline Halfspace<dim>::Halfspace(Real margin) : margin(margin) {
   static_assert((dim == 2) || (dim == 3), "dim is not 2 or 3");
-  if ((margin < 0.0)) {
+  if (margin < Real(0.0)) {
     throw std::domain_error("Invalid margin");
   }
 }

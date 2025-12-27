@@ -44,7 +44,7 @@ class Polytope : public ConvexSet<3> {
    * @param thresh   Support function threshold.
    */
   explicit Polytope(const std::vector<Vec3r>& vert, Real inradius,
-                    Real margin = 0.0, Real thresh = Real(0.75));
+                    Real margin = Real(0.0), Real thresh = Real(0.75));
 
   ~Polytope() = default;
 
@@ -79,7 +79,7 @@ inline Polytope::Polytope(const std::vector<Vec3r>& vert, Real inradius,
       vert_(vert),
       margin_(margin),
       thresh_(thresh) {
-  if ((margin < 0.0) || (inradius <= 0.0)) {
+  if ((margin < Real(0.0)) || (inradius <= Real(0.0))) {
     throw std::domain_error("Invalid margin or inradius");
   }
 
@@ -102,7 +102,7 @@ inline Real Polytope::SupportFunction(const Vec3r& n, Vec3r& sp,
   int idx = (hint && hint->n_prev.dot(n) > thresh_) ? hint->idx_ws : 0;
   assert(idx >= 0);
   // Current support value, current best support value.
-  Real s = 0.0, sv = n.dot(vert_[idx]);
+  Real s = Real(0.0), sv = n.dot(vert_[idx]);
 
   for (int i = 0; i < static_cast<int>(vert_.size()); ++i) {
     s = n.dot(vert_[i]);
@@ -125,7 +125,7 @@ inline Real Polytope::SupportFunction(const Vec3r& n,
                                       SupportFunctionDerivatives<3>& deriv,
                                       SupportFunctionHint<3>* hint) const {
   int idx = (hint && hint->n_prev.dot(n) > thresh_) ? hint->idx_ws : 0;
-  Real s = 0.0, sv = n.dot(vert_[idx]);
+  Real s = Real(0.0), sv = n.dot(vert_[idx]);
 
   deriv.differentiable = true;
   for (int i = 0; i < static_cast<int>(vert_.size()); ++i) {
@@ -151,9 +151,11 @@ inline Real Polytope::SupportFunction(const Vec3r& n,
   return sv + margin_;
 }
 
-inline bool Polytope::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Polytope::RequireUnitNormal() const {
+  return (margin_ > Real(0.0));
+}
 
-inline bool Polytope::IsPolytopic() const { return (margin_ == 0.0); }
+inline bool Polytope::IsPolytopic() const { return (margin_ == Real(0.0)); }
 
 inline void Polytope::PrintInfo() const {
   std::cout << "Type: Polytope (dim = 3)" << std::endl

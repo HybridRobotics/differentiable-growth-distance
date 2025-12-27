@@ -36,7 +36,7 @@ class Rectangle : public ConvexSet<2> {
    * @param hlx,hly Half side lengths.
    * @param margin  Safety margin.
    */
-  explicit Rectangle(Real hlx, Real hly, Real margin = 0.0);
+  explicit Rectangle(Real hlx, Real hly, Real margin = Real(0.0));
 
   ~Rectangle() = default;
 
@@ -62,7 +62,7 @@ class Rectangle : public ConvexSet<2> {
 
 inline Rectangle::Rectangle(Real hlx, Real hly, Real margin)
     : ConvexSet<2>(), hlx_(hlx), hly_(hly), margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (margin < 0.0)) {
+  if ((hlx <= Real(0.0)) || (hly <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis lengths or margin");
   }
   set_inradius(std::min(hlx, hly) + margin);
@@ -83,16 +83,17 @@ inline Real Rectangle::SupportFunction(const Vec2r& n,
   if (diff < Real(0.5) * eps_diff()) {
     deriv.differentiable = false;
   } else {
-    const Vec2r t = Vec2r(n(1), -n(0));
-    deriv.Dsp = margin_ * t * t.transpose();
+    deriv.Dsp = margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);
 }
 
-inline bool Rectangle::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Rectangle::RequireUnitNormal() const {
+  return (margin_ > Real(0.0));
+}
 
-inline bool Rectangle::IsPolytopic() const { return (margin_ == 0.0); }
+inline bool Rectangle::IsPolytopic() const { return (margin_ == Real(0.0)); }
 
 inline void Rectangle::PrintInfo() const {
   std::cout << "Type: Rectangle (dim = 2)" << std::endl

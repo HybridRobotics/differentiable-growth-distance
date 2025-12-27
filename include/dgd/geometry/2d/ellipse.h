@@ -36,7 +36,7 @@ class Ellipse : public ConvexSet<2> {
    * @param hlx,hly Half axis lengths.
    * @param margin  Safety margin.
    */
-  explicit Ellipse(Real hlx, Real hly, Real margin = 0.0);
+  explicit Ellipse(Real hlx, Real hly, Real margin = Real(0.0));
 
   ~Ellipse() = default;
 
@@ -62,7 +62,7 @@ class Ellipse : public ConvexSet<2> {
 
 inline Ellipse::Ellipse(Real hlx, Real hly, Real margin)
     : ConvexSet<2>(), hlx2_(hlx * hlx), hly2_(hly * hly), margin_(margin) {
-  if ((hlx <= 0.0) || (hly <= 0.0) || (margin < 0.0)) {
+  if ((hlx <= Real(0.0)) || (hly <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis lengths or margin");
   }
   set_inradius(std::min(hlx, hly) + margin);
@@ -71,25 +71,24 @@ inline Ellipse::Ellipse(Real hlx, Real hly, Real margin)
 inline Real Ellipse::SupportFunction(const Vec2r& n, Vec2r& sp,
                                      SupportFunctionHint<2>* /*hint*/) const {
   const Real k = std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1));
-  sp(0) = (hlx2_ / k + margin_) * n(0);
-  sp(1) = (hly2_ / k + margin_) * n(1);
+  sp.array() = n.array() * (margin_ + Vec2r(hlx2_, hly2_).array() / k);
   return k + margin_;
 }
 
 inline Real Ellipse::SupportFunction(const Vec2r& n,
                                      SupportFunctionDerivatives<2>& deriv,
                                      SupportFunctionHint<2>* /*hint*/) const {
-  const Real k2 = hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1);
-  const Real k = std::sqrt(k2);
-  const Vec2r t = Vec2r(n(1), -n(0));
-  deriv.Dsp = (margin_ + hlx2_ * hly2_ / (k2 * k)) * t * t.transpose();
-  deriv.sp(0) = (hlx2_ / k + margin_) * n(0);
-  deriv.sp(1) = (hly2_ / k + margin_) * n(1);
+  const Real k = std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1));
+  const Real k_inv = Real(1.0) / k;
+  const Vec2r g = Vec2r(hlx2_, hly2_) * k_inv;
+  deriv.Dsp = (margin_ + g(0) * g(1) * k_inv) * Vec2r(n(1), -n(0)) *
+              Vec2r(n(1), -n(0)).transpose();
+  deriv.sp.array() = n.array() * (margin_ + g.array());
   deriv.differentiable = true;
   return k + margin_;
 }
 
-inline bool Ellipse::RequireUnitNormal() const { return (margin_ > 0.0); }
+inline bool Ellipse::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
 inline bool Ellipse::IsPolytopic() const { return false; }
 
