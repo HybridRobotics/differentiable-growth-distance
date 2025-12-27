@@ -22,6 +22,7 @@
 
 #include <array>
 #include <cmath>
+#include <fstream>
 #include <random>
 #include <stdexcept>
 
@@ -33,73 +34,98 @@ namespace dgd {
 /// @brief Random number generator class.
 class Rng {
  public:
+  /// @brief Constructs an Rng object with a random seed.
   explicit Rng();
 
-  /// @brief Sets a default seed for the generator.
-  void SetDefaultSeed();
+  /// @brief Constructs an Rng object with the specified seed.
+  explicit Rng(unsigned int seed);
 
   /// @brief Sets a true random seed for the generator.
   void SetRandomSeed();
+
+  /// @brief Sets the given seed for the generator.
+  void SetSeed(unsigned int seed = 5489u);
+
+  /**
+   * @brief Saves the state of the MT generator to a stream.
+   *
+   * Caller-provided stream state is preserved; the generator state is appended.
+   *
+   * @param os Stream to save the state.
+   */
+  void SaveState(std::ostream& os) const;
+
+  /**
+   * @brief Loads the state of the MT generator from a stream.
+   *
+   * Throws on parse failure.
+   *
+   * @param is Stream to load the state from.
+   */
+  void LoadState(std::istream& is);
+
+  /// @brief Saves the state of the MT generator to a file.
+  void SaveStateToFile(const std::string& filename) const;
+
+  /// @brief Loads the state of the MT generator from a file.
+  void LoadStateFromFile(const std::string& filename);
 
   /**
    * @name Random real number functions
    * @brief Returns a random real number in the specified range.
    */
   ///@{
-  Real Random(Real range_low, Real range_high);
+  Real Random(Real low, Real high);
 
-  Real Random(Real range = 1.0);
+  Real Random(Real range = Real(1.0));
 
   Real Random(const std::array<Real, 2>& range);
   ///@}
 
   /// @brief Returns 1 with probability prob, and 0 with probability 1 - prob.
-  int CoinFlip(Real prob = 0.5);
+  int CoinFlip(Real prob = Real(0.5));
 
   /**
    * @name Random integer functions
-   * @brief Returns a random integer in the specified range.
+   * @brief Returns a random integer in the specified (inclusive) range.
    */
   ///@{
-  int RandomInt(int range_low, int range_high);
+  int RandomInt(int low, int high);
 
   int RandomInt(const std::array<int, 2>& range);
   ///@}
 
   /// @brief Returns a sample from a Gaussian distribution.
-  Real RandomGaussian(Real mean = 0.0, Real stddev = 1.0);
+  Real RandomGaussian(Real mean = Real(0.0), Real stddev = Real(1.0));
 
-  /// @brief Sets a random uniformly distributed unit vector.
+  /// @brief Returns a random uniformly distributed unit vector.
   template <int dim>
-  void RandomUnitVector(Vecr<dim>& n);
+  Vecr<dim> RandomUnitVector();
 
   /**
-   * @name Random rotation functions
-   * @brief Sets a random rotation matrix.
+   * @brief Returns a random rotation matrix.
    *
-   * @param[out] rot     Rotation matrix.
-   * @param[in]  ang_max Maximum rotation angle.
+   * @param  ang_max Maximum rotation angle.
+   * @return Rotation matrix.
    */
-  ///@{
-  void RandomRotation(Rotation2r& rot, Real ang_max = kPi);
-
-  void RandomRotation(Rotation3r& rot, Real ang_max = kPi);
-  ///@}
+  template <int dim>
+  Rotationr<dim> RandomRotation(Real ang_max = kPi);
 
   /**
-   * @brief Sets a random rigid body transformation matrix.
+   * @name Random transformation functions
+   * @brief Sets a random rigid body transformation.
    *
-   * @param[in]  range_low  Lower bound of position.
-   * @param[in]  range_high Upper bound of position.
-   * @param[out] tf         Transformation matrix.
+   * @param[in]  low  Lower bound of position.
+   * @param[in]  high Upper bound of position.
+   * @param[out] tf   Transformation matrix.
    */
   ///@{
   template <int dim>
-  void RandomTransform(const Vecr<dim>& range_low, const Vecr<dim>& range_high,
+  void RandomTransform(const Vecr<dim>& low, const Vecr<dim>& high,
                        Matr<dim + 1, dim + 1>& tf);
 
   template <int hdim>
-  void RandomTransform(Real range_low, Real range_high, Matr<hdim, hdim>& tf);
+  void RandomTransform(Real low, Real high, Matr<hdim, hdim>& tf);
   ///@}
 
  private:
@@ -109,15 +135,42 @@ class Rng {
 
 inline Rng::Rng() : generator_(rd_()) {}
 
-inline void Rng::SetDefaultSeed() { generator_.seed(5489u); }
+inline Rng::Rng(unsigned int seed) : generator_(seed) {}
 
 inline void Rng::SetRandomSeed() { generator_.seed(rd_()); }
 
-inline Real Rng::Random(Real range_low, Real range_high) {
-  if (range_low > range_high) {
-    throw std::range_error("Invalid range");
+inline void Rng::SetSeed(unsigned int seed) { generator_.seed(seed); }
+
+inline void Rng::SaveState(std::ostream& os) const {
+  if (!(os << generator_)) {
+    throw std::runtime_error("Failed to write RNG state to stream");
   }
-  std::uniform_real_distribution<Real> dis(range_low, range_high);
+}
+
+inline void Rng::LoadState(std::istream& is) {
+  if (!(is >> generator_)) {
+    throw std::runtime_error("Failed to read RNG state from stream");
+  }
+}
+
+inline void Rng::SaveStateToFile(const std::string& filename) const {
+  std::ofstream ofs(filename, std::ios::binary);
+  if (!ofs) throw std::runtime_error("Failed to open file: " + filename);
+  SaveState(ofs);
+  ofs.close();
+  if (!ofs) throw std::runtime_error("Failed to write to file: " + filename);
+}
+
+inline void Rng::LoadStateFromFile(const std::string& filename) {
+  std::ifstream ifs(filename, std::ios::binary);
+  if (!ifs) throw std::runtime_error("Failed to open file: " + filename);
+  LoadState(ifs);
+  if (!ifs) throw std::runtime_error("Failed to read from file: " + filename);
+}
+
+inline Real Rng::Random(Real low, Real high) {
+  if (low > high) throw std::range_error("Invalid range");
+  std::uniform_real_distribution<Real> dis(low, high);
   return dis(generator_);
 }
 
@@ -127,13 +180,13 @@ inline Real Rng::Random(const std::array<Real, 2>& range) {
   return Random(range[0], range[1]);
 }
 
-inline int Rng::CoinFlip(Real prob) { return Random(0.0, 1.0) < prob ? 1 : 0; }
+inline int Rng::CoinFlip(Real prob) {
+  return (Random(Real(0.0), Real(1.0)) < prob ? 1 : 0);
+}
 
-inline int Rng::RandomInt(int range_low, int range_high) {
-  if (range_low > range_high) {
-    throw std::range_error("Invalid range");
-  }
-  std::uniform_int_distribution<int> dis(range_low, range_high);
+inline int Rng::RandomInt(int low, int high) {
+  if (low > high) throw std::range_error("Invalid range");
+  std::uniform_int_distribution<int> dis(low, high);
   return dis(generator_);
 }
 
@@ -147,7 +200,8 @@ inline Real Rng::RandomGaussian(Real mean, Real stddev) {
 }
 
 template <int dim>
-inline void Rng::RandomUnitVector(Vecr<dim>& n) {
+inline Vecr<dim> Rng::RandomUnitVector() {
+  Vecr<dim> n;
   for (int i = 0; i < dim; ++i) n(i) = RandomGaussian();
   const Real norm = n.norm();
   if (norm < kEps) {
@@ -155,45 +209,34 @@ inline void Rng::RandomUnitVector(Vecr<dim>& n) {
   } else {
     n /= norm;
   }
+  return n;
 }
 
-inline void Rng::RandomRotation(Rotation2r& rot, Real ang_max) {
+template <>
+inline Rotation2r Rng::RandomRotation(Real ang_max) {
   const Real ang = Random(ang_max);
-  rot(0, 0) = std::cos(ang);
-  rot(1, 0) = std::sin(ang);
-  rot(0, 1) = -rot(1, 0);
-  rot(1, 1) = rot(0, 0);
+  const Real c = std::cos(ang), s = std::sin(ang);
+  return (Rotation2r() << c, -s, s, c).finished();
 }
 
-inline void Rng::RandomRotation(Rotation3r& rot, Real ang_max) {
-  Vec3r n;
-  RandomUnitVector(n);
-  AngleAxisToRotation(n, Random(ang_max), rot);
+template <>
+inline Rotation3r Rng::RandomRotation(Real ang_max) {
+  return AngleAxisToRotation(RandomUnitVector<3>(), Random(ang_max));
 }
 
 template <int dim>
-inline void Rng::RandomTransform(const Vecr<dim>& range_low,
-                                 const Vecr<dim>& range_high,
+inline void Rng::RandomTransform(const Vecr<dim>& low, const Vecr<dim>& high,
                                  Matr<dim + 1, dim + 1>& tf) {
   static_assert((dim == 2) || (dim == 3), "Dimension must be 2 or 3");
-  if ((range_low.array() > range_high.array()).any()) {
-    throw std::range_error("Invalid range");
-  }
-  Rotationr<dim> rot;
-  RandomRotation(rot);
-  Linear(tf) = rot;
-  for (int i = 0; i < dim; ++i) {
-    tf(i, dim) = Random(range_low(i), range_high(i));
-  }
-  tf.template block<1, dim>(dim, 0) = Vecr<dim>::Zero().transpose();
-  tf(dim, dim) = 1.0;
+
+  Linear(tf) = RandomRotation<dim>();
+  for (int i = 0; i < dim; ++i) tf(i, dim) = Random(low(i), high(i));
 }
 
 template <int hdim>
-inline void Rng::RandomTransform(Real range_low, Real range_high,
-                                 Matr<hdim, hdim>& tf) {
-  RandomTransform<hdim - 1>(Vecr<hdim - 1>::Constant(range_low),
-                            Vecr<hdim - 1>::Constant(range_high), tf);
+inline void Rng::RandomTransform(Real low, Real high, Matr<hdim, hdim>& tf) {
+  constexpr int dim = hdim - 1;
+  RandomTransform<dim>(Vecr<dim>::Constant(low), Vecr<dim>::Constant(high), tf);
 }
 
 }  // namespace dgd
