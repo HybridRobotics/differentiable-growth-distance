@@ -24,6 +24,15 @@
 
 namespace dgd {
 
+/// @brief Warm start type for the growth distance algorithm.
+enum class WarmStartType {
+  /// @brief Primal solution warm start.
+  Primal,
+
+  /// @brief Dual solution warm start.
+  Dual
+};
+
 /// @brief Settings for the growth distance algorithm.
 struct Settings {
   /**
@@ -38,9 +47,11 @@ struct Settings {
    * @brief Relative tolerance between the upper and lower bounds of the growth
    * distance (\f$= 1 + \epsilon\f$).
    *
+   * This value determines the logarithmic primal-dual gap tolerance.
+   *
    * The convergence criterion is
    * \f[
-   * lb \leq ub \leq (\text{rel_tol}) \ lb.
+   * lb \leq ub \leq \text{rel_tol} \cdot lb.
    * \f]
    */
   Real rel_tol = Real(1.0) + kSqrtEps;
@@ -49,10 +60,13 @@ struct Settings {
   int max_iter = 100;
 
   /**
-   * @brief (For proximal bundle and trust region Newton solvers in three
-   * dimensions) number of initial cutting plane iterations to run.
+   * @brief (For proximal bundle and trust region Newton solvers in 3D) number
+   * of initial cutting plane iterations to run.
    */
-  int cutting_plane_iter = 0;
+  int cutting_plane_iter = 5;
+
+  /// @brief Warm start type.
+  WarmStartType ws_type = WarmStartType::Primal;
 };
 
 }  // namespace dgd

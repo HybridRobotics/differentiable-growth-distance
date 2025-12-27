@@ -25,7 +25,7 @@
 
 namespace dgd {
 
-/// @brief Solution status at the termination of the algorithm.
+/// @brief Solution status at the termination of the growth distance algorithm.
 enum class SolutionStatus {
   /**
    * @brief Optimal solution reached according to the relative tolerance
@@ -53,9 +53,9 @@ enum class SolutionStatus {
 /**
  * @brief Growth distance algorithm output.
  *
- * @attention When not using warm start, an Output object can be shared across
+ * @attention When using cold start, an Output instance can be shared across
  * different pairs of convex sets. However, when using warm start, each
- * collision pair should use a different object.
+ * collision pair should use a different instance.
  *
  * @tparam dim Dimension of the convex sets.
  */
@@ -78,21 +78,24 @@ struct Output {
    * @brief The normal vector of an optimal hyperplane (dual optimal solution).
    *
    * @note The normal vector is in the world frame of reference and is
-   * pointed towards the second set (with respect to the first set). Also, the
-   * normal vector need not have unit 2-norm.
+   * pointed towards the second set (with respect to the first set). The normal
+   * vector need not have unit 2-norm.
    */
   Vecr<dim> normal = Vecr<dim>::Zero();
 
-  /// @brief Support function hints (internal).
+  /// @brief (internal) support function hints.
   SupportFunctionHint<dim> hint1_{}, hint2_{};
 
   /**
    * @name Primal optimal solutions
    * @brief Primal optimal solutions for each convex set.
    *
-   * @see SolutionError.prim_infeas_err
+   * The solutions are primal feasible, i.e., they satisfy:
+   * \f[
+   * p_1 - p_2 + \text{growth_dist_ub} \cdot (z_1 - p_1 - (z_2 - p_2)) = 0.
+   * \f]
    *
-   * @note The primal solutions are in the world frame of reference.
+   * @note The primal optimal solutions are in the world frame of reference.
    */
   ///@{
   Vecr<dim> z1 = Vecr<dim>::Zero();
@@ -112,15 +115,18 @@ struct Output {
    *
    * The lower bound corresponds to the dual solution (normal vector).
    */
-  Real growth_dist_lb = 0.0;
+  Real growth_dist_lb = Real(0.0);
 
-  /// @brief Convex set inradii (internal).
+  /// @brief (internal) convex set inradii.
   Real r1_ = kEps, r2_ = kEps;
+
+  // (test) (internal) primal infeasibility error.
+  // Real prim_infeas_err = kInf;
 
   /// @brief Number of solver iterations.
   int iter = 0;
 
-  /// @brief Unit normal vector flag (internal).
+  /// @brief (internal) unit normal vector flag.
   bool normalize_2norm_ = true;
 
   /// @brief Solution status.
