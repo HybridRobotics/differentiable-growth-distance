@@ -20,32 +20,61 @@
 #ifndef DGD_UTILS_TRANSFORMATIONS_H_
 #define DGD_UTILS_TRANSFORMATIONS_H_
 
+#include <cmath>
+#include <type_traits>
+
 #include "dgd/data_types.h"
 
 namespace dgd {
 
 /**
- * @brief Sets the rotation matrix using the body ZYX Euler angles.
+ * @brief Returns the skew-symmetric matrix of a 3D vector.
  *
- * @param[in]  euler ZYX Euler angles, in the form (roll, pitch, yaw).
- * @param[out] rot   Rotation matrix.
+ * @param  v 3D vector.
+ * @return Skew-symmetric matrix.
  */
-inline void EulerToRotation(const Vec3r& euler, Rotation3r& rot) {
-  const Eigen::AngleAxis<Real> R(euler(0), Vec3r::UnitX());
-  const Eigen::AngleAxis<Real> P(euler(1), Vec3r::UnitY());
-  const Eigen::AngleAxis<Real> Y(euler(2), Vec3r::UnitZ());
-  rot.noalias() = (Y * P * R).matrix();
+inline Rotation3r Hat(const Vec3r& v) {
+  Rotation3r rot;
+  rot << 0, -v(2), v(1), v(2), 0, -v(0), -v(1), v(0), 0;
+  return rot;
 }
 
 /**
- * @brief Sets the rotation matrix using the angle-axis representation.
+ * @brief Returns a rotation matrix using the body ZYX Euler angles.
  *
- * @param[in]  ax  Rotation axis, must be a unit vector.
- * @param[in]  ang Rotation angle.
- * @param[out] rot Rotation matrix.
+ * @param  euler ZYX Euler angles, in the form (roll, pitch, yaw).
+ * @return Rotation matrix.
  */
-inline void AngleAxisToRotation(const Vec3r& ax, Real ang, Rotation3r& rot) {
-  rot = Eigen::AngleAxis<Real>(ang, ax).matrix();
+inline Rotation3r EulerToRotation(const Vec3r& euler) {
+  const Real cr = std::cos(euler(0)), sr = std::sin(euler(0));
+  const Real cp = std::cos(euler(1)), sp = std::sin(euler(1));
+  const Real cy = std::cos(euler(2)), sy = std::sin(euler(2));
+
+  // R = Rz(yaw) * Ry(pitch) * Rx(roll).
+  Rotation3r rot;
+  // clang-format off
+  rot << cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr,
+         sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr,
+         -sp,     cp * sr,                cp * cr;
+  // clang-format on
+  return rot;
+}
+
+/**
+ * @brief Returns a rotation matrix using the angle-axis representation.
+ *
+ * @param  ax  Rotation axis with unit 2-norm.
+ * @param  ang Rotation angle.
+ * @return Rotation matrix.
+ */
+inline Rotation3r AngleAxisToRotation(const Vec3r& ax, Real ang) {
+  const Real c = std::cos(ang);
+
+  // R = c*I + (1-c)*ax*ax' + s*hat(ax).
+  Rotation3r rot;
+  rot = c * Rotation3r::Identity() + (Real(1.0) - c) * (ax * ax.transpose()) +
+        std::sin(ang) * Hat(ax);
+  return rot;
 }
 
 }  // namespace dgd
