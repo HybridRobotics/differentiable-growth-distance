@@ -17,8 +17,11 @@
  * @brief Common utility functions for the solvers.
  */
 
-#ifndef DGD_SOLVERS_UTILS_H_
-#define DGD_SOLVERS_UTILS_H_
+#ifndef DGD_SOLVERS_SOLVER_UTILS_H_
+#define DGD_SOLVERS_SOLVER_UTILS_H_
+
+#include <cmath>
+#include <type_traits>
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
@@ -29,24 +32,53 @@ namespace dgd {
 
 namespace detail {
 
-// Sets rot such that rot * n = (0, 1).
-inline void RotationToZAxis(const Vec2r& n, Rotation2r& rot) {
-  rot << n(1), -n(0), n(0), n(1);
+/// @brief Helper struct that is false for any solver type.
+template <SolverType S>
+struct always_false : std::false_type {};
+
+/// @brief Increments i modulo n.
+template <int n>
+inline constexpr int Inc(int i) {
+  return (i == n - 1) ? 0 : i + 1;
 }
 
-// Sets rot such that rot * n = (0, 0, 1).
-inline void RotationToZAxis(const Vec3r& n, Rotation3r& rot) {
+/// @brief Decrements i modulo n.
+template <int n>
+inline constexpr int Dec(int i) {
+  return (i == 0) ? n - 1 : i - 1;
+}
+
+/// @brief Inverts 0 and 1.
+inline constexpr int Inv(int i) { return 1 - i; }
+
+/// @brief Alignment rotation function.
+template <int dim>
+Rotationr<dim> RotationToZAxis(const Vecr<dim>& n) {
+  static_assert((dim == 2) || (dim == 3), "Dimension must be 2 or 3");
+}
+
+/// @brief Returns a rotation matrix \f$R\f$ such that \f$R n = (0, 1)\f$.
+template <>
+inline Rotation2r RotationToZAxis(const Vec2r& n) {
+  return (Rotation2r() << n(1), -n(0), n(0), n(1)).finished();
+}
+
+/// @brief Returns a rotation matrix \f$R\f$ such that \f$R n = (0, 0, 1)\f$.
+template <>
+inline Rotation3r RotationToZAxis(const Vec3r& n) {
   Vec3r axis = n + Vec3r::UnitZ();
-  const Real norm = axis.norm();
-  if (norm > kEps) {
-    axis /= norm;
-    rot = Real(2.0) * axis * axis.transpose() - Rotation3r::Identity();
+  const Real norm2 = axis.squaredNorm();
+  if (norm2 > kEps * kEps) {
+    Rotation3r m;
+    m.noalias() = (Real(2.0) / norm2) * axis * axis.transpose();
+    m.diagonal() -= Vec3r::Ones();
+    return m;
   } else {
-    rot = Vec3r(1.0, -1.0, -1.0).asDiagonal();
+    return Vec3r(Real(1.0), Real(-1.0), Real(-1.0)).asDiagonal();
   }
 }
 
-// Initializes the output for cold start.
+/// @brief Initializes the output for cold start.
 template <int dim, class C1, class C2>
 inline void InitializeOutput(const C1* set1, const C2* set2, Output<dim>& out) {
   out.hint2_.n_prev = out.hint1_.n_prev = Vecr<dim>::Zero();
@@ -55,19 +87,19 @@ inline void InitializeOutput(const C1* set1, const C2* set2, Output<dim>& out) {
   out.normalize_2norm_ = set1->RequireUnitNormal() || set2->RequireUnitNormal();
 }
 
-// Sets zero output when the centers of the convex sets coincide.
+/// @brief Sets zero output when the centers of the convex sets coincide.
 template <int dim>
 inline Real SetZeroOutput(const Transformr<dim>& tf1,
                           const Transformr<dim>& tf2, Output<dim>& out) {
   out.normal = Vecr<dim>::Zero();
-  out.growth_dist_ub = out.growth_dist_lb = 0.0;
+  out.growth_dist_ub = out.growth_dist_lb = Real(0.0);
   out.z1 = Affine(tf1);
   out.z2 = Affine(tf2);
   out.status = SolutionStatus::CoincidentCenters;
-  return 0.0;
+  return Real(0.0);
 }
 
-// Normalizes the normal vector.
+/// @brief Normalizes the normal vector.
 template <int dim>
 inline void NormalizeNormal(Vecr<dim>& n, bool normalize_2norm) {
   if (normalize_2norm) {
@@ -77,7 +109,7 @@ inline void NormalizeNormal(Vecr<dim>& n, bool normalize_2norm) {
   }
 }
 
-// Computes the primal optimal solution in the world frame of reference.
+/// @brief Computes the primal optimal solution in the world frame of reference.
 template <int dim>
 inline Real ComputePrimalSolution(const Transformr<dim>& tf1,
                                   const Transformr<dim>& tf2, Real cdist,
@@ -87,7 +119,7 @@ inline Real ComputePrimalSolution(const Transformr<dim>& tf1,
   return out.growth_dist_ub = cdist / lb;
 }
 
-// Computes the dual optimal solution in the world frame of reference.
+/// @brief Computes the dual optimal solution in the world frame of reference.
 template <int dim>
 inline Real ComputeDualSolution(const Rotationr<dim>& rot, Real cdist, Real ub,
                                 Output<dim>& out) {
@@ -95,10 +127,10 @@ inline Real ComputeDualSolution(const Rotationr<dim>& rot, Real cdist, Real ub,
   return out.growth_dist_lb = cdist / ub;
 }
 
-// Computes gamma for the proximal bundle method.
+/// @brief Computes \f$\gamma\f$ for the proximal bundle method.
 inline Real ComputeGammaProximalBundle(Real ub, Real r, int iter) {
   Real gamma;
-  if constexpr (SolverSettings::kProxThresh < kEps) {
+  if (SolverSettings::kProxThresh < kEps) {
     gamma = r / ub;
   } else {
     gamma = Real(1.0) /
@@ -113,82 +145,82 @@ inline Real ComputeGammaProximalBundle(Real ub, Real r, int iter) {
   return gamma;
 }
 
-// Helper struct that is false for any solver type.
-template <SolverType S>
-struct always_false : std::false_type {};
-
-// Minkowski difference set properties.
+/// @brief Minkowski difference set properties.
 template <int dim>
 struct MinkowskiDiffProp {
-  // Alignment rotation matrices.
+  /// @brief Alignment rotation matrices.
   Matr<dim, dim> rot, rot1, rot2;
 
-  // Relative center position.
+  /// @brief Relative center position.
   Vecr<dim> p21;
 
-  // Center distance.
+  /// @brief Center distance.
   Real cdist;
 
-  // Minkowski difference set inradius.
+  /// @brief Minkowski difference set inradius.
   Real r;
 
-  // Sets p21 and cdist.
+  /// @brief Sets p21 and cdist.
   void SetCenterDistance(const Transformr<dim>& tf1,
                          const Transformr<dim>& tf2) {
     p21 = Affine(tf2) - Affine(tf1);
     cdist = p21.norm();
   }
 
-  // Sets rot, rot1, and rot2.
+  /// @brief Sets rot, rot1, and rot2.
   void SetRotationMatrices(const Transformr<dim>& tf1,
                            const Transformr<dim>& tf2) {
-    RotationToZAxis(p21 / cdist, rot);
+    rot = RotationToZAxis<dim>(p21 / cdist);
     rot1.noalias() = rot * Linear(tf1);
     rot2.noalias() = rot * Linear(tf2);
   }
 };
 
-// nth-order support function output.
+/// @brief nth-order support function output.
 template <int dim, int order>
 struct SupportFunctionOutput;
 
 template <int dim>
 struct SupportFunctionOutput<dim, 1> {
-  // Support points.
-  Vecr<dim> sp, sp1, sp2;
+  /// @brief Support points.
+  Vecr<dim> sp, sp1_, sp2_;
 
-  // Support values.
+  /// @brief Support values.
   Real sv1, sv2;
 
-  // Evaluates the support function at the given normal vector.
+  /// @brief Evaluates the support function at the given normal vector.
   template <class C1, class C2>
   void Evaluate(const C1* set1, const C2* set2,
                 const MinkowskiDiffProp<dim>& mdp, const Vecr<dim>& n,
                 Output<dim>& out) {
-    sv1 = set1->SupportFunction(mdp.rot1.transpose() * n, sp1, &out.hint1_);
-    sv2 = set2->SupportFunction(-mdp.rot2.transpose() * n, sp2, &out.hint2_);
-    sp.noalias() = mdp.rot1 * sp1 - mdp.rot2 * sp2;
+    sv1 = set1->SupportFunction(mdp.rot1.transpose() * n, sp1_, &out.hint1_);
+    sv2 = set2->SupportFunction(-mdp.rot2.transpose() * n, sp2_, &out.hint2_);
+    sp.noalias() = mdp.rot1 * sp1_ - mdp.rot2 * sp2_;
   }
+
+  /// @brief Gets the support points.
+  const Vecr<dim>& sp1() const { return sp1_; }
+  const Vecr<dim>& sp2() const { return sp2_; }
 };
 
 template <int dim>
 struct SupportFunctionOutput<dim, 2> {
-  // Support function derivatives.
+  /// @brief Support function derivatives.
   SupportFunctionDerivatives<dim> deriv1, deriv2;
 
-  // Support function Hessian.
+  /// @brief Support function Hessian.
   Matr<dim, dim> Dsp;
 
-  // Support point.
+  /// @brief Support point.
   Vecr<dim> sp;
 
-  // Support values.
+  /// @brief Support values.
   Real sv1, sv2;
 
-  // Differentiability.
+  /// @brief Differentiability.
   bool differentiable;
 
-  // Evaluates the support function at the given normal vector.
+  /// @brief Evaluates the support function at the given normal vector.
   template <class C1, class C2>
   void Evaluate(const C1* set1, const C2* set2,
                 const MinkowskiDiffProp<dim>& mdp, const Vecr<dim>& n,
@@ -203,7 +235,8 @@ struct SupportFunctionOutput<dim, 2> {
     }
   }
 
-  // Evaluates the first-order support function at the given normal vector.
+  /// @brief Evaluates the first-order support function at the given normal
+  /// vector.
   template <class C1, class C2>
   void EvaluateFirstOrder(const C1* set1, const C2* set2,
                           const MinkowskiDiffProp<dim>& mdp, const Vecr<dim>& n,
@@ -214,10 +247,14 @@ struct SupportFunctionOutput<dim, 2> {
                                 &out.hint2_);
     sp.noalias() = mdp.rot1 * deriv1.sp - mdp.rot2 * deriv2.sp;
   }
+
+  /// @brief Gets the support points.
+  const Vecr<dim>& sp1() const { return deriv1.sp; }
+  const Vecr<dim>& sp2() const { return deriv2.sp; }
 };
 
 }  // namespace detail
 
 }  // namespace dgd
 
-#endif  // DGD_SOLVERS_UTILS_H_
+#endif  // DGD_SOLVERS_SOLVER_UTILS_H_
