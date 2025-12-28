@@ -10,37 +10,49 @@
 
 namespace dgd {
 
-namespace internal {
+namespace bench {
 
+// Prints the growth distance benchmark statistics.
 inline void PrintStatistics(double avg_solve_time, double max_prim_dual_gap,
-                            double max_prim_feas_err, double max_dual_feas_err,
-                            double avg_iter, int nsubopt) {
+                            double max_prim_infeas_err,
+                            double max_dual_infeas_err, double avg_iter,
+                            int nsubopt,
+                            double* max_internal_prim_infeas_err = nullptr) {
   std::cout << "Avg. solve time (us)    : " << avg_solve_time << std::endl;
   std::cout << std::scientific;
   std::cout << "Max. prim dual gap      : " << max_prim_dual_gap << std::endl;
-  std::cout << "Max. prim infeas err (m): " << max_prim_feas_err << std::endl;
-  std::cout << "Max. dual infeas err    : " << max_dual_feas_err << std::endl;
+  std::cout << "Max. prim infeas err (m): " << max_prim_infeas_err << std::endl;
+  if (max_internal_prim_infeas_err) {
+    std::cout << "Max. prim infeas err (m): " << *max_internal_prim_infeas_err
+              << "  (internal)" << std::endl;
+  }
+  std::cout << "Max. dual infeas err    : " << max_dual_infeas_err << std::endl;
   std::cout.unsetf(std::ios::fixed | std::ios::scientific);
   std::cout << "Avg. iterations         : " << avg_iter << std::endl;
   std::cout << "Num. suboptimal runs    : " << nsubopt << std::endl;
   std::cout << std::endl;
 }
 
-template <int dim>
+// Prints a formatted matrix.
+template <int dim, bool csv = true>
 inline void PrintMatrix(const Matr<dim, dim>& m) {
+  const std::string prefix = csv ? "  " : "  (";
+  const std::string suffix = csv ? "," : ")";
   for (int i = 0; i < dim; ++i) {
-    std::cout << "  (";
+    std::cout << prefix;
     for (int j = 0; j < dim - 1; ++j) std::cout << m(i, j) << ", ";
-    std::cout << m(i, dim - 1) << ")" << std::endl;
+    std::cout << m(i, dim - 1) << suffix << std::endl;
   }
 }
 
+// Prints a formatted vector.
 template <int dim>
 inline void PrintVector(const Vecr<dim>& v) {
   for (int i = 0; i < dim - 1; ++i) std::cout << v(i) << ", ";
   std::cout << v(dim - 1) << std::endl;
 }
 
+// Converts the solution status to string.
 inline std::string StatusToString(SolutionStatus status) {
   if (status == SolutionStatus::CoincidentCenters) {
     return "Coincident centers";
@@ -51,6 +63,18 @@ inline std::string StatusToString(SolutionStatus status) {
   }
 }
 
+// Returns a string for the warm start type.
+inline std::string WarmStartTypeString(Settings settings) {
+  if (settings.ws_type == WarmStartType::Primal) {
+    return "Primal";
+  } else if (settings.ws_type == WarmStartType::Dual) {
+    return "Dual";
+  } else {
+    return "Unknown";
+  }
+}
+
+// Prints the growth distance problem setup.
 template <int dim>
 void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                 const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
@@ -76,7 +100,11 @@ void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
   std::cout << "Settings: " << std::endl
             << "  Max iter: " << settings.max_iter << std::endl
             << "  Rel tol: " << settings.rel_tol << std::endl
-            << "  Min center dist: " << settings.min_center_dist << std::endl;
+            << "  Min center dist: " << settings.min_center_dist << std::endl
+            << "  Cutting plane iter: " << settings.cutting_plane_iter
+            << std::endl
+            << "  Warm start type: " << WarmStartTypeString(settings)
+            << std::endl;
   std::cout << "Output: " << std::endl
             << "  Status: " << StatusToString(out.status) << std::endl
             << "  GD (lower): " << out.growth_dist_lb << std::endl
@@ -113,7 +141,7 @@ void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
   std::cout << std::setprecision(6);
 }
 
-}  // namespace internal
+}  // namespace bench
 
 }  // namespace dgd
 

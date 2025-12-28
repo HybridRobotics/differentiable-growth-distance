@@ -8,7 +8,7 @@
 
 namespace dgd {
 
-namespace internal {
+namespace bench {
 
 void MeshProperties::SetVertexMeshFromObjFile(const std::string& filename) {
   MeshLoader ml{};
@@ -18,7 +18,8 @@ void MeshProperties::SetVertexMeshFromObjFile(const std::string& filename) {
     if (!ml.MakeVertexGraph(vert, vgraph)) {
       throw std::runtime_error("Qhull error: Failed to parse the file");
     }
-    if ((inradius = ml.ComputeInradius(interior_point)) <= 0.0) {
+    inradius = ml.ComputeInradius(interior_point);
+    if (inradius <= 0.0) {
       throw std::runtime_error("Nonpositive inradius");
     }
   } catch (const std::runtime_error& e) {
@@ -38,8 +39,8 @@ void MeshProperties::SetFacetMeshFromObjFile(const std::string& filename) {
     if (!ml.MakeFacetGraph(normal, offset, fgraph, interior_point)) {
       throw std::runtime_error("Qhull error: Failed to parse the file");
     }
-    if ((inradius = ml.ComputeInradius(normal, offset, interior_point)) <=
-        0.0) {
+    inradius = ml.ComputeInradius(normal, offset, interior_point);
+    if (inradius <= 0.0) {
       throw std::runtime_error("Nonpositive inradius");
     }
   } catch (const std::runtime_error& e) {
@@ -59,8 +60,8 @@ void MeshProperties::SetFacetMeshFromVertices(const std::vector<Vec3r>& vert) {
     if (!ml.MakeFacetGraph(normal, offset, fgraph, interior_point)) {
       throw std::runtime_error("Qhull error: Failed to process vertices");
     }
-    if ((inradius = ml.ComputeInradius(normal, offset, interior_point)) <=
-        0.0) {
+    inradius = ml.ComputeInradius(normal, offset, interior_point);
+    if (inradius <= 0.0) {
       throw std::runtime_error("Nonpositive inradius");
     }
   } catch (const std::runtime_error& e) {
@@ -70,6 +71,6 @@ void MeshProperties::SetFacetMeshFromVertices(const std::vector<Vec3r>& vert) {
   nfacet = static_cast<int>(normal.size());
 }
 
-}  // namespace internal
+}  // namespace bench
 
 }  // namespace dgd

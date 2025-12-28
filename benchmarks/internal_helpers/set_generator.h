@@ -17,7 +17,7 @@ class ConvexSet;
 
 class Mesh;
 
-namespace internal {
+namespace bench {
 
 // Type definitions for convenience.
 template <int dim>
@@ -50,8 +50,9 @@ enum class FlatPrimitive3D {
   Count_,
 };
 
+// Feature dimension ranges for convex sets.
 struct ConvexSetFeatureRange {
-  static constexpr Real kScale = 1e-1;
+  static constexpr Real kScale = 1e-2;
 
   // 2D convex sets.
   struct {
@@ -113,8 +114,9 @@ struct ConvexSetFeatureRange {
     std::array<Real, 2> radius{0.25 * kScale, 0.25};
   } sphere;
 
-  Real margin = Real(0.25);
-  Real pos_margin_prob = Real(0.5);
+  Real margin = 0.25;
+  // Probability of positive margin.
+  Real pos_margin_prob = 0.5;
 };
 
 // Convex set generator.
@@ -124,16 +126,16 @@ class ConvexSetGenerator {
 
   ~ConvexSetGenerator() = default;
 
-  // Sets default RNG seed.
-  void SetDefaultRngSeed() { rng_.SetDefaultSeed(); };
+  // Sets an RNG seed.
+  void SetRngSeed(unsigned int seed = 5489u) { rng_.SetSeed(seed); };
 
-  // Sets a random seed.
+  // Sets a true random seed.
   void SetRandomRngSeed() { rng_.SetRandomSeed(); };
 
   // Loads meshes from .obj files.
   void LoadMeshesFromObjFiles(const std::vector<std::string>& filenames);
 
-  // Gets a margin value.
+  // Returns a random margin value.
   Real GetMargin();
 
   // Generates a random convex set of a primitive type.
@@ -143,17 +145,18 @@ class ConvexSetGenerator {
 
   ConvexSetPtr<3> GetPrimitiveSet(FlatPrimitive3D type);
 
-  // Gets random primitive convex sets.
+  // Generates random primitive convex sets.
   ConvexSetPtr<3> GetRandomCurvedPrimitive3DSet();
 
   ConvexSetPtr<3> GetRandomPrimitive3DSet();
 
-  // Retrieves a random Mesh set with index.
+  // Retrieves a random Mesh set using an index.
   ConvexSetPtr<3> GetRandomMeshSet(int* idx = nullptr);
 
-  // Gets a random convex set.
+  // Generates a random 2D convex set.
   ConvexSetPtr<2> GetRandom2DSet();
 
+  // Generates a random 3D convex set.
   ConvexSetPtr<3> GetRandom3DSet();
 
   const std::vector<MeshPtr>& meshes() const { return meshes_; }
@@ -170,7 +173,7 @@ class ConvexSetGenerator {
   int nmeshes_;
 };
 
-}  // namespace internal
+}  // namespace bench
 
 }  // namespace dgd
 

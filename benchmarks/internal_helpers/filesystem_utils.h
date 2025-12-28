@@ -7,7 +7,7 @@
 
 namespace dgd {
 
-namespace internal {
+namespace bench {
 
 // Checks if the given folder path is a valid directory.
 inline bool IsValidDirectory(const std::string& path) {
@@ -20,17 +20,17 @@ inline bool IsValidDirectory(const std::string& path) {
 }
 
 // Gets the .obj file names from the given folder path.
-inline void GetObjFileNames(const std::string& path,
-                            std::vector<std::string>& filenames) {
-  filenames.clear();
+inline std::vector<std::string> GetObjFileNames(const std::string& path) {
+  std::vector<std::string> filenames;
   for (const auto& entry : std::filesystem::directory_iterator(path)) {
     if (entry.is_regular_file() && entry.path().extension() == ".obj") {
       filenames.push_back(path + entry.path().filename().string());
     }
   }
+  return filenames;
 }
 
-}  // namespace internal
+}  // namespace bench
 
 }  // namespace dgd
 

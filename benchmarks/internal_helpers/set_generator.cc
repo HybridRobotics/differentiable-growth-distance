@@ -13,7 +13,7 @@
 
 namespace dgd {
 
-namespace internal {
+namespace bench {
 
 namespace {
 
@@ -36,7 +36,7 @@ ConvexSetGenerator::ConvexSetGenerator(const ConvexSetFeatureRange& fr)
       count2_(static_cast<int>(Primitive2D::Count_)),
       ccount3_(static_cast<int>(CurvedPrimitive3D::Count_)),
       fcount3_(static_cast<int>(FlatPrimitive3D::Count_)) {
-  SetDefaultRngSeed();
+  SetRngSeed();
   if ((fr.polytope.nvert[0] < 4) || (fr.polygon.nvert[0] < 3)) {
     throw std::invalid_argument(
         "Polytopes (polygons) must have at least 4 (3) vertices.");
@@ -229,6 +229,6 @@ ConvexSetPtr<3> ConvexSetGenerator::GetRandom3DSet() {
   }
 }
 
-}  // namespace internal
+}  // namespace bench
 
 }  // namespace dgd
