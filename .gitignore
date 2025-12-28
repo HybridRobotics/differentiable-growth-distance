@@ -31,13 +31,17 @@
 *.out
 *.app
 
+
+# Include test .obj file
+!tests/cube.obj
+
 # Build files
 build/
 
 # VSCode files
 .vscode/
 
-# Plots.
+# Plots
 plots/
 
 # Temporary files

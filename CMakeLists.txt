@@ -2,16 +2,13 @@ cmake_minimum_required(VERSION 3.15)
 
 project(
   DifferentiableGrowthDistance
-  VERSION 1.0.1
+  VERSION 1.0.0
   DESCRIPTION "Differentiable growth distance algorithm for convex sets"
 )
 
 
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 ## User flags
-#   Compile flags
-# option(DGD_USE_FFAST_MATH "Add -ffast-math compile option" OFF)
-
 #   Preprocessor definitions
 option(DGD_USE_32BIT_FLOAT "Use 32-bit floating point" OFF)
 
@@ -23,7 +20,7 @@ option(DGD_INSTALL_LIBS "Install library" ON)
 include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-find_package(Eigen3 3.4.90 REQUIRED NO_MODULE)
+find_package(Eigen3 5.0 REQUIRED)
 find_package(Qhull REQUIRED)
 
 
@@ -83,7 +80,7 @@ endif()
 # Tests, bechmarks, and documentation
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   option(DGD_BUILD_TESTS      "Build tests" ON)
-  option(DGD_BUILD_BENCHMARKS "Build benchmarks (only for Release config with double precision)" ON)
+  option(DGD_BUILD_BENCHMARKS "Build benchmarks (only for Release config with double precision)" OFF)
   option(DGD_BUILD_DOCS       "Build documentation" OFF)
 
   include(FetchContent)

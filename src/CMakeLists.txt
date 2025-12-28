@@ -2,7 +2,6 @@
 add_library(${DGD_LIB} STATIC
   "${CMAKE_CURRENT_SOURCE_DIR}/graham_scan.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/mesh_loader.cc"
-  "${CMAKE_CURRENT_SOURCE_DIR}/utils/numerical_differentiation.cc"
 )
 
 add_library(${DGD_LIB}::${DGD_LIB} ALIAS ${DGD_LIB})
@@ -36,8 +35,7 @@ target_compile_options(${DGD_LIB}
     -Wall -Wextra -Werror -Wconversion -Wpedantic -fdiagnostics-color=always
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    $<$<CONFIG:Release>:-funroll-loops -mfpmath=sse -march=x86-64 -flto>
-    # $<$<AND:$<CONFIG:Release>,$<DGD_USE_FFAST_MATH>>:-ffast-math>
+    $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
 )
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${DGD_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
