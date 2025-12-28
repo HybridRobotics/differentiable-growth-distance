@@ -147,7 +147,7 @@ inline Real PrimalWarmStart(const MinkowskiDiffProp<2>& mdp, Matr<2, 2>& s,
  * Debug printing.
  */
 
-/// @brief Prints debugging information at any iteration of the algorithm.
+/// @brief Prints debugging information at an iteration of the algorithm.
 inline void PrintDebugIteration(int iter, [[maybe_unused]] Real cdist, Real lb,
                                 Real ub, Real rel_tol, const Matr<2, 2>& s,
                                 const Vec2r& bc) {
@@ -164,7 +164,7 @@ inline void PrintDebugIteration(int iter, [[maybe_unused]] Real cdist, Real lb,
  */
 
 /**
- * @brief Bundle scheme for the two-dimensional growth distance problem.
+ * @brief Bundle scheme for the growth distance problem in 2D.
  *
  * @note When detecting collision, the output is 1.0 if the sets are colliding,
  * and -1.0 otherwise.
