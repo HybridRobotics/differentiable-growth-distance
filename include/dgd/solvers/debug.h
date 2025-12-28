@@ -31,7 +31,7 @@ namespace dgd {
 
 namespace detail {
 
-// Sets ostream properties and prints debugging header.
+/// @brief Sets ostream properties and prints debugging header.
 inline void PrintDebugHeader(const std::string& solver_name) {
   std::cout << std::left;
   std::cout << std::scientific;
@@ -49,7 +49,7 @@ inline void PrintDebugHeader(const std::string& solver_name) {
   std::cout << std::string(line_len, '-') << std::endl;
 }
 
-// Prints debugging information at any iteration of the algorithm.
+/// @brief Prints debugging information at an iteration of the algorithm.
 inline void PrintDebugIteration(int iter, Real primal, Real dual, Real rel_tol,
                                 Real prim_infeas_err) {
   const Real rel_err = primal / dual;
@@ -64,7 +64,7 @@ inline void PrintDebugIteration(int iter, Real primal, Real dual, Real rel_tol,
   // clang-format on
 }
 
-// Unsets ostream properties.
+/// @brief Unsets ostream properties.
 inline void PrintDebugFooter() {
   std::cout.unsetf(std::ios::fixed | std::ios::scientific);
   std::cout << std::right;

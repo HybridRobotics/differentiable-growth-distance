@@ -37,6 +37,9 @@ enum class SolverType {
   /**
    * @brief Proximal bundle solver with constant or adaptive regularization.
    *
+   * @attention The proximal bundle solver is not implemented for the growth
+   * distance problem in 3D.
+   *
    * @note The proximal bundle method can have slow convergence in general.
    */
   ProximalBundle,
@@ -54,6 +57,19 @@ inline constexpr int SolverOrder() {
     return 1;
   }
 }
+
+/// @brief Barycentric coordinate solver type.
+enum class BcSolverType {
+  /**
+   * @brief Cramer's rule, assuming nondegeneracy.
+   *
+   * @attention This method can only be used for the cutting plane solver.
+   */
+  kCramer,
+
+  /// @brief Full pivot LU decomposition with projection, handling degeneracy.
+  kLU,
+};
 
 /// @brief Proximal regularization type.
 enum class ProximalRegularization {
@@ -75,8 +91,8 @@ enum class TrustRegionNewtonLevel {
   /**
    * @brief Return full trust region Newton solution.
    *
-   * @note The full solution is not implemented for the three-dimensional growth
-   * distance problem.
+   * @attention The full solution is not implemented for the growth distance
+   * problem in 3D.
    */
   kFull,
 };
@@ -84,42 +100,38 @@ enum class TrustRegionNewtonLevel {
 /// @brief Solver settings.
 struct SolverSettings {
   // [Debugging]
-  // Whether to print convergence information at each iteration.
+  /// @brief Whether to print convergence information at each iteration.
   static constexpr bool kEnableDebugPrinting = false;
-  // Whether to print growth distance bounds or dual function bounds.
+  /// @brief Whether to print growth distance bounds or dual function bounds.
   static constexpr bool kPrintGdBounds = false;
 
   // [Primal warm start]
-  // Smallest nonzero barycentric coordinate value.
-  static constexpr Real kEpsMinBc = std::pow(kEps, Real(0.75));
+  /// @brief Smallest nonzero barycentric coordinate value.
+  static inline const Real kEpsMinBc = std::pow(kEps, Real(0.75));
 
   // [All 3D solvers]
-  // Projected simplex area tolerance for barycentric coordinate computation.
-  static constexpr Real kEpsArea3 = kEps;
-  // Whether to enforce bounds on the primal infeasibility error.
-  static constexpr bool kBoundPrimInfeasErr3 = true;
-  // Squared norm bound on the primal infeasibility error.
-  static constexpr Real kEpsSqPrimInfeasErr3 = std::pow(kEps, Real(1.2));
-  // Constant added to the normal vector to ensure dual feasibility.
-  static constexpr Real kEpsNormal3 = 0.0;
+  /// @brief Projected simplex area tolerance for barycentric coordinate
+  /// computation.
+  static inline const Real kEpsArea3 = kEps;
 
   // [Proximal bundle solver]
-  // Type of proximal regularization.
+  /// @brief Type of proximal regularization.
   static constexpr auto kProxRegType = ProximalRegularization::kConstant;
-  // Constants used to compute the regularization factor (>= 0).
-  static constexpr Real kProxKc = Real(1.0e-3);  // Constant.
-  static constexpr Real kProxKa = Real(0.1e-3);  // Adaptive.
-  static constexpr Real kProxThresh = 0.0;       // <= 1.0.
+  /// @brief Constants used to compute the regularization factor (>= 0).
+  static inline const Real kProxKc = Real(1.0e-3);   // Constant.
+  static inline const Real kProxKa = Real(0.1e-3);   // Adaptive.
+  static inline const Real kProxThresh = Real(0.0);  // <= 1.0.
 
   // [Trust region Newton solver]
-  // [3D] Trust region Newton solution level.
+  /// @brief (3D) Trust region Newton solution level.
   static constexpr auto kTrnLevel = TrustRegionNewtonLevel::kPartial;
-  // [3D] Skip the trust region Newton solution if the Hessian is singular.
+  /// @brief (3D) Skip the trust region Newton solution if the Hessian is
+  /// singular.
   static constexpr bool kSkipTrnIfSingularHess3 = true;
-  // Tolerance for the Newton step computation.
-  static constexpr Real kHessMin2 = kSqrtEps;
-  static constexpr Real kPinvTol3 = kSqrtEps;
-  static constexpr Real kPinvResErr3 = kEps;
+  /// @brief Tolerance for the Newton step computation.
+  static inline const Real kHessMin2 = kSqrtEps;
+  static inline const Real kPinvTol3 = kSqrtEps;
+  static inline const Real kPinvResErr3 = kEps;
 };
 
 /// @brief Returns the solver name.
@@ -128,13 +140,15 @@ inline constexpr std::string SolverName() {
   if constexpr (S == SolverType::CuttingPlane) {
     return "Cutting plane";
   } else if constexpr (S == SolverType::ProximalBundle) {
-    if (SolverSettings::kProxRegType == ProximalRegularization::kConstant) {
+    if constexpr (SolverSettings::kProxRegType ==
+                  ProximalRegularization::kConstant) {
       return "Proximal bundle, constant regularization";
     } else {
       return "Proximal bundle, adaptive regularization";
     }
   } else if constexpr (S == SolverType::TrustRegionNewton) {
-    if (SolverSettings::kTrnLevel == TrustRegionNewtonLevel::kPartial) {
+    if constexpr (SolverSettings::kTrnLevel ==
+                  TrustRegionNewtonLevel::kPartial) {
       return "Trust region Newton, partial";
     } else {
       return "Trust region Newton, full";
