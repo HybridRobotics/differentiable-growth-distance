@@ -12,16 +12,15 @@ int main(int argc, char** argv) {
   }
 
   std::string path = argv[1];
-  if (!dgd::internal::IsValidDirectory(path)) return EXIT_FAILURE;
+  if (!dgd::bench::IsValidDirectory(path)) return EXIT_FAILURE;
 
-  std::vector<std::string> filenames;
-  dgd::internal::GetObjFileNames(path, filenames);
+  const auto filenames = dgd::bench::GetObjFileNames(path);
   if (filenames.empty()) {
     std::cerr << "No .obj files found in the specified directory" << std::endl;
     return EXIT_FAILURE;
   }
 
-  dgd::internal::MeshProperties mp;
+  dgd::bench::MeshProperties mp;
   for (const auto& filename : filenames) {
     try {
       mp.SetVertexMeshFromObjFile(filename);
