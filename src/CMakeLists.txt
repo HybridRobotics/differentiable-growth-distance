@@ -35,7 +35,7 @@ target_compile_options(${DGD_LIB}
     -Wall -Wextra -Werror -Wconversion -Wpedantic -fdiagnostics-color=always
     $<$<CONFIG:Debug>:-O0 -g>
     $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
+    # $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
 )
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
   set_target_properties(${DGD_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)

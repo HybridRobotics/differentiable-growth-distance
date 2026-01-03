@@ -10,7 +10,7 @@ target_compile_options(mesh_load_test
   PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     -O3 -DNDEBUG
-    -funroll-loops -march=native -flto
+    # -funroll-loops -march=native -flto
 )
 
 # Benchmark
@@ -23,5 +23,5 @@ target_compile_options(${DGD_LIB}_growth_distance_bm
   PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     -O3 -DNDEBUG
-    -funroll-loops -march=native -flto
+    # -funroll-loops -march=native -flto
 )

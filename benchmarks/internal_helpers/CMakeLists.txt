@@ -22,5 +22,5 @@ target_compile_options(${DGD_LIB}_bench
   PRIVATE
     -Wall -Wextra -Werror -Wconversion -Wpedantic
     -O3 -DNDEBUG
-    -funroll-loops -march=native -flto
+    # -funroll-loops -march=native -flto
 )
