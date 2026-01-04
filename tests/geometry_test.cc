@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <type_traits>
 #include <vector>
 
 #include "dgd/data_types.h"
@@ -455,6 +456,16 @@ TEST(PolytopeTest, SupportFunction) {
 }
 
 // XD convex set tests
+struct SetNameGenerator {
+  template <typename T>
+  static std::string GetName(int) {
+    if constexpr (std::is_same_v<T, Stadium>) return "Stadium";
+    if constexpr (std::is_same_v<T, Capsule>) return "Capsule";
+    if constexpr (std::is_same_v<T, Circle>) return "Circle";
+    if constexpr (std::is_same_v<T, Sphere>) return "Sphere";
+  }
+};
+
 //  Capsule test
 template <class C>
 class CapsuleTest : public testing::Test {
@@ -464,8 +475,8 @@ class CapsuleTest : public testing::Test {
   ~CapsuleTest() {}
 };
 
-typedef testing::Types<Stadium, Capsule> CapsuleTypes;
-TYPED_TEST_SUITE(CapsuleTest, CapsuleTypes);
+using CapsuleTypes = testing::Types<Stadium, Capsule>;
+TYPED_TEST_SUITE(CapsuleTest, CapsuleTypes, SetNameGenerator);
 
 TYPED_TEST(CapsuleTest, SupportFunction) {
   constexpr int dim = TypeParam::dimension();
@@ -505,8 +516,8 @@ class SphereTest : public testing::Test {
   ~SphereTest() {}
 };
 
-typedef testing::Types<Circle, Sphere> SphereTypes;
-TYPED_TEST_SUITE(SphereTest, SphereTypes);
+using SphereTypes = testing::Types<Circle, Sphere>;
+TYPED_TEST_SUITE(SphereTest, SphereTypes, SetNameGenerator);
 
 TYPED_TEST(SphereTest, SupportFunction) {
   constexpr int dim = TypeParam::dimension();
