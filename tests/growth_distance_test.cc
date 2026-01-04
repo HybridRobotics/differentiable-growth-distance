@@ -20,8 +20,6 @@ using namespace dgd;
 
 template <int dim>
 using C = ConvexSet<dim>;
-using C2 = ConvexSet<2>;
-using C3 = ConvexSet<3>;
 template <int dim>
 using ConvexSetPtr = std::unique_ptr<ConvexSet<dim>>;
 
@@ -107,22 +105,28 @@ struct GrowthDistanceConfig {
 };
 
 struct GrowthDistanceCp_2D
-    : GrowthDistanceConfig<2, GrowthDistanceCp<2, C2, C2>> {};
+    : GrowthDistanceConfig<2, GrowthDistanceCp<2, C<2>, C<2>>> {};
 struct GrowthDistanceTrn_2D
-    : GrowthDistanceConfig<2, GrowthDistanceTrn<2, C2, C2>> {};
+    : GrowthDistanceConfig<2, GrowthDistanceTrn<2, C<2>, C<2>>> {};
 struct GrowthDistanceCp_3D
-    : GrowthDistanceConfig<3, GrowthDistanceCp<3, C3, C3>> {};
+    : GrowthDistanceConfig<3, GrowthDistanceCp<3, C<3>, C<3>>> {};
 struct GrowthDistanceTrn_3D
-    : GrowthDistanceConfig<3, GrowthDistanceTrn<3, C3, C3>> {};
+    : GrowthDistanceConfig<3, GrowthDistanceTrn<3, C<3>, C<3>>> {};
 
 struct GrowthDistanceNameGenerator {
   template <typename T>
   static std::string GetName(int) {
-    const bool is_cp = (T::growth_distance ==
-                        static_cast<GrowthDistanceType<T::dim>>(
-                            GrowthDistanceCp<T::dim, C<T::dim>, C<T::dim>>));
-    return (is_cp ? "CuttingPlane" : "TrustRegionNewton") +
-           ("_" + std::to_string(T::dim) + "D");
+    if (T::growth_distance ==
+        static_cast<GrowthDistanceType<T::dim>>(
+            GrowthDistanceCp<T::dim, C<T::dim>, C<T::dim>>)) {
+      return "CuttingPlane_" + std::to_string(T::dim) + "D";
+    } else if (T::growth_distance ==
+               static_cast<GrowthDistanceType<T::dim>>(
+                   GrowthDistanceTrn<T::dim, C<T::dim>, C<T::dim>>)) {
+      return "TrustRegionNewton_" + std::to_string(T::dim) + "D";
+    } else {
+      return "Unknown_" + std::to_string(T::dim) + "D";
+    }
   }
 };
 
@@ -135,8 +139,8 @@ class GrowthDistanceTest : public testing::Test {
 };
 
 using GrowthDistanceTypes =
-    testing::Types<GrowthDistanceCp_2D, GrowthDistanceTrn_2D,
-                   GrowthDistanceCp_3D, GrowthDistanceTrn_3D>;
+    testing::Types<GrowthDistanceCp_2D, GrowthDistanceCp_3D,
+                   GrowthDistanceTrn_2D, GrowthDistanceTrn_3D>;
 TYPED_TEST_SUITE(GrowthDistanceTest, GrowthDistanceTypes,
                  GrowthDistanceNameGenerator);
 
@@ -196,7 +200,7 @@ struct DetectCollision_3D {
 struct DetectCollisionNameGenerator {
   template <typename T>
   static std::string GetName(int) {
-    return "_" + std::to_string(T::dim) + "D";
+    return std::to_string(T::dim) + "D";
   }
 };
 

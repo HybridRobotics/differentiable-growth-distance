@@ -463,6 +463,7 @@ struct SetNameGenerator {
     if constexpr (std::is_same_v<T, Capsule>) return "Capsule";
     if constexpr (std::is_same_v<T, Circle>) return "Circle";
     if constexpr (std::is_same_v<T, Sphere>) return "Sphere";
+    return "Unknown";
   }
 };
 
