@@ -753,15 +753,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
 
   while (true) {
     // Evaluate the support functions at the normal.
-    if constexpr (SolverOrder<S>() == 2) {
-      if (iter < settings.cutting_plane_iter) {
-        sfo.EvaluateFirstOrder(set1, set2, mdp, bsc.n, out);
-      } else {
-        sfo.Evaluate(set1, set2, mdp, bsc.n, out);
-      }
-    } else {
-      sfo.Evaluate(set1, set2, mdp, bsc.n, out);
-    }
+    sfo.Evaluate(set1, set2, mdp, bsc.n, out);
 
     // Update the upper bound and the current best normal vector.
     const Real ub_new = (sfo.sv1 + sfo.sv2) / bsc.n(2);
@@ -779,8 +771,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
       } else {
         // Check if the lower bound can be improved; if not, skip the simplex
         // update, and update the normal to the cutting plane normal.
-        if ((update_lb = ((iter < settings.cutting_plane_iter) ||
-                          (n_cp.dot(sfo.sp - bsc.s.col(0)) > Real(0.0))))) {
+        if ((update_lb = (n_cp.dot(sfo.sp - bsc.s.col(0)) > Real(0.0)))) {
           lb = UpdateSimplex(sfo.sp, sfo.sp1(), sfo.sp2(), bsc, out, &idxn);
         }
       }

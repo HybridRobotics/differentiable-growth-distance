@@ -59,12 +59,6 @@ struct Settings {
   /// @brief Maximum number of solver iterations.
   int max_iter = 100;
 
-  /**
-   * @brief (For proximal bundle and trust region Newton solvers in 3D) number
-   * of initial cutting plane iterations to run.
-   */
-  int cutting_plane_iter = 5;
-
   /// @brief Warm start type.
   WarmStartType ws_type = WarmStartType::Primal;
 };
