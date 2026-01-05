@@ -101,7 +101,6 @@ void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
             << "  Max iter: " << settings.max_iter << std::endl
             << "  Rel tol: " << settings.rel_tol << std::endl
             << "  Min center dist: " << settings.min_center_dist << std::endl
-            << "  Cutting plane iter: " << settings.cutting_plane_iter
             << std::endl
             << "  Warm start type: " << WarmStartTypeString(settings)
             << std::endl;
