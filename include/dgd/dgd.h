@@ -30,7 +30,7 @@
 #include "dgd/settings.h"
 #include "dgd/solvers/bundle_scheme_2d.h"
 #include "dgd/solvers/bundle_scheme_3d.h"
-#include "dgd/solvers/solver_options.h"
+#include "dgd/solvers/solver_types.h"
 
 namespace dgd {
 

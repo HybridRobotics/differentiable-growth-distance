@@ -26,7 +26,8 @@
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
 #include "dgd/output.h"
-#include "dgd/solvers/solver_options.h"
+#include "dgd/solvers/solver_settings.h"
+#include "dgd/solvers/solver_types.h"
 
 namespace dgd {
 

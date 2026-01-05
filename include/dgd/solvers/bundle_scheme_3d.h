@@ -30,7 +30,8 @@
 #include "dgd/output.h"
 #include "dgd/settings.h"
 #include "dgd/solvers/debug.h"
-#include "dgd/solvers/solver_options.h"
+#include "dgd/solvers/solver_settings.h"
+#include "dgd/solvers/solver_types.h"
 #include "dgd/solvers/solver_utils.h"
 
 namespace dgd {
