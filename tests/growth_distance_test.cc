@@ -21,7 +21,7 @@ using namespace dgd;
 template <int dim>
 using C = ConvexSet<dim>;
 template <int dim>
-using ConvexSetPtr = std::unique_ptr<ConvexSet<dim>>;
+using ConvexSetPtr = std::unique_ptr<C<dim>>;
 
 template <int dim>
 void SetConvexSets(ConvexSetPtr<dim>& set1, ConvexSetPtr<dim>& set2,

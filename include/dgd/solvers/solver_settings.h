@@ -28,32 +28,6 @@ namespace dgd {
 
 namespace detail {
 
-/// @brief Proximal regularization type.
-enum class ProximalRegularization {
-  /// @brief Constant regularization.
-  kConstant,
-
-  /// @brief Adaptive regularization, proportional to the iteration number.
-  kAdaptive,
-};
-
-/// @brief Trust region Newton solution level.
-enum class TrustRegionNewtonLevel {
-  /**
-   * @brief Return cutting plane solution if the Newton step does not lie in the
-   * trust region.
-   */
-  kPartial,
-
-  /**
-   * @brief Return full trust region Newton solution.
-   *
-   * @attention The full solution is not implemented for the growth distance
-   * problem in 3D.
-   */
-  kFull,
-};
-
 /// @brief Solver settings.
 struct SolverSettings {
   // [Debugging]
@@ -71,17 +45,7 @@ struct SolverSettings {
   /// computation.
   static inline const Real kEpsArea3 = kEps;
 
-  // [Proximal bundle solver]
-  /// @brief Type of proximal regularization.
-  static constexpr auto kProxRegType = ProximalRegularization::kConstant;
-  /// @brief Constants used to compute the regularization factor (>= 0).
-  static inline const Real kProxKc = Real(1.0e-3);   // Constant.
-  static inline const Real kProxKa = Real(0.1e-3);   // Adaptive.
-  static inline const Real kProxThresh = Real(0.0);  // <= 1.0.
-
   // [Trust region Newton solver]
-  /// @brief (3D) Trust region Newton solution level.
-  static constexpr auto kTrnLevel = TrustRegionNewtonLevel::kPartial;
   /// @brief (3D) Skip the trust region Newton solution if the Hessian is
   /// singular.
   static constexpr bool kSkipTrnIfSingularHess3 = true;

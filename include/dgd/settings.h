@@ -21,17 +21,9 @@
 #define DGD_SETTINGS_H_
 
 #include "dgd/data_types.h"
+#include "dgd/solvers/solver_types.h"
 
 namespace dgd {
-
-/// @brief Warm start type for the growth distance algorithm.
-enum class WarmStartType {
-  /// @brief Primal solution warm start.
-  Primal,
-
-  /// @brief Dual solution warm start.
-  Dual
-};
 
 /// @brief Settings for the growth distance algorithm.
 struct Settings {

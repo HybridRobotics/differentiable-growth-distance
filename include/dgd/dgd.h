@@ -44,8 +44,7 @@ namespace dgd {
  *
  * @see GrowthDistance
  */
-template <int dim, class C1, class C2,
-          detail::BcSolverType BST = detail::BcSolverType::kCramer>
+template <int dim, class C1, class C2, BcSolverType BST = BcSolverType::kCramer>
 inline Real GrowthDistanceCp(const C1* set1, const Transformr<dim>& tf1,
                              const C2* set2, const Transformr<dim>& tf2,
                              const Settings& settings, Output<dim>& out,
@@ -54,9 +53,8 @@ inline Real GrowthDistanceCp(const C1* set1, const Transformr<dim>& tf1,
                 "Incompatible set C1");
   static_assert(detail::ConvexSetValidator<dim, C2>::valid,
                 "Incompatible set C2");
-  return detail::BundleScheme<C1, C2, detail::SolverType::CuttingPlane, BST,
-                              false>(set1, tf1, set2, tf2, settings, out,
-                                     warm_start);
+  return detail::BundleScheme<C1, C2, SolverType::CuttingPlane, BST, false>(
+      set1, tf1, set2, tf2, settings, out, warm_start);
 }
 
 /**
@@ -77,8 +75,8 @@ inline Real GrowthDistanceTrn(const C1* set1, const Transformr<dim>& tf1,
                 "Incompatible set C1");
   static_assert(detail::ConvexSetValidator<dim, C2>::valid,
                 "Incompatible set C2");
-  return detail::BundleScheme<C1, C2, detail::SolverType::TrustRegionNewton,
-                              detail::BcSolverType::kLU, false>(
+  return detail::BundleScheme<C1, C2, SolverType::TrustRegionNewton,
+                              BcSolverType::kLU, false>(
       set1, tf1, set2, tf2, settings, out, warm_start);
 }
 
@@ -145,8 +143,7 @@ inline Real GrowthDistance(const C1* set1, const Transformr<dim>& tf1,
  * @param         warm_start Whether to use previous output for warm start.
  * @return        true, if the sets are colliding; false, otherwise.
  */
-template <int dim, class C1, class C2,
-          detail::BcSolverType BST = detail::BcSolverType::kCramer>
+template <int dim, class C1, class C2, BcSolverType BST = BcSolverType::kCramer>
 bool DetectCollision(const C1* set1, const Transformr<dim>& tf1, const C2* set2,
                      const Transformr<dim>& tf2, const Settings& settings,
                      Output<dim>& out, bool warm_start = false) {
@@ -158,7 +155,7 @@ bool DetectCollision(const C1* set1, const Transformr<dim>& tf1, const C2* set2,
   // Collision detection often only takes a few iterations. Using the cutting
   // plane method can be beneficial.
   const Real gd =
-      detail::BundleScheme<C1, C2, detail::SolverType::CuttingPlane, BST, true>(
+      detail::BundleScheme<C1, C2, SolverType::CuttingPlane, BST, true>(
           set1, tf1, set2, tf2, settings, out, warm_start);
   return ((out.status == SolutionStatus::CoincidentCenters) ||
           ((out.status == SolutionStatus::Optimal) && (gd > Real(0.0))));

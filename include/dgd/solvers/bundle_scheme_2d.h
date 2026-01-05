@@ -90,23 +90,24 @@ inline void UpdateNormalCuttingPlane(const Matr<2, 2>& s, Vec2r& n) {
 }
 
 /*
- * Proximal bundle and trust region Newton method functions.
+ * Trust region Newton method functions.
  */
 
 /**
- * @brief Updates the normal vector to the proximal point value.
+ * @brief Updates the normal vector to the trust region Newton solution.
  *
- * @note \f$\gamma > 0\f$ should be ensured;
- * if \f$\gamma = 0\f$, use the cutting plane update.
+ * @note \f$\text{hess} > 0\f$ should be ensured;
+ * if \f$\text{hess} = 0\f$, use the cutting plane update.
  */
-inline void UpdateNormalProximalPoint(const Matr<2, 2>& s, const Vec2r& n_cp,
-                                      Vec2r& n, Real gamma, int idxn) {
+inline void UpdateNormalTrustRegionNewton(const Matr<2, 2>& s,
+                                          const Vec2r& n_cp, Vec2r& n,
+                                          Real hess, int idxn) {
   const Real sgn = Real(2 * idxn - 1);
-  // const Real grad = gamma * (n_cp(0) / n_cp(1) - n(0) / n(1)) + s(0, idxn);
+  // const Real grad = hess * (n_cp(0) / n_cp(1) - n(0) / n(1)) + s(0, idxn);
   const Real grad =
-      gamma * (n_cp(0) * n(1) - n(0) * n_cp(1)) + n(1) * n_cp(1) * s(0, idxn);
+      hess * (n_cp(0) * n(1) - n(0) * n_cp(1)) + n(1) * n_cp(1) * s(0, idxn);
   if (sgn * grad < Real(0.0)) {
-    n(0) -= n(1) * (s(0, idxn) / gamma);
+    n(0) -= n(1) * (s(0, idxn) / hess);
   } else {
     n = n_cp;
   }
@@ -118,7 +119,7 @@ inline void UpdateNormalProximalPoint(const Matr<2, 2>& s, const Vec2r& n_cp,
 
 /**
  * @brief Warm starts the simplex and the normal vector and returns the lower
- * bound.
+ * bound using the previous primal optimal solution.
  */
 template <bool detect_collision>
 inline Real PrimalWarmStart(const MinkowskiDiffProp<2>& mdp, Matr<2, 2>& s,
@@ -144,9 +145,33 @@ inline Real PrimalWarmStart(const MinkowskiDiffProp<2>& mdp, Matr<2, 2>& s,
   return lb;
 }
 
+/**
+ * @brief Warm starts the normal vector using the previous dual optimal
+ * solution.
+ */
+inline void DualWarmStart(const MinkowskiDiffProp<2>& mdp, const Output<2>& out,
+                          Vec2r& n) {
+  if ((n(1) = mdp.rot.row(1).dot(out.normal)) > Real(0.0)) {
+    // Warm-started normal is dual feasible.
+    n(0) = mdp.rot.row(0).dot(out.normal);
+  } else {
+    n(1) = Real(1.0);
+  }
+}
+
 /*
  * Debug printing.
  */
+
+/// @brief Prints the debugging header.
+template <SolverType S>
+inline void PrintDebugHeader(bool warm_start, WarmStartType ws_type) {
+  std::string header =
+      SolverName<S>() + " (dim = 2) (" + InitializationName(warm_start);
+  if (warm_start) header += ": " + WarmStartName(ws_type);
+  header += ")";
+  PrintDebugHeader(header);
+}
 
 /// @brief Prints debugging information at an iteration of the algorithm.
 inline void PrintDebugIteration(int iter, [[maybe_unused]] Real cdist, Real lb,
@@ -170,7 +195,7 @@ inline void PrintDebugIteration(int iter, [[maybe_unused]] Real cdist, Real lb,
  * @note When detecting collision, the output is 1.0 if the sets are colliding,
  * and -1.0 otherwise.
  */
-template <class C1, class C2, SolverType S, BcSolverType BST,
+template <class C1, class C2, SolverType S, BcSolverType /*BST*/,
           bool detect_collision>
 Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
                   const Transform2r& tf2, const Settings& settings,
@@ -198,17 +223,13 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
 
   if (warm_start && (out.status == SolutionStatus::Optimal)) {
     // Warm start.
-    if (settings.ws_type == WarmStartType::Primal) {
+    if (settings.ws_type == WarmStartType::Primal) {  // Primal warm start.
       lb = PrimalWarmStart<detect_collision>(mdp, s, n, out);
     } else {  // Dual warm start.
       InitializeSimplex(s, n, mdp.r, out);
+      // if constexpr (detect_collision) InitializeSetSimplices(mdp, out);
       InitializeSetSimplices(mdp, out);
-      if ((n(1) = mdp.rot.row(1).dot(out.normal)) > Real(0.0)) {
-        // Warm-started normal is dual feasible.
-        n(0) = mdp.rot.row(0).dot(out.normal);
-      } else {
-        n(1) = Real(1.0);
-      }
+      DualWarmStart(mdp, out, n);
     }
   } else {
     // Cold start.
@@ -221,7 +242,7 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
   }
 
   if constexpr (SolverSettings::kEnableDebugPrinting) {
-    PrintDebugHeader(SolverName<S>() + " (dim = 2)");
+    PrintDebugHeader<S>(warm_start, settings.ws_type);
     PrintDebugIteration(iter, mdp.cdist, lb, ub, settings.rel_tol, s, out.bc);
   }
 
@@ -242,7 +263,7 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
                        (sfo.sp(1) <= Real(0.0))))) {
       if constexpr (S == SolverType::CuttingPlane) {
         lb = UpdateSimplex(sfo.sp, sfo.sp1(), sfo.sp2(), s, out);
-      } else {
+      } else {  // TrustRegionNewton
         // In 2D, the lower bound is guaranteed to be nondecreasing.
         lb = UpdateSimplex(sfo.sp, sfo.sp1(), sfo.sp2(), s, out, &idxn);
       }
@@ -291,27 +312,23 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
     if (update_lb) {
       if constexpr (S == SolverType::CuttingPlane) {
         UpdateNormalCuttingPlane(s, n);
-      } else {
+      } else {  // TrustRegionNewton
         UpdateNormalCuttingPlane(s, n_cp);
-        if constexpr (S == SolverType::ProximalBundle) {
-          const Real gamma = ComputeGammaProximalBundle(ub, mdp.r, iter);
-          UpdateNormalProximalPoint(s, n_cp, n, gamma, idxn);
-        } else {  // TrustRegionNewton.
-          Real hess;
-          if (sfo.differentiable &&
-              ((hess = n(1) * sfo.Dsp(0, 0)) > SolverSettings::kHessMin2)) {
-            UpdateNormalProximalPoint(s, n_cp, n, hess, idxn);
-          } else {
-            n = n_cp;
-          }
+        Real hess;
+        if (sfo.differentiable &&
+            ((hess = n(1) * sfo.Dsp(0, 0)) > SolverSettings::kHessMin2)) {
+          UpdateNormalTrustRegionNewton(s, n_cp, n, hess, idxn);
+        } else {
+          n = n_cp;
         }
       }
       NormalizeNormal(n, out.normalize_2norm_);
     } else {
-      // Lower bound was not updated; reset the normal vector.
+      // (Dual warm start) Lower bound was not updated; reset the normal vector.
       n = Vec2r::UnitY();
     }
   }
+
   out.iter = iter;
 
   if constexpr (SolverSettings::kEnableDebugPrinting) PrintDebugFooter();

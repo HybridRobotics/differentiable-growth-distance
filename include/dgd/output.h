@@ -20,6 +20,8 @@
 #ifndef DGD_OUTPUT_H_
 #define DGD_OUTPUT_H_
 
+#include <string>
+
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
 
@@ -135,6 +137,19 @@ struct Output {
 
 using Output2 = Output<2>;
 using Output3 = Output<3>;
+
+/// @brief Returns the solution status name.
+inline std::string SolutionStatusName(SolutionStatus status) {
+  if (status == SolutionStatus::CoincidentCenters) {
+    return "Coincident centers";
+  } else if (status == SolutionStatus::MaxIterReached) {
+    return "Maximum iterations reached";
+  } else if (status == SolutionStatus::Optimal) {
+    return "Optimal solution";
+  } else {
+    return "";
+  }
+}
 
 }  // namespace dgd
 

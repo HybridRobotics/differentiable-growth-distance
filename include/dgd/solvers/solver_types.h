@@ -31,53 +31,30 @@ enum class SolverType {
   /// @brief Cutting plane solver.
   CuttingPlane,
 
-  /**
-   * @brief Proximal bundle solver with constant or adaptive regularization.
-   *
-   * @attention The proximal bundle solver is not implemented for the growth
-   * distance problem in 3D.
-   *
-   * @note The proximal bundle method can have slow convergence in general.
-   */
-  ProximalBundle,
-
-  /// @brief Trust region Newton solver with partial or full solution.
+  /// @brief Trust region Newton solver.
   TrustRegionNewton,
 };
 
 /// @brief Derivative order required for each solver type.
 template <SolverType S>
 inline constexpr int SolverOrder() {
-  if constexpr (S == SolverType::TrustRegionNewton) {
+  if constexpr (S == SolverType::CuttingPlane) {
+    return 1;
+  } else if constexpr (S == SolverType::TrustRegionNewton) {
     return 2;
   } else {
-    return 1;
+    return -1;
   }
 }
 
-/// @brief Returns the solver name.
-template <SolverType S>
-inline constexpr std::string SolverName() {
-  if constexpr (S == SolverType::CuttingPlane) {
-    return "Cutting plane";
-  } else if constexpr (S == SolverType::ProximalBundle) {
-    if constexpr (SolverSettings::kProxRegType ==
-                  ProximalRegularization::kConstant) {
-      return "Proximal bundle, constant regularization";
-    } else {
-      return "Proximal bundle, adaptive regularization";
-    }
-  } else if constexpr (S == SolverType::TrustRegionNewton) {
-    if constexpr (SolverSettings::kTrnLevel ==
-                  TrustRegionNewtonLevel::kPartial) {
-      return "Trust region Newton, partial";
-    } else {
-      return "Trust region Newton, full";
-    }
-  } else {
-    return "";
-  }
-}
+/// @brief Warm start type for the growth distance algorithm.
+enum class WarmStartType {
+  /// @brief Primal solution warm start.
+  Primal,
+
+  /// @brief Dual solution warm start.
+  Dual
+};
 
 /// @brief Barycentric coordinate solver type.
 enum class BcSolverType {
@@ -91,6 +68,46 @@ enum class BcSolverType {
   /// @brief Full pivot LU decomposition with projection, handling degeneracy.
   kLU,
 };
+
+/// @brief Returns the solver name.
+template <SolverType S>
+inline constexpr std::string SolverName() {
+  if constexpr (S == SolverType::CuttingPlane) {
+    return "Cutting plane";
+  } else if constexpr (S == SolverType::TrustRegionNewton) {
+    return "Trust region Newton";
+  } else {
+    return "";
+  }
+}
+
+/// @brief Returns the initialization type name.
+inline std::string InitializationName(bool warm_start) {
+  return warm_start ? "Warm start" : "Cold start";
+}
+
+/// @brief Returns the warm start type name.
+inline std::string WarmStartName(WarmStartType ws_type) {
+  if (ws_type == WarmStartType::Primal) {
+    return "Primal";
+  } else if (ws_type == WarmStartType::Dual) {
+    return "Dual";
+  } else {
+    return "";
+  }
+}
+
+/// @brief Returns the barycentric coordinate solver type name.
+template <BcSolverType BST>
+inline constexpr std::string BcSolverName() {
+  if constexpr (BST == BcSolverType::kCramer) {
+    return "Cramer's rule";
+  } else if constexpr (BST == BcSolverType::kLU) {
+    return "LU decomposition";
+  } else {
+    return "";
+  }
+}
 
 }  // namespace dgd
 

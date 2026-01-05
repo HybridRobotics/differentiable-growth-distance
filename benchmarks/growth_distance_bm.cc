@@ -106,9 +106,9 @@ void ParseConfig(int argc, char* argv[], Config& config) {
 template <class C>
 using SetPtr = std::shared_ptr<C>;
 
+using dgd::BcSolverType;
+using dgd::SolverType;
 using dgd::WarmStartType;
-using dgd::detail::BcSolverType;
-using dgd::detail::SolverType;
 
 template <int dim, class C1, class C2>
 void ColdStart(std::function<const SetPtr<C1>()> gen1,

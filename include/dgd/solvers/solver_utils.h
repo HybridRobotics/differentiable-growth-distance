@@ -52,6 +52,9 @@ inline constexpr int Dec(int i) {
 /// @brief Inverts 0 and 1.
 inline constexpr int Inv(int i) { return 1 - i; }
 
+/// @brief Rectified Linear Unit (ReLU) function.
+inline constexpr Real Relu(Real x) { return std::max(x, Real(0.0)); }
+
 /// @brief Alignment rotation function.
 template <int dim>
 Rotationr<dim> RotationToZAxis(const Vecr<dim>& n) {
@@ -126,24 +129,6 @@ inline Real ComputeDualSolution(const Rotationr<dim>& rot, Real cdist, Real ub,
                                 Output<dim>& out) {
   out.normal = rot.transpose() * out.normal;
   return out.growth_dist_lb = cdist / ub;
-}
-
-/// @brief Computes \f$\gamma\f$ for the proximal bundle method.
-inline Real ComputeGammaProximalBundle(Real ub, Real r, int iter) {
-  Real gamma;
-  if (SolverSettings::kProxThresh < kEps) {
-    gamma = r / ub;
-  } else {
-    gamma = Real(1.0) /
-            std::sqrt((ub * ub) / (r * r) - SolverSettings::kProxThresh);
-  }
-  if constexpr (SolverSettings::kProxRegType ==
-                ProximalRegularization::kConstant) {
-    gamma *= SolverSettings::kProxKc;
-  } else {
-    gamma *= Real(iter) * SolverSettings::kProxKa;
-  }
-  return gamma;
 }
 
 /// @brief Minkowski difference set properties.

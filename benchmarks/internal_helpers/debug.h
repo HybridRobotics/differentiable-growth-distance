@@ -6,7 +6,11 @@
 #include <limits>
 
 #include "dgd/data_types.h"
+#include "dgd/error_metrics.h"
+#include "dgd/geometry/convex_set.h"
 #include "dgd/output.h"
+#include "dgd/settings.h"
+#include "dgd/solvers/solver_types.h"
 
 namespace dgd {
 
@@ -52,28 +56,6 @@ inline void PrintVector(const Vecr<dim>& v) {
   std::cout << v(dim - 1) << std::endl;
 }
 
-// Converts the solution status to string.
-inline std::string StatusToString(SolutionStatus status) {
-  if (status == SolutionStatus::CoincidentCenters) {
-    return "Coincident centers";
-  } else if (status == SolutionStatus::MaxIterReached) {
-    return "Maximum iterations reached";
-  } else {
-    return "Optimal solution";
-  }
-}
-
-// Returns a string for the warm start type.
-inline std::string WarmStartTypeString(Settings settings) {
-  if (settings.ws_type == WarmStartType::Primal) {
-    return "Primal";
-  } else if (settings.ws_type == WarmStartType::Dual) {
-    return "Dual";
-  } else {
-    return "Unknown";
-  }
-}
-
 // Prints the growth distance problem setup.
 template <int dim>
 void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
@@ -102,10 +84,10 @@ void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
             << "  Rel tol: " << settings.rel_tol << std::endl
             << "  Min center dist: " << settings.min_center_dist << std::endl
             << std::endl
-            << "  Warm start type: " << WarmStartTypeString(settings)
+            << "  Warm start type: " << WarmStartName(settings.ws_type)
             << std::endl;
   std::cout << "Output: " << std::endl
-            << "  Status: " << StatusToString(out.status) << std::endl
+            << "  Status: " << SolutionStatusName(out.status) << std::endl
             << "  GD (lower): " << out.growth_dist_lb << std::endl
             << "  GD (upper): " << out.growth_dist_ub << std::endl
             << "  #Iter: " << out.iter << std::endl;
@@ -121,7 +103,8 @@ void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
             << "  Dual infeas err: " << err.dual_infeas_err << std::endl;
   if (warm_start && out_prev) {
     std::cout << "Previous output: " << std::endl
-              << "  Status: " << StatusToString(out_prev->status) << std::endl
+              << "  Status: " << SolutionStatusName(out_prev->status)
+              << std::endl
               << "  GD (lower): " << out_prev->growth_dist_lb << std::endl
               << "  GD (upper): " << out_prev->growth_dist_ub << std::endl
               << "  r1: " << out_prev->r1_ << std::endl

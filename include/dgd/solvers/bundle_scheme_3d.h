@@ -20,11 +20,8 @@
 #ifndef DGD_SOLVERS_BUNDLE_SCHEME_3D_H_
 #define DGD_SOLVERS_BUNDLE_SCHEME_3D_H_
 
-// #include <cassert>
 #include <Eigen/Dense>
 #include <cmath>
-
-// #include "eiquadprog/eiquadprog-rt.hpp"
 
 #include "dgd/data_types.h"
 #include "dgd/output.h"
@@ -39,11 +36,11 @@ namespace dgd {
 namespace detail {
 
 /*
- * Local context.
+ * Local solver context.
  */
 
 /// @brief Local context for the bundle scheme.
-template <BcSolverType BST>
+template <BcSolverType /*BST*/>
 struct BundleScheme3Context;
 
 template <>
@@ -192,10 +189,9 @@ inline Real UpdateOriginCoordinates<BcSolverType::kCramer>(
     BundleScheme3Context<BcSolverType::kCramer>& bsc, Vec3r& bc) {
   // The projected (signed) simplex area is theoretically guaranteed to be
   // positive. However, some coordinates may become slightly negative.
-  auto relu = [](Real x) -> Real { return std::max(x, Real(0.0)); };
-  bc(0) = relu(bsc.s(0, 1) * bsc.s(1, 2) - bsc.s(1, 1) * bsc.s(0, 2));
-  bc(1) = relu(bsc.s(0, 2) * bsc.s(1, 0) - bsc.s(1, 2) * bsc.s(0, 0));
-  bc(2) = relu(bsc.s(0, 0) * bsc.s(1, 1) - bsc.s(1, 0) * bsc.s(0, 1));
+  bc(0) = Relu(bsc.s(0, 1) * bsc.s(1, 2) - bsc.s(1, 1) * bsc.s(0, 2));
+  bc(1) = Relu(bsc.s(0, 2) * bsc.s(1, 0) - bsc.s(1, 2) * bsc.s(0, 0));
+  bc(2) = Relu(bsc.s(0, 0) * bsc.s(1, 1) - bsc.s(1, 0) * bsc.s(0, 1));
   bsc.area = bc.sum();
   bc /= bsc.area;
   return bsc.s.row(2) * bc;
@@ -208,8 +204,8 @@ inline Real UpdateOriginCoordinates<BcSolverType::kCramer>(
  */
 inline void ProjectCoordinates(BundleScheme3Context<BcSolverType::kLU>& bsc,
                                Vec3r& bc) {
-  auto project_edge = [&](const Eigen::Ref<const Vec2r>& eij, int i, int j,
-                          int k) -> void {
+  auto project_edge = [&bsc, &bc](const Eigen::Ref<const Vec2r>& eij, int i,
+                                  int j, int k) -> void {
     bc(i) = std::max(Real(0.0),
                      std::min(Real(1.0), -eij.dot(bsc.s.col(j).head<2>()) /
                                              eij.squaredNorm()));
@@ -486,58 +482,15 @@ inline void UpdateNormalCuttingPlane<BcSolverType::kLU>(
 }
 
 /*
- * Proximal bundle method functions.
- */
-
-// /**
-//  * @brief Updates the normal vector to the proximal point value.
-//  *
-//  * @note The cost matrix should be nonzero;
-//  * otherwise, use the cutting plane update.
-//  */
-// template <BcSolverType BST>
-// inline void UpdateNormalProximalPoint(const Matr<2, 2>& Q, const Vec3r& n_cp,
-//                                       BundleScheme3Context<BST>& bsc) {
-//   const Vec2r lmb_cp = n_cp.head<2>();
-//   const Vec2r lmb = bsc.n.head<2>() / bsc.n(2) - lmb_cp;
-//
-//   // Solve min_x (c'x + 0.5 x'Px), s.t. Aineq x + bineq >= 0.
-//   RtMatrixX<3, 3>::d P = kEps * Matr<3, 3>::Identity();
-//   P.block<2, 2>(0, 0) = Q;
-//   RtVectorX<3>::d c = Vec3r::Zero();
-//   c.head<2>().noalias() = -(Q + kEps * Matr<2, 2>::Identity()) * lmb;
-//   c(2) = Real(1.0);
-//   const RtMatrixX<0, 3>::d Aeq;
-//   const RtVectorX<0>::d beq(0);
-//   RtMatrixX<3, 3>::d Aineq;
-//   Aineq.leftCols<2>() = -bsc.s.topRows<2>().transpose();
-//   Aineq.col(2) = Vec3r::Ones();
-//   const RtVectorX<3>::d bineq = Vec3r::Zero();
-//   RtVectorX<3>::d x = Vec3r::Zero();
-//
-//   {
-//     using namespace eiquadprog::solvers;
-//     RtEiquadprog<3, 0, 3> qp;
-//     [[maybe_unused]] RtEiquadprog_status status;
-//     status = qp.solve_quadprog(P, c, Aeq, beq, Aineq, bineq, x);
-//     assert(status == RT_EIQUADPROG_OPTIMAL);
-//   }
-//
-//   bsc.n(0) = static_cast<Real>(x(0)) + lmb_cp(0);
-//   bsc.n(1) = static_cast<Real>(x(1)) + lmb_cp(1);
-//   bsc.n(2) = Real(1.0);
-// }
-
-/*
  * Trust region Newton method functions.
  */
 
-/**
- * @brief Updates the normal vector to the partial trust region Newton solution.
- */
+/// @brief Updates the normal vector to the trust region Newton solution.
 template <BcSolverType BST>
-inline void UpdateNormalPartialNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
-                                      BundleScheme3Context<BST>& bsc, int idx) {
+inline void UpdateNormalTrustRegionNewton(const Matr<2, 2>& hess,
+                                          const Vec3r& n_cp,
+                                          BundleScheme3Context<BST>& bsc,
+                                          int idx) {
   // Compute the pseudoinverse of the cost matrix, assuming it is nonzero.
   Matr<2, 2> hess_inv;
   const Real det = hess.determinant();
@@ -578,60 +531,13 @@ inline void UpdateNormalPartialNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
   }
 }
 
-// /**
-//  * @brief Updates the normal vector to the full trust region Newton solution.
-//  */
-// template <BcSolverType BST>
-// inline void UpdateNormalFullNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
-//                                    BundleScheme3Context<BST>& bsc, int idx) {
-//   const Vec2r lmb = bsc.n.head<2>() / bsc.n(2) - n_cp.head<2>();
-//   const Vec2r grad = bsc.s.col(idx).head<2>() - hess * lmb;
-//
-//   // Setup trust region Newton QP problem.
-//   const RtMatrixX<2, 2>::d Q =
-//       hess + SolverSettings::kPinvTol3 * Matr<2, 2>::Identity();
-//   const RtVectorX<2>::d c = grad - SolverSettings::kPinvTol3 * lmb;
-//   const RtMatrixX<0, 2>::d Aeq;
-//   const RtVectorX<0>::d beq(0);
-//   RtMatrixX<2, 2>::d Aineq;
-//   Aineq.row(0) = (bsc.s.col(idx) - bsc.s.col(Inc<3>(idx))).head<2>();
-//   Aineq.row(1) = (bsc.s.col(idx) - bsc.s.col(Dec<3>(idx))).head<2>();
-//   const RtVectorX<2>::d bineq = Vecr<2>::Zero();
-//   RtVectorX<2>::d x = Vecr<2>::Zero();
-//
-//   // Solve problem.
-//   {
-//     using namespace eiquadprog::solvers;
-//     RtEiquadprog<2, 0, 2> qp;
-//     [[maybe_unused]] RtEiquadprog_status status =
-//         qp.solve_quadprog(Q, c, Aeq, beq, Aineq, bineq, x);
-//     assert(status == RT_EIQUADPROG_OPTIMAL);
-//   }
-//
-//   const Vec2r lmb_opt =
-//       Vec2r(static_cast<Real>(x(0)), static_cast<Real>(x(1)));
-//   bsc.n.head<2>() = lmb_opt + n_cp.head<2>();
-//   bsc.n(2) = Real(1.0);
-// }
-
-/// @brief Updates the normal vector for the trust region Newton method.
-template <BcSolverType BST>
-inline void UpdateNormalNewton(const Matr<2, 2>& hess, const Vec3r& n_cp,
-                               BundleScheme3Context<BST>& bsc, int idx) {
-  if constexpr (SolverSettings::kTrnLevel == TrustRegionNewtonLevel::kPartial) {
-    UpdateNormalPartialNewton(hess, n_cp, bsc, idx);
-  }  // else {
-  //   UpdateNormalFullNewton(hess, n_cp, bsc, idx);
-  // }
-}
-
 /*
  * Warm start.
  */
 
 /**
  * @brief Warm starts the simplex and the normal vector and returns the lower
- * bound.
+ * bound using the previous primal optimal solution.
  */
 template <BcSolverType BST, bool detect_collision>
 inline Real PrimalWarmStart(const MinkowskiDiffProp<3>& mdp,
@@ -657,9 +563,34 @@ inline Real PrimalWarmStart(const MinkowskiDiffProp<3>& mdp,
   return lb;
 }
 
+/**
+ * @brief Warm starts the normal vector using the previous dual optimal
+ * solution.
+ */
+template <BcSolverType BST>
+inline void DualWarmStart(const MinkowskiDiffProp<3>& mdp, const Output<3>& out,
+                          BundleScheme3Context<BST>& bsc) {
+  if ((bsc.n(2) = mdp.rot.row(2).dot(out.normal)) > Real(0.0)) {
+    // Warm-started normal is dual feasible.
+    bsc.n.template head<2>() = mdp.rot.topRows<2>() * out.normal;
+  } else {
+    bsc.n(2) = Real(1.0);
+  }
+}
+
 /*
  * Debug printing.
  */
+
+/// @brief Prints the debugging header.
+template <SolverType S, BcSolverType BST>
+inline void PrintDebugHeader(bool warm_start, WarmStartType ws_type) {
+  std::string header = SolverName<S>() + ", " + BcSolverName<BST>() +
+                       " (dim = 3) (" + InitializationName(warm_start);
+  if (warm_start) header += ": " + WarmStartName(ws_type);
+  header += ")";
+  PrintDebugHeader(header);
+}
 
 /// @brief Prints debugging information at an iteration of the algorithm.
 inline void PrintDebugIteration(int iter, [[maybe_unused]] Real cdist, Real lb,
@@ -688,16 +619,6 @@ template <class C1, class C2, SolverType S, BcSolverType BST,
 Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
                   const Transform3r& tf2, const Settings& settings,
                   Output<3>& out, bool warm_start) {
-  if constexpr ((S == SolverType::TrustRegionNewton) &&
-                (SolverSettings::kTrnLevel == TrustRegionNewtonLevel::kFull)) {
-    static_assert(always_false<S>::value,
-                  "The full trust region Newton method for 3D is disabled");
-  }
-  if constexpr (S == SolverType::ProximalBundle) {
-    static_assert(always_false<S>::value,
-                  "The proximal bundle method for 3D is disabled");
-  }
-
   if (!warm_start) InitializeOutput(set1, set2, out);
 
   MinkowskiDiffProp<3> mdp;
@@ -715,24 +636,20 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
   // Growth distance bounds.
   Real lb = Real(0.0), ub = kInf, gd;
   // Other local variables.
-  Matr<2, 2> Q;
+  Matr<2, 2> hess;
   Vec3r n_cp;
   int iter = 0, idxn;
   bool update_lb;
 
   if (warm_start && (out.status == SolutionStatus::Optimal)) {
     // Warm start.
-    if (settings.ws_type == WarmStartType::Primal) {
+    if (settings.ws_type == WarmStartType::Primal) {  // Primal warm start.
       lb = PrimalWarmStart<BST, detect_collision>(mdp, bsc, out);
     } else {  // Dual warm start.
       InitializeSimplex(bsc, mdp.r, out);
+      // if constexpr (detect_collision) InitializeSetSimplices(mdp, out);
       InitializeSetSimplices(mdp, out);
-      if ((bsc.n(2) = mdp.rot.row(2).dot(out.normal)) > Real(0.0)) {
-        // Warm-started normal is dual feasible.
-        bsc.n.template head<2>() = mdp.rot.topRows<2>() * out.normal;
-      } else {
-        bsc.n(2) = Real(1.0);
-      }
+      DualWarmStart(mdp, out, bsc);
     }
   } else {
     // Cold start.
@@ -746,7 +663,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
   if constexpr (S != SolverType::CuttingPlane) n_cp = Vec3r::UnitZ();
 
   if constexpr (SolverSettings::kEnableDebugPrinting) {
-    PrintDebugHeader(SolverName<S>() + " (dim = 3)");
+    PrintDebugHeader<S, BST>(warm_start, settings.ws_type);
     PrintDebugIteration(iter, mdp.cdist, lb, ub, settings.rel_tol, bsc.s,
                         out.bc);
   }
@@ -768,7 +685,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
                        (sfo.sp(2) <= Real(0.0))))) {
       if constexpr (S == SolverType::CuttingPlane) {
         lb = UpdateSimplex(sfo.sp, sfo.sp1(), sfo.sp2(), bsc, out);
-      } else {
+      } else {  // TrustRegionNewton
         // Check if the lower bound can be improved; if not, skip the simplex
         // update, and update the normal to the cutting plane normal.
         if ((update_lb = (n_cp.dot(sfo.sp - bsc.s.col(0)) > Real(0.0)))) {
@@ -822,35 +739,26 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
       if (update_lb) {
         UpdateNormalCuttingPlane(bsc, bsc.n);
       } else {
-        // Lower bound was not updated; reset the normal vector.
+        // (Dual warm start) Lower bound was not updated; reset the normal
+        // vector.
         bsc.n = Vec3r::UnitZ();
         continue;
       }
-    } else {
+    } else {  // TrustRegionNewton
       UpdateNormalCuttingPlane(bsc, n_cp);
-      if constexpr (S == SolverType::ProximalBundle) {
-        if (update_lb) {
-          Q = ComputeGammaProximalBundle(ub, mdp.r, iter) *
-              Matr<2, 2>::Identity();
-          n_cp /= n_cp(2);
-          // UpdateNormalProximalPoint(Q, n_cp, bsc);
-        } else {
-          bsc.n = n_cp;
-        }
-      } else {  // TrustRegionNewton.
-        if (update_lb && sfo.differentiable &&
-            (bsc.n(2) * (sfo.Dsp(0, 0) + sfo.Dsp(1, 1)) >
-             SolverSettings::kPinvTol3)) {
-          Q = bsc.n(2) * sfo.Dsp.template block<2, 2>(0, 0);
-          n_cp /= n_cp(2);
-          UpdateNormalNewton(Q, n_cp, bsc, idxn);
-        } else {
-          bsc.n = n_cp;
-        }
+      if (update_lb && sfo.differentiable &&
+          (bsc.n(2) * (sfo.Dsp(0, 0) + sfo.Dsp(1, 1)) >
+           SolverSettings::kPinvTol3)) {
+        hess = bsc.n(2) * sfo.Dsp.template block<2, 2>(0, 0);
+        n_cp /= n_cp(2);
+        UpdateNormalTrustRegionNewton(hess, n_cp, bsc, idxn);
+      } else {
+        bsc.n = n_cp;
       }
     }
     NormalizeNormal(bsc.n, out.normalize_2norm_);
   }
+
   out.iter = iter;
 
   if constexpr (SolverSettings::kEnableDebugPrinting) PrintDebugFooter();
