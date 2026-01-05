@@ -14,62 +14,19 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Growth distance solver types and settings.
+ * @brief Growth distance solver settings.
  */
 
-#ifndef DGD_SOLVERS_SOLVER_OPTIONS_H_
-#define DGD_SOLVERS_SOLVER_OPTIONS_H_
+#ifndef DGD_SOLVERS_SOLVER_SETTINGS_H_
+#define DGD_SOLVERS_SOLVER_SETTINGS_H_
 
 #include <cmath>
-#include <string>
 
 #include "dgd/data_types.h"
 
 namespace dgd {
 
 namespace detail {
-
-/// @brief Nonsmooth solver types for the computing the growth distance.
-enum class SolverType {
-  /// @brief Cutting plane solver.
-  CuttingPlane,
-
-  /**
-   * @brief Proximal bundle solver with constant or adaptive regularization.
-   *
-   * @attention The proximal bundle solver is not implemented for the growth
-   * distance problem in 3D.
-   *
-   * @note The proximal bundle method can have slow convergence in general.
-   */
-  ProximalBundle,
-
-  /// @brief Trust region Newton solver with partial or full solution.
-  TrustRegionNewton,
-};
-
-/// @brief Derivative order required for each solver type.
-template <SolverType S>
-inline constexpr int SolverOrder() {
-  if constexpr (S == SolverType::TrustRegionNewton) {
-    return 2;
-  } else {
-    return 1;
-  }
-}
-
-/// @brief Barycentric coordinate solver type.
-enum class BcSolverType {
-  /**
-   * @brief Cramer's rule, assuming nondegeneracy.
-   *
-   * @attention This method can only be used for the cutting plane solver.
-   */
-  kCramer,
-
-  /// @brief Full pivot LU decomposition with projection, handling degeneracy.
-  kLU,
-};
 
 /// @brief Proximal regularization type.
 enum class ProximalRegularization {
@@ -134,32 +91,8 @@ struct SolverSettings {
   static inline const Real kPinvResErr3 = kEps;
 };
 
-/// @brief Returns the solver name.
-template <SolverType S>
-inline constexpr std::string SolverName() {
-  if constexpr (S == SolverType::CuttingPlane) {
-    return "Cutting plane";
-  } else if constexpr (S == SolverType::ProximalBundle) {
-    if constexpr (SolverSettings::kProxRegType ==
-                  ProximalRegularization::kConstant) {
-      return "Proximal bundle, constant regularization";
-    } else {
-      return "Proximal bundle, adaptive regularization";
-    }
-  } else if constexpr (S == SolverType::TrustRegionNewton) {
-    if constexpr (SolverSettings::kTrnLevel ==
-                  TrustRegionNewtonLevel::kPartial) {
-      return "Trust region Newton, partial";
-    } else {
-      return "Trust region Newton, full";
-    }
-  } else {
-    return "";
-  }
-}
-
 }  // namespace detail
 
 }  // namespace dgd
 
-#endif  // DGD_SOLVERS_SOLVER_OPTIONS_H_
+#endif  // DGD_SOLVERS_SOLVER_SETTINGS_H_
