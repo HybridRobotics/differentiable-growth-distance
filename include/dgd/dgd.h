@@ -95,7 +95,7 @@ Real GrowthDistanceCp(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * @brief Growth distance algorithm for compact convex sets using the trust
  * region Newton method.
  *
- * @attention Warm start is disable for this solver.
+ * @attention Warm start is disabled for this solver.
  *
  * @see GrowthDistance
  */
@@ -103,7 +103,7 @@ template <int dim>
 Real GrowthDistanceTrn(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                        const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
                        const Settings& settings, Output<dim>& out,
-                       bool /*warm_start*/ = false);
+                       bool warm_start = false);
 
 /*
  * Collision detection algorithm.
