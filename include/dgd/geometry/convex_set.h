@@ -23,6 +23,7 @@
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
+#include <type_traits>
 
 #include "dgd/data_types.h"
 

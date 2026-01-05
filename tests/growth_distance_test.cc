@@ -100,29 +100,22 @@ struct GrowthDistanceConfig {
   static constexpr int dim = d;
   static constexpr GrowthDistanceType<dim> growth_distance = GD;
   static inline const bool warm_start =
-      (GD == static_cast<GrowthDistanceType<dim>>(
-                 GrowthDistanceCp<dim, C<dim>, C<dim>>));
+      (GD == static_cast<GrowthDistanceType<dim>>(GrowthDistanceCp<dim>));
 };
 
-struct GrowthDistanceCp_2D
-    : GrowthDistanceConfig<2, GrowthDistanceCp<2, C<2>, C<2>>> {};
-struct GrowthDistanceTrn_2D
-    : GrowthDistanceConfig<2, GrowthDistanceTrn<2, C<2>, C<2>>> {};
-struct GrowthDistanceCp_3D
-    : GrowthDistanceConfig<3, GrowthDistanceCp<3, C<3>, C<3>>> {};
-struct GrowthDistanceTrn_3D
-    : GrowthDistanceConfig<3, GrowthDistanceTrn<3, C<3>, C<3>>> {};
+struct GrowthDistanceCp_2D : GrowthDistanceConfig<2, GrowthDistanceCp<2>> {};
+struct GrowthDistanceTrn_2D : GrowthDistanceConfig<2, GrowthDistanceTrn<2>> {};
+struct GrowthDistanceCp_3D : GrowthDistanceConfig<3, GrowthDistanceCp<3>> {};
+struct GrowthDistanceTrn_3D : GrowthDistanceConfig<3, GrowthDistanceTrn<3>> {};
 
 struct GrowthDistanceNameGenerator {
   template <typename T>
   static std::string GetName(int) {
     if (T::growth_distance ==
-        static_cast<GrowthDistanceType<T::dim>>(
-            GrowthDistanceCp<T::dim, C<T::dim>, C<T::dim>>)) {
+        static_cast<GrowthDistanceType<T::dim>>(GrowthDistanceCp<T::dim>)) {
       return "CuttingPlane_" + std::to_string(T::dim) + "D";
-    } else if (T::growth_distance ==
-               static_cast<GrowthDistanceType<T::dim>>(
-                   GrowthDistanceTrn<T::dim, C<T::dim>, C<T::dim>>)) {
+    } else if (T::growth_distance == static_cast<GrowthDistanceType<T::dim>>(
+                                         GrowthDistanceTrn<T::dim>)) {
       return "TrustRegionNewton_" + std::to_string(T::dim) + "D";
     } else {
       return "Unknown_" + std::to_string(T::dim) + "D";
@@ -273,14 +266,13 @@ TEST(GrowthDistanceTest, CuboidHalfspace) {
   Output<3> out;
 
   Affine(tfc) = Vec3r(Real(8.0), Real(-7.0), Real(0.7));
-  const Real gd = GrowthDistanceHalfspace(setc.get(), tfc, seth.get(), tfh,
-                                          settings, out, false);
+  const Real gd =
+      GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
   ASSERT_TRUE(out.status == SolutionStatus::Optimal);
   ASSERT_NEAR(gd, Real(0.2), kTol);
 
   Affine(tfc) = Vec3r(Real(8.0), Real(-7.0), Real(-0.1));
-  GrowthDistanceHalfspace(setc.get(), tfc, seth.get(), tfh, settings, out,
-                          false);
+  GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
   ASSERT_TRUE(out.status == SolutionStatus::CoincidentCenters);
 }
 

@@ -1,5 +1,6 @@
 ## DGD library
 add_library(${DGD_LIB} STATIC
+  "${CMAKE_CURRENT_SOURCE_DIR}/dgd.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/graham_scan.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/mesh_loader.cc"
 )
