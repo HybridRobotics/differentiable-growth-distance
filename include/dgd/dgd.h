@@ -21,64 +21,17 @@
 #ifndef DGD_DGD_H_
 #define DGD_DGD_H_
 
-#include <type_traits>
-
 #include "dgd/data_types.h"
-#include "dgd/dgd_halfspace.h"
 #include "dgd/geometry/convex_set.h"
+#include "dgd/geometry/halfspace.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
-#include "dgd/solvers/bundle_scheme_2d.h"
-#include "dgd/solvers/bundle_scheme_3d.h"
-#include "dgd/solvers/solver_types.h"
 
 namespace dgd {
 
 /*
  * Growth distance algorithm.
  */
-
-/**
- * @brief Growth distance algorithm for compact convex sets using the cutting
- * plane method.
- *
- * @see GrowthDistance
- */
-template <int dim, class C1, class C2, BcSolverType BST = BcSolverType::kCramer>
-inline Real GrowthDistanceCp(const C1* set1, const Transformr<dim>& tf1,
-                             const C2* set2, const Transformr<dim>& tf2,
-                             const Settings& settings, Output<dim>& out,
-                             bool warm_start = false) {
-  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
-                "Incompatible set C1");
-  static_assert(detail::ConvexSetValidator<dim, C2>::valid,
-                "Incompatible set C2");
-  return detail::BundleScheme<C1, C2, SolverType::CuttingPlane, BST, false>(
-      set1, tf1, set2, tf2, settings, out, warm_start);
-}
-
-/**
- * @brief Growth distance algorithm for compact convex sets using the trust
- * region Newton method.
- *
- * @note Cramer's rule results in larger numerical errors for barycentric
- * coordinate computation in 3D.
- *
- * @see GrowthDistance
- */
-template <int dim, class C1, class C2>
-inline Real GrowthDistanceTrn(const C1* set1, const Transformr<dim>& tf1,
-                              const C2* set2, const Transformr<dim>& tf2,
-                              const Settings& settings, Output<dim>& out,
-                              bool warm_start = false) {
-  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
-                "Incompatible set C1");
-  static_assert(detail::ConvexSetValidator<dim, C2>::valid,
-                "Incompatible set C2");
-  return detail::BundleScheme<C1, C2, SolverType::TrustRegionNewton,
-                              BcSolverType::kLU, false>(
-      set1, tf1, set2, tf2, settings, out, warm_start);
-}
 
 /**
  * @brief Growth distance algorithm for 2D and 3D compact convex sets.
@@ -89,9 +42,6 @@ inline Real GrowthDistanceTrn(const C1* set1, const Transformr<dim>& tf1,
  * calls;
  * The order of the sets must be the same.
  *
- * @note Output from a previous collision detection call can be used to warm
- * start the growth distance algorithm.
- *
  * @param[in]     set1,set2  Compact convex sets.
  * @param[in]     tf1,tf2    Rigid body transformations for the sets.
  * @param[in]     settings   Settings.
@@ -99,22 +49,61 @@ inline Real GrowthDistanceTrn(const C1* set1, const Transformr<dim>& tf1,
  * @param         warm_start Whether to use previous output for warm start.
  * @return        Growth distance lower bound.
  */
-template <int dim, class C1, class C2>
-inline Real GrowthDistance(const C1* set1, const Transformr<dim>& tf1,
-                           const C2* set2, const Transformr<dim>& tf2,
-                           const Settings& settings, Output<dim>& out,
-                           bool warm_start = false) {
-  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
-                "Incompatible set C1");
-  static_assert(detail::ConvexSetValidator<dim, C2>::valid,
-                "Incompatible set C2");
-  if (set1->IsPolytopic() && set2->IsPolytopic()) {
-    return GrowthDistanceCp(set1, tf1, set2, tf2, settings, out, warm_start);
-  } else {
-    // Trust region Newton method is not used currently.
-    return GrowthDistanceCp(set1, tf1, set2, tf2, settings, out, warm_start);
-  }
-}
+template <int dim>
+Real GrowthDistance(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                    const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                    const Settings& settings, Output<dim>& out,
+                    bool warm_start = false);
+
+/**
+ * @brief Growth distance algorithm for a compact convex set and a half-space.
+ *
+ * @attention out.s1, out.s2, out.bc, and out.z2 are not set.
+ *
+ * @note CoincidentCenters status is returned if the center of the convex set
+ * lies in the half-space.
+ *
+ * @note Warm start only accelerates the support function computation.
+ *
+ * @param[in]     set1       Compact convex set.
+ * @param[in]     set2       Half-space.
+ * @param[in]     tf1,tf2    Rigid body transformations for the sets.
+ * @param[in]     settings   Settings.
+ * @param[in,out] out        Output.
+ * @param         warm_start Whether to use previous output for warm start.
+ * @return        Growth distance.
+ */
+template <int dim>
+Real GrowthDistance(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                    const Halfspace<dim>* set2, const Transformr<dim>& tf2,
+                    const Settings& settings, Output<dim>& out,
+                    bool warm_start = false);
+
+/**
+ * @brief Growth distance algorithm for compact convex sets using the cutting
+ * plane method.
+ *
+ * @see GrowthDistance
+ */
+template <int dim>
+Real GrowthDistanceCp(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                      const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                      const Settings& settings, Output<dim>& out,
+                      bool warm_start = false);
+
+/**
+ * @brief Growth distance algorithm for compact convex sets using the trust
+ * region Newton method.
+ *
+ * @attention Warm start is disable for this solver.
+ *
+ * @see GrowthDistance
+ */
+template <int dim>
+Real GrowthDistanceTrn(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                       const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                       const Settings& settings, Output<dim>& out,
+                       bool /*warm_start*/ = false);
 
 /*
  * Collision detection algorithm.
@@ -133,9 +122,6 @@ inline Real GrowthDistance(const C1* set1, const Transformr<dim>& tf1,
  * calls;
  * The order of the sets must be the same.
  *
- * @note Output from a previous growth distance call can be used to warm
- * start the collision detection function.
- *
  * @param[in]     set1,set2  Compact convex sets.
  * @param[in]     tf1,tf2    Rigid body transformations for the sets.
  * @param[in]     settings   Settings.
@@ -143,23 +129,36 @@ inline Real GrowthDistance(const C1* set1, const Transformr<dim>& tf1,
  * @param         warm_start Whether to use previous output for warm start.
  * @return        true, if the sets are colliding; false, otherwise.
  */
-template <int dim, class C1, class C2, BcSolverType BST = BcSolverType::kCramer>
-bool DetectCollision(const C1* set1, const Transformr<dim>& tf1, const C2* set2,
-                     const Transformr<dim>& tf2, const Settings& settings,
-                     Output<dim>& out, bool warm_start = false) {
-  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
-                "Incompatible set C1");
-  static_assert(detail::ConvexSetValidator<dim, C2>::valid,
-                "Incompatible set C2");
+template <int dim>
+bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                     const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                     const Settings& settings, Output<dim>& out,
+                     bool warm_start = false);
 
-  // Collision detection often only takes a few iterations. Using the cutting
-  // plane method can be beneficial.
-  const Real gd =
-      detail::BundleScheme<C1, C2, SolverType::CuttingPlane, BST, true>(
-          set1, tf1, set2, tf2, settings, out, warm_start);
-  return ((out.status == SolutionStatus::CoincidentCenters) ||
-          ((out.status == SolutionStatus::Optimal) && (gd > Real(0.0))));
-}
+/**
+ * @brief Collision detection algorithm for a compact convex set and a
+ * half-space.
+ *
+ * @attention out.s1, out.s2, out.bc, and out.z2 are not set.
+ *
+ * @note CoincidentCenters status is returned if the center of the convex set
+ * lies in the half-space.
+ *
+ * @note Warm start only accelerates the support function computation.
+ *
+ * @param[in]     set1       Compact convex set.
+ * @param[in]     set2       Half-space.
+ * @param[in]     tf1,tf2    Rigid body transformations for the sets.
+ * @param[in]     settings   Settings.
+ * @param[in,out] out        Output.
+ * @param         warm_start Whether to use previous output for warm start.
+ * @return        true, if the sets are colliding; false, otherwise.
+ */
+template <int dim>
+bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                     const Halfspace<dim>* set2, const Transformr<dim>& tf2,
+                     const Settings& settings, Output<dim>& out,
+                     bool warm_start = false);
 
 }  // namespace dgd
 

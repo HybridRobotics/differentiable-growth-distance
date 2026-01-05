@@ -6,10 +6,10 @@
 #include <string_view>
 #include <vector>
 
-#include "dgd/dgd.h"
 #include "dgd/error_metrics.h"
 #include "dgd/geometry/geometry_2d.h"
 #include "dgd/geometry/geometry_3d.h"
+#include "dgd/solvers/bundle_scheme_impl.h"
 #include "dgd/utils/timer.h"
 #include "internal_helpers/debug.h"
 #include "internal_helpers/filesystem_utils.h"
@@ -111,6 +111,12 @@ using dgd::SolverType;
 using dgd::WarmStartType;
 
 template <int dim, class C1, class C2>
+using GrowthDistanceType = dgd::Real (*)(const C1*, const dgd::Transformr<dim>&,
+                                         const C2*, const dgd::Transformr<dim>&,
+                                         const dgd::Settings&,
+                                         dgd::Output<dim>&, bool);
+
+template <int dim, class C1, class C2>
 void ColdStart(std::function<const SetPtr<C1>()> gen1,
                std::function<const SetPtr<C2>()> gen2, dgd::Rng& rng,
                const Config& config,
@@ -123,10 +129,12 @@ void ColdStart(std::function<const SetPtr<C1>()> gen1,
   double avg_iter = 0.0;
   int nsubopt = 0;
 
-  auto GrowthDistanceImpl =
-      (solver == SolverType::CuttingPlane)
-          ? dgd::GrowthDistanceCp<dim, C1, C2, BcSolverType::kCramer>
-          : dgd::GrowthDistanceTrn<dim, C1, C2>;
+  GrowthDistanceType<dim, C1, C2> growth_distance;
+  if (solver == SolverType::CuttingPlane) {
+    growth_distance = dgd::GrowthDistanceCpTpl<dim, C1, C2>;  // Cramer's rule
+  } else {  // Trust region Newton
+    growth_distance = dgd::GrowthDistanceTrnTpl<dim, C1, C2>;
+  }
 
   dgd::Timer timer;
   timer.Stop();
@@ -140,12 +148,10 @@ void ColdStart(std::function<const SetPtr<C1>()> gen1,
       dgd::bench::SetRandomTransforms(rng, tf1, tf2, -position_lim,
                                       position_lim);
       // Initial call to reduce cache misses.
-      GrowthDistanceImpl(set1.get(), tf1, set2.get(), tf2, settings, out,
-                         false);
+      growth_distance(set1.get(), tf1, set2.get(), tf2, settings, out, false);
       timer.Start();
       for (int k = 0; k < config.ncold; ++k) {
-        GrowthDistanceImpl(set1.get(), tf1, set2.get(), tf2, settings, out,
-                           false);
+        growth_distance(set1.get(), tf1, set2.get(), tf2, settings, out, false);
       }
       timer.Stop();
       const auto err =
@@ -193,10 +199,12 @@ void WarmStart(std::function<const SetPtr<C1>()> gen1,
   double avg_iter = 0.0;
   int nsubopt = 0;
 
-  auto GrowthDistanceImpl =
-      (solver == SolverType::CuttingPlane)
-          ? dgd::GrowthDistanceCp<dim, C1, C2, BcSolverType::kCramer>
-          : dgd::GrowthDistanceTrn<dim, C1, C2>;
+  GrowthDistanceType<dim, C1, C2> growth_distance;
+  if (solver == SolverType::CuttingPlane) {
+    growth_distance = dgd::GrowthDistanceCpTpl<dim, C1, C2>;  // Cramer's rule
+  } else {  // Trust region Newton
+    growth_distance = dgd::GrowthDistanceTrnTpl<dim, C1, C2>;
+  }
 
   dgd::Timer timer;
   timer.Stop();
@@ -216,14 +224,12 @@ void WarmStart(std::function<const SetPtr<C1>()> gen1,
       tf1_c = tf1;
       dgd::bench::SetRandomDisplacement(rng, dx, drot, dx_max, ang_max);
       // Initial cold-start call.
-      GrowthDistanceImpl(set1.get(), tf1, set2.get(), tf2, settings, out,
-                         false);
+      growth_distance(set1.get(), tf1, set2.get(), tf2, settings, out, false);
       int total_iter = 0;
       timer.Start();
       for (int k = 0; k < config.nwarm; ++k) {
         dgd::bench::UpdateTransform(tf1, dx, drot);
-        GrowthDistanceImpl(set1.get(), tf1, set2.get(), tf2, settings, out,
-                           true);
+        growth_distance(set1.get(), tf1, set2.get(), tf2, settings, out, true);
         outs[k] = out;
         total_iter += out.iter;
       }

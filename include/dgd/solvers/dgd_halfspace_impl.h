@@ -14,12 +14,12 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Differentiable growth distance algorithm for a compact convex set and
- * a half-space.
+ * @brief Differentiable growth distance algorithm implementations for a compact
+ * convex set and a half-space.
  */
 
-#ifndef DGD_DGD_HALFSPACE_H_
-#define DGD_DGD_HALFSPACE_H_
+#ifndef DGD_SOLVERS_DGD_HALFSPACE_IMPL_H_
+#define DGD_SOLVERS_DGD_HALFSPACE_IMPL_H_
 
 #include <type_traits>
 
@@ -35,30 +35,12 @@ namespace dgd {
  * Growth distance algorithm.
  */
 
-/**
- * @brief Growth distance algorithm for a compact convex set and a half-space.
- *
- * @attention out.s1, out.s2, out.bc, and out.z2 are not set.
- *
- * @note CoincidentCenters status is returned if the center of the convex set
- * lies in the half-space.
- *
- * @note Warm start only accelerates the support function computation.
- *
- * @param[in]     set1       Compact convex set.
- * @param[in]     set2       Half-space.
- * @param[in]     tf1,tf2    Rigid body transformations for the sets.
- * @param[in]     settings   Settings.
- * @param[in,out] out        Output.
- * @param         warm_start Whether to use previous output for warm start.
- * @return        Growth distance.
- */
+/// @brief Growth distance algorithm for a compact convex set and a half-space.
 template <int dim, class C1>
-inline Real GrowthDistanceHalfspace(const C1* set1, const Transformr<dim>& tf1,
-                                    const Halfspace<dim>* set2,
-                                    const Transformr<dim>& tf2,
-                                    const Settings& settings, Output<dim>& out,
-                                    bool warm_start = false) {
+inline Real GrowthDistanceHalfspaceTpl(
+    const C1* set1, const Transformr<dim>& tf1, const Halfspace<dim>* set2,
+    const Transformr<dim>& tf2, const Settings& settings, Output<dim>& out,
+    bool warm_start = false) {
   static_assert(detail::ConvexSetValidator<dim, C1, false>::valid,
                 "Incompatible compact set C1");
 
@@ -96,31 +78,20 @@ inline Real GrowthDistanceHalfspace(const C1* set1, const Transformr<dim>& tf1,
 /**
  * @brief Collision detection algorithm for a compact convex set and a
  * half-space.
- *
- * @see GrowthDistanceHalfspace
- *
- * @param[in]     set1       Compact convex set.
- * @param[in]     set2       Half-space.
- * @param[in]     tf1,tf2    Rigid body transformations for the sets.
- * @param[in]     settings   Settings.
- * @param[in,out] out        Output.
- * @param         warm_start Whether to use previous output for warm start.
- * @return        true, if the sets are colliding; false, otherwise.
  */
 template <int dim, class C1>
-bool DetectCollisionHalfspace(const C1* set1, const Transformr<dim>& tf1,
-                              const Halfspace<dim>* set2,
-                              const Transformr<dim>& tf2,
-                              const Settings& settings, Output<dim>& out,
-                              bool warm_start = false) {
+inline bool DetectCollisionHalfspaceTpl(
+    const C1* set1, const Transformr<dim>& tf1, const Halfspace<dim>* set2,
+    const Transformr<dim>& tf2, const Settings& settings, Output<dim>& out,
+    bool warm_start = false) {
   static_assert(detail::ConvexSetValidator<dim, C1, false>::valid,
                 "Incompatible compact set C1");
-  const Real gd =
-      GrowthDistanceHalfspace(set1, tf1, set2, tf2, settings, out, warm_start);
+  const Real gd = GrowthDistanceHalfspaceTpl<dim, C1>(
+      set1, tf1, set2, tf2, settings, out, warm_start);
   return ((out.status == SolutionStatus::CoincidentCenters) ||
           (gd <= Real(1.0)));
 }
 
 }  // namespace dgd
 
-#endif  // DGD_DGD_HALFSPACE_H_
+#endif  // DGD_SOLVERS_DGD_HALFSPACE_IMPL_H_
