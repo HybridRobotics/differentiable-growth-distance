@@ -64,10 +64,7 @@ class SphereImpl : public ConvexSet<dim> {
 template <int dim>
 inline SphereImpl<dim>::SphereImpl(Real radius)
     : ConvexSet<dim>(radius), radius_(radius) {
-  static_assert((dim == 2) || (dim == 3), "dim is not 2 or 3");
-  if (radius <= Real(0.0)) {
-    throw std::domain_error("Radius is nonpositive");
-  }
+  if (radius < Real(0.0)) throw std::domain_error("Radius is negative");
 }
 
 template <int dim>
@@ -90,12 +87,12 @@ inline Real SphereImpl<dim>::SupportFunction(
 
 template <int dim>
 inline bool SphereImpl<dim>::RequireUnitNormal() const {
-  return true;
+  return (radius_ > Real(0.0));
 }
 
 template <int dim>
 inline bool SphereImpl<dim>::IsPolytopic() const {
-  return false;
+  return (radius_ == Real(0.0));
 }
 
 template <int dim>

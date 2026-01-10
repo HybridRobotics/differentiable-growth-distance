@@ -75,10 +75,11 @@ struct SupportFunctionDerivatives {
 /**
  * @brief Convex set abstract class implementing the support function.
  *
- * @attention The convex set must be a compact and solid set (i.e., closed,
- * bounded, and with a nonempty interior). Also, the origin must be in
- * the interior of the set. The origin is the center point of the convex set
- * in its local frame.
+ * @attention The convex set must be compact (i.e., closed and bounded) and
+ * must contain the origin. When the set is solid (i.e., has a nonempty
+ * interior), the origin must lie in the set interior and the inradius must be
+ * positive. The origin is the center point of the convex set in its local
+ * frame.
  *
  * @tparam dim Dimension of the convex set (2 or 3).
  */
@@ -107,7 +108,7 @@ class ConvexSet {
    * \f}
    * where \f$m\f$ is the safety margin. Note that the safety margin also
    * increases the inradius. A nonzero safety margin can result in slower
-   * convergence when using the cutting plane method.
+   * convergence for polytopes when using the cutting plane method.
    *
    * @see RequireUnitNormal
    *
@@ -183,20 +184,20 @@ class ConvexSet {
    * @brief Convex set inradius at the origin.
    *
    * Radius of a ball that is centered at the origin and contained in the set.
-   * Any number greater than 0 and less than the inradius will work. However,
-   * larger values can help prevent singularities in simplex computations and
-   * enable faster convergence.
+   * Any nonnegative lower bound of the inradius will work. For solid sets, the
+   * inradius must be positive. Note that larger values can help prevent
+   * singularities in simplex computations and enable faster convergence.
    */
   Real inradius_;
 };
 
 template <int dim>
-inline ConvexSet<dim>::ConvexSet() : ConvexSet(kEps) {}
+inline ConvexSet<dim>::ConvexSet() : ConvexSet(Real(0.0)) {}
 
 template <int dim>
 inline ConvexSet<dim>::ConvexSet(Real inradius) : inradius_(inradius) {
-  if (inradius <= Real(0.0)) {
-    throw std::domain_error("Inradius is not positive");
+  if (inradius < Real(0.0)) {
+    throw std::domain_error("Inradius is negative");
   }
 }
 
@@ -236,8 +237,8 @@ inline Real ConvexSet<dim>::inradius() const {
 
 template <int dim>
 inline void ConvexSet<dim>::set_inradius(Real inradius) {
-  if (inradius <= Real(0.0)) {
-    throw std::domain_error("Inradius is not positive");
+  if (inradius < Real(0.0)) {
+    throw std::domain_error("Inradius is negative");
   }
   inradius_ = inradius;
 }

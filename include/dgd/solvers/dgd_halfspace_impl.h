@@ -57,6 +57,14 @@ inline Real GrowthDistanceHalfspaceTpl(
     return Real(0.0);
   }
 
+  // Check (lower bound of) the Minkowski difference set inradius.
+  if (set1->inradius() + set2->margin <= kSqrtEps) {
+    out.growth_dist_ub = kInf;
+    out.growth_dist_lb = Real(0.0);
+    out.status = SolutionStatus::IllConditionedInputs;
+    return Real(0.0);
+  }
+
   out.normal = -Linear(tf2).col(dim - 1);
   // Evaluate the support function.
   Vecr<dim> sp1;

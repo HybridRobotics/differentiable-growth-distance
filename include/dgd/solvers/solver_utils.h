@@ -103,6 +103,15 @@ inline Real SetZeroOutput(const Transformr<dim>& tf1,
   return Real(0.0);
 }
 
+/// @brief Sets the output when the input convex sets are ill-conditioned.
+template <int dim>
+inline Real SetInfOutput(Output<dim>& out) {
+  out.growth_dist_ub = kInf;
+  out.growth_dist_lb = Real(0.0);
+  out.status = SolutionStatus::IllConditionedInputs;
+  return Real(0.0);
+}
+
 /// @brief Normalizes the normal vector.
 template <int dim>
 inline void NormalizeNormal(Vecr<dim>& n, bool normalize_2norm) {

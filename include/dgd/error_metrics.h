@@ -82,6 +82,10 @@ SolutionError ComputeSolutionError(const ConvexSet<dim>* set1,
   if (out.status == SolutionStatus::CoincidentCenters) {
     err.prim_dual_gap = err.prim_infeas_err = 0.0;
     return err;
+  } else if (out.status == SolutionStatus::IllConditionedInputs) {
+    err.prim_dual_gap = static_cast<double>(kInf);
+    err.prim_infeas_err = 0.0;
+    return err;
   }
 
   const Vecr<dim> p1 = Affine(tf1);
@@ -120,7 +124,8 @@ bool AssertCollisionStatus(const ConvexSet<dim>* set1,
                            Real max_prim_infeas_err = kSqrtEps) {
   if (out.status == SolutionStatus::CoincidentCenters) {
     return collision;
-  } else if (out.status == SolutionStatus::MaxIterReached) {
+  } else if ((out.status == SolutionStatus::MaxIterReached) ||
+             (out.status == SolutionStatus::IllConditionedInputs)) {
     return false;
   }
 

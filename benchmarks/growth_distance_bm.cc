@@ -158,7 +158,8 @@ void ColdStart(std::function<const SetPtr<C1>()> gen1,
           dgd::ComputeSolutionError(set1.get(), tf1, set2.get(), tf2, out);
 
       if (config.print_failure) {
-        if (out.status == dgd::SolutionStatus::MaxIterReached) {
+        if ((out.status != dgd::SolutionStatus::Optimal) &&
+            (out.status != dgd::SolutionStatus::CoincidentCenters)) {
           dgd::bench::PrintSetup(set1.get(), tf1, set2.get(), tf2, settings,
                                  out, err);
           if (config.exit_failure) exit(EXIT_FAILURE);
@@ -246,7 +247,8 @@ void WarmStart(std::function<const SetPtr<C1>()> gen1,
             dgd::ComputeSolutionError(set1.get(), tf1, set2.get(), tf2, out);
 
         if (config.print_failure) {
-          if (out.status == dgd::SolutionStatus::MaxIterReached) {
+          if ((out.status != dgd::SolutionStatus::Optimal) &&
+              (out.status != dgd::SolutionStatus::CoincidentCenters)) {
             if (k == 0) {
               dgd::bench::PrintSetup(set1.get(), tf1, set2.get(), tf2, settings,
                                      out, err);

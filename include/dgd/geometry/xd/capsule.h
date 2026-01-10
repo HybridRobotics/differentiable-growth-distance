@@ -75,8 +75,7 @@ inline CapsuleImpl<dim>::CapsuleImpl(Real hlx, Real radius, Real margin)
       hlx_(hlx),
       radius_(radius),
       margin_(margin) {
-  static_assert((dim == 2) || (dim == 3), "dim is not 2 or 3");
-  if ((hlx <= Real(0.0)) || (radius <= Real(0.0)) || (margin < Real(0.0))) {
+  if ((hlx <= Real(0.0)) || (radius < Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid axis length, radius, or margin");
   }
 }
@@ -106,12 +105,12 @@ inline Real CapsuleImpl<dim>::SupportFunction(
 
 template <int dim>
 inline bool CapsuleImpl<dim>::RequireUnitNormal() const {
-  return true;
+  return (CapsuleImpl<dim>::inradius_ > Real(0.0));
 }
 
 template <int dim>
 inline bool CapsuleImpl<dim>::IsPolytopic() const {
-  return false;
+  return (CapsuleImpl<dim>::inradius_ == Real(0.0));
 }
 
 template <int dim>

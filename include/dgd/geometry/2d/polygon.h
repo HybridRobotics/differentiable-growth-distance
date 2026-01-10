@@ -32,8 +32,8 @@ namespace dgd {
 class Polygon : public ConvexSet<2> {
  public:
   /**
-   * @attention When used as a standalone set, the polygon must contain the
-   * origin in its interior.
+   * @attention The polygon must contain the origin in its interior, and the
+   * vertices must be in counter-clockwise (CCW) order.
    *
    * @see GrahamScan
    * @see ComputePolygonInradius

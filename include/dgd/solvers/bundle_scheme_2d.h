@@ -209,6 +209,8 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
   // Set alignment rotation matrices and inradius.
   mdp.SetRotationMatrices(tf1, tf2);
   mdp.r = out.r1_ + out.r2_;
+  // Check (lower bound of) the Minkowski difference set inradius.
+  if (mdp.r <= Real(0.5) * kSqrtEps) return SetInfOutput(out);
 
   // Support function output.
   SupportFunctionOutput<2, SolverOrder<S>()> sfo;

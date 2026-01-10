@@ -53,6 +53,14 @@ enum class SolutionStatus {
    * @see Settings.min_center_dist
    */
   CoincidentCenters,
+
+  /**
+   * @brief Ill-conditioned input sets.
+   *
+   * The input sets are ill-conditioned if the sum of their inradii is less than
+   * \f$\sqrt{\epsilon_m}/2\f$ in 2D and \f$2\sqrt{\epsilon_m}\f$ in 3D.
+   */
+  IllConditionedInputs,
 };
 
 /**
@@ -135,7 +143,7 @@ struct Output {
   bool normalize_2norm_ = true;
 
   /// @brief Solution status.
-  SolutionStatus status = SolutionStatus::MaxIterReached;
+  SolutionStatus status = SolutionStatus::IllConditionedInputs;
 
   /// @brief (logging) iteration-wise growth distance bounds.
 #ifdef DGD_EXTRACT_METRICS
@@ -155,6 +163,8 @@ inline std::string SolutionStatusName(SolutionStatus status) {
     return "Maximum iterations reached";
   } else if (status == SolutionStatus::Optimal) {
     return "Optimal solution";
+  } else if (status == SolutionStatus::IllConditionedInputs) {
+    return "Ill-conditioned input sets";
   } else {
     return "";
   }

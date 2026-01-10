@@ -20,7 +20,6 @@
 #ifndef DGD_GEOMETRY_3D_POLYTOPE_H_
 #define DGD_GEOMETRY_3D_POLYTOPE_H_
 
-// #include <Eigen/Dense>
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
@@ -35,9 +34,6 @@ namespace dgd {
 class Polytope : public ConvexSet<3> {
  public:
   /**
-   * @attention When used as a standalone set, the polytope must contain the
-   * origin in its interior.
-   *
    * @param vert     Vector of n three-dimensional vertices.
    * @param inradius Polytope inradius.
    * @param margin   Safety margin.
@@ -79,21 +75,9 @@ inline Polytope::Polytope(const std::vector<Vec3r>& vert, Real inradius,
       vert_(vert),
       margin_(margin),
       thresh_(thresh) {
-  if ((margin < Real(0.0)) || (inradius <= Real(0.0))) {
+  if ((margin < Real(0.0)) || (inradius < Real(0.0))) {
     throw std::domain_error("Invalid margin or inradius");
   }
-
-  // const int nvert = static_cast<int>(vert.size());
-  // if (nvert < 4) {
-  //   throw std::domain_error("Polytope is not solid");
-  // }
-  // Matr<3, -1> aff_vert(3, nvert - 1);
-  // for (int i = 1; i < nvert; ++i) aff_vert.col(i - 1) = vert[i] - vert[0];
-  // const Eigen::ColPivHouseholderQR<Matr<3, -1>> qr(aff_vert);
-  // const int rank = static_cast<int>(qr.rank());
-  // if (rank != 3) {
-  //   throw std::domain_error("Polytope is not solid");
-  // }
 }
 
 inline Real Polytope::SupportFunction(const Vec3r& n, Vec3r& sp,
