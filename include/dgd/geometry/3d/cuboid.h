@@ -82,7 +82,7 @@ inline Real Cuboid::SupportFunction(const Vec3r& n, Vec3r& sp,
 inline Real Cuboid::SupportFunction(const Vec3r& n,
                                     SupportFunctionDerivatives<3>& deriv,
                                     SupportFunctionHint<3>* /*hint*/) const {
-  const Real diff = std::max(
+  const Real diff = std::min(
       {std::abs(hlx_ * n(0)), std::abs(hly_ * n(1)), std::abs(hlz_ * n(2))});
   if (diff < Real(0.5) * eps_diff()) {
     deriv.differentiable = false;

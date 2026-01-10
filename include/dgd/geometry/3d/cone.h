@@ -125,7 +125,7 @@ inline Real Cone::SupportFunction(const Vec3r& n,
     return (h_ - rho_) * n(2) + margin_;
   } else {
     // The support point lies in the cone base.
-    if (std::max(Real(2.0) * r_ * k, -diff) < eps_diff()) {
+    if (std::min(Real(2.0) * r_ * k, -diff) < eps_diff()) {
       deriv.differentiable = false;
     } else {
       deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
