@@ -79,7 +79,7 @@ inline Real Rectangle::SupportFunction(const Vec2r& n, Vec2r& sp,
 inline Real Rectangle::SupportFunction(const Vec2r& n,
                                        SupportFunctionDerivatives<2>& deriv,
                                        SupportFunctionHint<2>* /*hint*/) const {
-  const Real diff = std::max(std::abs(hlx_ * n(0)), std::abs(hly_ * n(1)));
+  const Real diff = std::min(std::abs(hlx_ * n(0)), std::abs(hly_ * n(1)));
   if (diff < Real(0.5) * eps_diff()) {
     deriv.differentiable = false;
   } else {

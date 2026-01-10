@@ -87,7 +87,7 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
                                       SupportFunctionHint<3>* /*hint*/) const {
   const Real k2 = n(1) * n(1) + n(2) * n(2);
   const Real k = std::sqrt(k2);
-  const Real diff = std::max(radius_ * k, std::abs(hlx_ * n(0)));
+  const Real diff = std::min(radius_ * k, std::abs(hlx_ * n(0)));
   if (diff < Real(0.5) * eps_diff()) {
     deriv.differentiable = false;
   } else {
