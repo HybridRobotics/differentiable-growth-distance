@@ -662,11 +662,15 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
   }
   if constexpr (S != SolverType::CuttingPlane) n_cp = Vec3r::UnitZ();
 
-  if constexpr (SolverSettings::kEnableDebugPrinting) {
+  if constexpr (SolverSettings::kVerboseIteration) {
     PrintDebugHeader<S, BST>(warm_start, settings.ws_type);
     PrintDebugIteration(iter, mdp.cdist, lb, ub, settings.rel_tol, bsc.s,
                         out.bc);
   }
+#ifdef DGD_EXTRACT_METRICS
+  InitializeLogs(settings.max_iter, out);
+  LogBounds(iter, lb, ub, out);
+#endif  // DGD_EXTRACT_METRICS
 
   while (true) {
     // Evaluate the support functions at the normal.
@@ -696,10 +700,13 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
 
     ++iter;
 
-    if constexpr (SolverSettings::kEnableDebugPrinting) {
+    if constexpr (SolverSettings::kVerboseIteration) {
       PrintDebugIteration(iter, mdp.cdist, lb, ub, settings.rel_tol, bsc.s,
                           out.bc);
     }
+#ifdef DGD_EXTRACT_METRICS
+    LogBounds(iter, lb, ub, out);
+#endif  // DGD_EXTRACT_METRICS
 
     // Termination criteria.
     if constexpr (detect_collision) {
@@ -761,7 +768,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
 
   out.iter = iter;
 
-  if constexpr (SolverSettings::kEnableDebugPrinting) PrintDebugFooter();
+  if constexpr (SolverSettings::kVerboseIteration) PrintDebugFooter();
 
   // (test)
   // out.prim_infeas_err = (bsc.s.template topRows<2>() * out.bc).norm();

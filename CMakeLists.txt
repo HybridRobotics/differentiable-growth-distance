@@ -11,6 +11,8 @@ message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 ## User flags
 #   Preprocessor definitions
 option(DGD_USE_32BIT_FLOAT "Use 32-bit floating point" OFF)
+option(DGD_VERBOSE_ITERATION "Enable verbose iteration-level printing" OFF)
+option(DGD_EXTRACT_METRICS "Extract convergence metrics" OFF)
 
 #   Installation rules
 option(DGD_INSTALL_LIBS "Install library" ON)

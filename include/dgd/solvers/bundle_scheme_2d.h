@@ -241,10 +241,14 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
     InitializeSetSimplices(mdp, out);
   }
 
-  if constexpr (SolverSettings::kEnableDebugPrinting) {
+  if constexpr (SolverSettings::kVerboseIteration) {
     PrintDebugHeader<S>(warm_start, settings.ws_type);
     PrintDebugIteration(iter, mdp.cdist, lb, ub, settings.rel_tol, s, out.bc);
   }
+#ifdef DGD_EXTRACT_METRICS
+  InitializeLogs(settings.max_iter, out);
+  LogBounds(iter, lb, ub, out);
+#endif  // DGD_EXTRACT_METRICS
 
   while (true) {
     // Evaluate the support functions at the normal.
@@ -271,9 +275,12 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
 
     ++iter;
 
-    if constexpr (SolverSettings::kEnableDebugPrinting) {
+    if constexpr (SolverSettings::kVerboseIteration) {
       PrintDebugIteration(iter, mdp.cdist, lb, ub, settings.rel_tol, s, out.bc);
     }
+#ifdef DGD_EXTRACT_METRICS
+    LogBounds(iter, lb, ub, out);
+#endif  // DGD_EXTRACT_METRICS
 
     // Termination criteria.
     if constexpr (detect_collision) {
@@ -331,7 +338,7 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
 
   out.iter = iter;
 
-  if constexpr (SolverSettings::kEnableDebugPrinting) PrintDebugFooter();
+  if constexpr (SolverSettings::kVerboseIteration) PrintDebugFooter();
 
   // (test)
   // out.prim_infeas_err = std::abs(s.row(0) * out.bc);

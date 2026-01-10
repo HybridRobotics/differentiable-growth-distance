@@ -14,7 +14,7 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Debug printing functions.
+ * @brief Debug printing and logging functions.
  */
 
 #ifndef DGD_SOLVERS_DEBUG_H_
@@ -26,6 +26,7 @@
 #include <string>
 
 #include "dgd/data_types.h"
+#include "dgd/output.h"
 
 namespace dgd {
 
@@ -69,6 +70,24 @@ inline void PrintDebugFooter() {
   std::cout.unsetf(std::ios::fixed | std::ios::scientific);
   std::cout << std::right;
 }
+
+/**
+ * Logging.
+ */
+
+#ifdef DGD_EXTRACT_METRICS
+template <int dim>
+inline void InitializeLogs(int max_iter, Output<dim>& out) {
+  out.lbs.assign(max_iter, Real(0.0));
+  out.ubs.assign(max_iter, kInf);
+}
+
+template <int dim>
+inline void LogBounds(int iter, Real lb, Real ub, Output<dim>& out) {
+  out.lbs[iter] = lb;
+  out.ubs[iter] = ub;
+}
+#endif  // DGD_EXTRACT_METRICS
 
 }  // namespace detail
 

@@ -32,7 +32,11 @@ namespace detail {
 struct SolverSettings {
   // [Debugging]
   /// @brief Whether to print convergence information at each iteration.
-  static constexpr bool kEnableDebugPrinting = false;
+#ifdef DGD_VERBOSE_ITERATION
+  static constexpr bool kVerboseIteration = true;
+#else
+  static constexpr bool kVerboseIteration = false;
+#endif  // DGD_VERBOSE_ITERATION
   /// @brief Whether to print growth distance bounds or dual function bounds.
   static constexpr bool kPrintGdBounds = false;
 

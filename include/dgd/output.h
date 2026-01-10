@@ -21,6 +21,9 @@
 #define DGD_OUTPUT_H_
 
 #include <string>
+#ifdef DGD_EXTRACT_METRICS
+#include <vector>
+#endif  // DGD_EXTRACT_METRICS
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
@@ -122,7 +125,7 @@ struct Output {
   /// @brief (internal) convex set inradii.
   Real r1_ = kEps, r2_ = kEps;
 
-  // (test) (internal) primal infeasibility error.
+  // (test) primal infeasibility error.
   // Real prim_infeas_err = kInf;
 
   /// @brief Number of solver iterations.
@@ -133,6 +136,12 @@ struct Output {
 
   /// @brief Solution status.
   SolutionStatus status = SolutionStatus::MaxIterReached;
+
+  /// @brief (logging) iteration-wise growth distance bounds.
+#ifdef DGD_EXTRACT_METRICS
+  std::vector<Real> lbs;
+  std::vector<Real> ubs;
+#endif  // DGD_EXTRACT_METRICS
 };
 
 using Output2 = Output<2>;
