@@ -143,7 +143,7 @@ struct Output {
   bool normalize_2norm_ = true;
 
   /// @brief Solution status.
-  SolutionStatus status = SolutionStatus::IllConditionedInputs;
+  SolutionStatus status = SolutionStatus::MaxIterReached;
 
   /// @brief (logging) iteration-wise growth distance bounds.
 #ifdef DGD_EXTRACT_METRICS

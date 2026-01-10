@@ -97,7 +97,7 @@ inline Frustum::Frustum(Real base_radius, Real top_radius, Real height,
       h_(height),
       margin_(margin) {
   if ((base_radius < Real(0.0)) || (top_radius < Real(0.0)) ||
-      (std::max(base_radius, top_radius) < Real(0.0)) ||
+      (std::max(base_radius, top_radius) <= Real(0.0)) ||
       (height <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid radii, height, or margin");
   }
