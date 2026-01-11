@@ -25,6 +25,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "dgd/data_types.h"
@@ -52,8 +53,8 @@ class Mesh : public ConvexSet<3> {
    * @param thresh      Support function threshold.
    * @param guess_level Guess level for the warm start index.
    */
-  explicit Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
-                Real inradius, Real margin = Real(0.0), Real thresh = Real(0.9),
+  explicit Mesh(std::vector<Vec3r> vert, std::vector<int> graph, Real inradius,
+                Real margin = Real(0.0), Real thresh = Real(0.9),
                 int guess_level = 1, const std::string& name = "__Mesh__");
 
   ~Mesh() = default;
@@ -102,15 +103,15 @@ class Mesh : public ConvexSet<3> {
   std::string name_; /**< Mesh name. */
 };
 
-inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
+inline Mesh::Mesh(std::vector<Vec3r> vert, std::vector<int> graph,
                   Real inradius, Real margin, Real thresh, int guess_level,
                   const std::string& name)
     : ConvexSet<3>(margin + inradius),
-      vert_(vert),
-      graph_(graph),
+      vert_(std::move(vert)),
+      graph_(std::move(graph)),
       margin_(margin),
       thresh_(thresh),
-      nvert_(static_cast<int>(vert.size())),
+      nvert_(static_cast<int>(vert_.size())),
       name_(name) {
   if ((inradius <= Real(0.0)) || (margin < Real(0.0))) {
     throw std::domain_error("Invalid inradius or margin");
@@ -119,8 +120,8 @@ inline Mesh::Mesh(const std::vector<Vec3r>& vert, const std::vector<int>& graph,
     throw std::domain_error("Guess level is not 0, 1, or 2");
   }
 
-  if (vert.empty() || graph.size() < 2 || nvert_ != graph[0] ||
-      static_cast<int>(graph.size()) != 2 + 2 * nvert_ + 3 * graph[1]) {
+  if (vert_.empty() || graph_.size() < 2 || nvert_ != graph_[0] ||
+      static_cast<int>(graph_.size()) != 2 + 2 * nvert_ + 3 * graph_[1]) {
     throw std::domain_error("Invalid graph or vertex set");
   }
 

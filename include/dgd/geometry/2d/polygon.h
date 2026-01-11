@@ -22,6 +22,7 @@
 
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
@@ -42,7 +43,7 @@ class Polygon : public ConvexSet<2> {
    * @param inradius Polygon inradius.
    * @param margin   Safety margin.
    */
-  explicit Polygon(const std::vector<Vec2r>& vert, Real inradius,
+  explicit Polygon(std::vector<Vec2r> vert, Real inradius,
                    Real margin = Real(0.0));
 
   ~Polygon() = default;
@@ -66,9 +67,8 @@ class Polygon : public ConvexSet<2> {
   const Real margin_;             /**< Safety margin. */
 };
 
-inline Polygon::Polygon(const std::vector<Vec2r>& vert, Real inradius,
-                        Real margin)
-    : ConvexSet<2>(margin + inradius), vert_(vert), margin_(margin) {
+inline Polygon::Polygon(std::vector<Vec2r> vert, Real inradius, Real margin)
+    : ConvexSet<2>(margin + inradius), vert_(std::move(vert)), margin_(margin) {
   if ((margin < Real(0.0)) || (inradius <= Real(0.0))) {
     throw std::domain_error("Invalid margin or inradius");
   }
