@@ -29,6 +29,7 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #define TINYOBJLOADER_IMPLEMENTATION  // define this in only *one* .cc
@@ -60,7 +61,7 @@ void MeshLoader::LoadObj(const std::string& input, bool is_file) {
   }
 
   const auto& attrib = objReader.GetAttrib();
-  normal_ = attrib.normals;
+  normal_ = std::move(attrib.normals);
   facenormal_.clear();
 
   if (!objReader.GetShapes().empty()) {
@@ -68,6 +69,7 @@ void MeshLoader::LoadObj(const std::string& input, bool is_file) {
 
     // Iterate over mesh faces.
     std::vector<tinyobj::index_t> face_indices;
+    face_indices.reserve(mesh.indices.size());
     for (int face = 0, idx = 0; idx < static_cast<int>(mesh.indices.size());) {
       int nfacevert = mesh.num_face_vertices[face];
       if (nfacevert < 3 || nfacevert > 4) {
@@ -88,6 +90,8 @@ void MeshLoader::LoadObj(const std::string& input, bool is_file) {
     }
 
     // For each vertex, store index and normal.
+    face_.reserve(face_indices.size());
+    facenormal_.reserve(face_indices.size());
     for (const auto& mesh_index : face_indices) {
       face_.push_back(mesh_index.vertex_index);
 

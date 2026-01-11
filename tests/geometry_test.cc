@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "dgd/data_types.h"
@@ -127,7 +128,7 @@ TEST(PolygonTest, SupportFunction) {
   GrahamScan(pts, vert);
   Real inradius = ComputePolygonInradius(vert, Vec2r::Zero());
 
-  auto set = Polygon(vert, inradius, margin);
+  auto set = Polygon(std::move(vert), inradius, margin);
 
   EXPECT_EQ(set.inradius(), inradius + margin);
 
@@ -407,7 +408,7 @@ TEST(MeshTest, SupportFunction) {
     ASSERT_TRUE(valid);
 
     auto polytope = Polytope(vert, inradius, margin);
-    auto mesh = Mesh(vert, graph, inradius, margin);
+    auto mesh = Mesh(std::move(vert), std::move(graph), inradius, margin);
 
     // Support function test.
     for (int j = 0; j < normals.cols(); ++j) {
@@ -441,7 +442,7 @@ TEST(PolytopeTest, SupportFunction) {
   Vec3r interior_point = Vec3r::Zero();
   Real inradius = ml.ComputeInradius(interior_point);
 
-  auto set = Polytope(vert, inradius, margin);
+  auto set = Polytope(std::move(vert), inradius, margin);
 
   EXPECT_EQ(set.inradius(), inradius + margin);
 

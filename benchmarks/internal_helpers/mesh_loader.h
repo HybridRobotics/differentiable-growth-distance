@@ -27,7 +27,10 @@ struct MeshProperties {
   // Sets facet mesh from .obj file.
   void SetFacetMeshFromObjFile(const std::string& filename);
 
-  // Set facet mesh from vertices.
+  // Sets vertex mesh from vertices.
+  void SetVertexMeshFromVertices(const std::vector<Vec3r>& vert);
+
+  // Sets facet mesh from vertices.
   void SetFacetMeshFromVertices(const std::vector<Vec3r>& vert);
 
   // Sets the origin as the center of the vertex mesh.

@@ -52,17 +52,15 @@ enum class FlatPrimitive3D {
 
 // Feature dimension ranges for convex sets.
 struct ConvexSetFeatureRange {
-  static constexpr Real kScale = 1e-2;
-
   // 2D convex sets.
   struct {
-    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
-    std::array<Real, 2> hly{0.25 * kScale, 0.25};
+    Real hlx = 0.25;
+    Real hly = 0.25;
   } ellipse;
 
   struct {
-    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
-    std::array<Real, 2> hly{0.25 * kScale, 0.25};
+    Real hlx = 0.25;
+    Real hly = 0.25;
   } rectangle;
 
   struct {
@@ -72,31 +70,31 @@ struct ConvexSetFeatureRange {
 
   // 3D convex sets.
   struct {
-    std::array<Real, 2> radius{0.25 * kScale, 0.25};
-    std::array<Real, 2> height{0.5 * kScale, 0.5};
+    Real radius = 0.25;
+    Real height = 0.5;
   } cone;
 
   struct {
-    std::array<Real, 2> hlx{0.4 * kScale, 0.4};
-    std::array<Real, 2> radius{0.25 * kScale, 0.25};
+    Real hlx = 0.4;
+    Real radius = 0.25;
   } cylinder;
 
   struct {
-    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
-    std::array<Real, 2> hly{0.25 * kScale, 0.25};
-    std::array<Real, 2> hlz{0.25 * kScale, 0.25};
+    Real hlx = 0.25;
+    Real hly = 0.25;
+    Real hlz = 0.25;
   } ellipsoid;
 
   struct {
-    std::array<Real, 2> base_radius{0.25 * kScale, 0.25};
-    std::array<Real, 2> top_radius{0.25 * kScale, 0.25};
-    std::array<Real, 2> height{0.5 * kScale, 0.5};
+    Real base_radius = 0.25;
+    Real top_radius = 0.25;
+    Real height = 0.5;
   } frustum;
 
   struct {
-    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
-    std::array<Real, 2> hly{0.25 * kScale, 0.25};
-    std::array<Real, 2> hlz{0.25 * kScale, 0.25};
+    Real hlx = 0.25;
+    Real hly = 0.25;
+    Real hlz = 0.25;
   } cuboid;
 
   struct {
@@ -106,23 +104,39 @@ struct ConvexSetFeatureRange {
 
   // XD convex sets.
   struct {
-    std::array<Real, 2> hlx{0.25 * kScale, 0.25};
-    std::array<Real, 2> radius{0.25 * kScale, 0.25};
+    Real hlx = 0.25;
+    Real radius = 0.25;
   } capsule;
 
   struct {
-    std::array<Real, 2> radius{0.25 * kScale, 0.25};
+    Real radius = 0.25;
   } sphere;
+
+  // Spherical polytopes.
+  struct {
+    Real radius = 0.25;
+  } sph_polytope;
 
   Real margin = 0.25;
   // Probability of positive margin.
   Real pos_margin_prob = 0.5;
+
+  void SetScale(Real scale) {
+    if ((scale < 1.0) && (scale > 1e-4)) scale_ = scale;
+  }
+
+  Real scale() const { return scale_; }
+
+  std::array<Real, 2> Range(Real ub) const { return {scale_ * ub, ub}; }
+
+ private:
+  Real scale_ = 1e-2;
 };
 
 // Convex set generator.
 class ConvexSetGenerator {
  public:
-  explicit ConvexSetGenerator(const ConvexSetFeatureRange& fr);
+  explicit ConvexSetGenerator(ConvexSetFeatureRange fr);
 
   ~ConvexSetGenerator() = default;
 
@@ -159,6 +173,16 @@ class ConvexSetGenerator {
   // Generates a random 3D convex set.
   ConvexSetPtr<3> GetRandom3DSet();
 
+  // Generates random vertices on an ellipsoid.
+  std::vector<Vec3r> GetRandomEllipsoidVertices(int nvert,
+                                                const Vec3r& half_lengths);
+
+  // Generates random ellipsoidal polytope/mesh.
+  template <class T>
+  ConvexSetPtr<3> GetRandomEllipsoidalPolytope(int nvert, Real skew);
+
+  ConvexSetFeatureRange& feature_range() { return fr_; }
+
   const std::vector<MeshPtr>& meshes() const { return meshes_; }
 
   int nmeshes() const { return nmeshes_; }
@@ -167,7 +191,7 @@ class ConvexSetGenerator {
   std::vector<MeshPtr> meshes_;
   std::vector<Vec2r> polygon_vert_;   // Temporary.
   std::vector<Vec3r> polytope_vert_;  // Temporary.
-  const ConvexSetFeatureRange fr_;
+  ConvexSetFeatureRange fr_;
   Rng rng_;
   const int count2_, ccount3_, fcount3_;
   int nmeshes_;
