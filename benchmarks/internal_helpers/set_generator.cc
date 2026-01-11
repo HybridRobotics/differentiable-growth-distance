@@ -277,7 +277,8 @@ ConvexSetPtr<3> ConvexSetGenerator::GetRandomEllipsoidalPolytope(int nvert,
   try {
     mp.SetVertexMeshFromVertices(vert);
   } catch (const std::runtime_error& e) {
-    throw std::runtime_error("Failed to set vertex mesh");
+    throw std::runtime_error(std::string("Failed to set vertex mesh: ") +
+                             e.what());
   }
   mp.SetZeroVertexCenter();
 

@@ -121,8 +121,11 @@ struct ConvexSetFeatureRange {
   // Probability of positive margin.
   Real pos_margin_prob = 0.5;
 
+  // Valid values for the scale are in the interval [1e-3, 1.0]. If a value
+  // outside this range is provided, the call is a no-op and the existing value
+  // of the scale is left unchanged.
   void SetScale(Real scale) {
-    if ((scale < 1.0) && (scale > 1e-4)) scale_ = scale;
+    if ((scale <= 1.0) && (scale >= 1e-3)) scale_ = scale;
   }
 
   Real scale() const { return scale_; }
