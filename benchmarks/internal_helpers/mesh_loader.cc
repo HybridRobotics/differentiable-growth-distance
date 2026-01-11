@@ -15,10 +15,12 @@ void MeshProperties::SetVertexMeshFromObjFile(const std::string& filename) {
 
   try {
     ml.LoadObj(filename);
-    if (!ml.MakeVertexGraph(vert, vgraph)) {
+    // Facet graph is constructed since the inradius is required.
+    if (!ml.MakeVertexGraph(vert, vgraph) ||
+        !ml.MakeFacetGraph(normal, offset, fgraph, interior_point)) {
       throw std::runtime_error("Qhull error: Failed to parse the file");
     }
-    inradius = ml.ComputeInradius(interior_point);
+    inradius = ml.ComputeInradius(normal, offset, interior_point);
     if (inradius <= 0.0) {
       throw std::runtime_error("Nonpositive inradius");
     }
@@ -50,6 +52,27 @@ void MeshProperties::SetFacetMeshFromObjFile(const std::string& filename) {
   }
   nfacet = static_cast<int>(normal.size());
   name = filename;
+}
+
+void MeshProperties::SetVertexMeshFromVertices(const std::vector<Vec3r>& vert) {
+  MeshLoader ml{};
+
+  try {
+    ml.ProcessPoints(vert);
+    // Facet graph is constructed since the inradius is required.
+    if (!ml.MakeVertexGraph(this->vert, vgraph) ||
+        !ml.MakeFacetGraph(normal, offset, fgraph, interior_point)) {
+      throw std::runtime_error("Qhull error: Failed to process vertices");
+    }
+    inradius = ml.ComputeInradius(normal, offset, interior_point);
+    if (inradius <= 0.0) {
+      throw std::runtime_error("Nonpositive inradius");
+    }
+  } catch (const std::runtime_error& e) {
+    std::cerr << "Error computing v-rep" << std::endl;
+    throw;
+  }
+  nvert = static_cast<int>(this->vert.size());
 }
 
 void MeshProperties::SetFacetMeshFromVertices(const std::vector<Vec3r>& vert) {
