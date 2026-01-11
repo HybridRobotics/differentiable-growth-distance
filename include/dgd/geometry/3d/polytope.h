@@ -23,6 +23,7 @@
 #include <cassert>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 #include "dgd/data_types.h"
@@ -39,7 +40,7 @@ class Polytope : public ConvexSet<3> {
    * @param margin   Safety margin.
    * @param thresh   Support function threshold.
    */
-  explicit Polytope(const std::vector<Vec3r>& vert, Real inradius,
+  explicit Polytope(std::vector<Vec3r> vert, Real inradius,
                     Real margin = Real(0.0), Real thresh = Real(0.75));
 
   ~Polytope() = default;
@@ -69,10 +70,10 @@ class Polytope : public ConvexSet<3> {
   const Real thresh_;  // Support function threshold.
 };
 
-inline Polytope::Polytope(const std::vector<Vec3r>& vert, Real inradius,
-                          Real margin, Real thresh)
+inline Polytope::Polytope(std::vector<Vec3r> vert, Real inradius, Real margin,
+                          Real thresh)
     : ConvexSet<3>(margin + inradius),
-      vert_(vert),
+      vert_(std::move(vert)),
       margin_(margin),
       thresh_(thresh) {
   if ((margin < Real(0.0)) || (inradius < Real(0.0))) {
