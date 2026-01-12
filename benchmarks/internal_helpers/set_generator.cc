@@ -197,11 +197,11 @@ ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(FlatPrimitive3D type) {
           const int idx = rng_.RandomInt({0, nvert_m - 1});
           polytope_vert_.push_back(meshes_[mesh_idx]->vertices()[idx]);
         }
-        // Add a small margin to ensure that the set is solid.
-        margin += 1e-2;
       }
       CenterVertices(polytope_vert_);
 
+      // Add a small margin to ensure that the set is solid.
+      margin += 1e-2;
       return std::make_shared<Polytope>(std::move(polytope_vert_), kSqrtEps,
                                         margin);
     }
