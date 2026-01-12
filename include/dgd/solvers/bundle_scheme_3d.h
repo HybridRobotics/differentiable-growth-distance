@@ -621,6 +621,10 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
                   Output<3>& out, bool warm_start) {
   if (!warm_start) InitializeOutput(set1, set2, out);
 
+#ifdef DGD_EXTRACT_METRICS
+  InitializeLogs(settings.max_iter, out);
+#endif  // DGD_EXTRACT_METRICS
+
   MinkowskiDiffProp<3> mdp;
   // Check center distance.
   mdp.SetCenterDistance(tf1, tf2);
@@ -670,7 +674,6 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
                         out.bc);
   }
 #ifdef DGD_EXTRACT_METRICS
-  InitializeLogs(settings.max_iter, out);
   LogBounds(iter, lb, ub, out);
 #endif  // DGD_EXTRACT_METRICS
 
