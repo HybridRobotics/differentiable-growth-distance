@@ -83,14 +83,15 @@ The codebase is modular, extensible, and leverages modern C++17 features, as wel
 
 ## Performance
 
-<!-- TODO: Add performance graphs -->
+<div align="center">
+<img src="docs/images/solution_time_iters.png"/>
+</div>
 
 ### Notes
 
+- More details about the comparison libraries and the benchmarking process can be found in the paper. <!-- TODO: After adding multiple papers, specify which one. -->
 - The benchmarking code can be found here: [dgd-benchmark](https://github.com/AkshayThiru/dgd-benchmark).
 - The benchmarks are performed using the runtime (virtual-dispatch) functions. The template functions can be 5-10% faster (see [API Reference & Usage](#api-reference--usage)).
-- More details about the benchmarking process can be found in the paper.
-<!-- TODO: After adding multiple papers, specify which one. -->
 
 
 ## Requirements
@@ -124,9 +125,11 @@ The codebase is modular, extensible, and leverages modern C++17 features, as wel
 ### CMake Options
 
 - `DGD_BUILD_TESTS` (default: ON)    — Build unit tests (requires GoogleTest)
-- `DGD_BUILD_BENCHMARKS` (default: ON)    — Build benchmarks (Release mode, double precision only)
+- `DGD_BUILD_BENCHMARKS` (default: OFF)    — Build benchmarks (Release mode, double precision only)
 - `DGD_BUILD_DOCS` (default: OFF)   — Build documentation (requires Doxygen)
 - `DGD_USE_32BIT_FLOAT` (default: OFF)   — Use single precision floats
+- `DGD_VERBOSE_ITERATION` (default: OFF)   — Enable verbose iteration-level printing
+- `DGD_EXTRACT_METRICS` (default: OFF)   — Extract convergence metrics
 
 ### Testing & Benchmarking
 
@@ -164,24 +167,22 @@ See the [Usage](docs/Usage.md) guide for more in-depth examples.
 
 ## Troubleshooting
 
-- **Eigen or Qhull not found:** </br>
+- **Eigen or Qhull not found:**  
  Ensure Eigen is installed and available in the include path. Qhull may need to be installed via the package manager (e.g., `sudo apt install libqhull-dev`).
 
-- **Compiler errors about C++ standard:** </br>
+- **Compiler errors about C++ standard:**  
  Ensure that the compiler supports C++17 or a later version.
 
-- **Build errors:** </br>
+- **Build errors:**  
  Try a clean build (`rm -rf build && mkdir build && cd build && cmake .. && make`).
 
 
 ## Citation
 
-<!-- TODO: different citations for different algorithms -->
-
 If you use this library in your research, please cite:
 
 <!-- TODO: Add CITATION.cff -->
-<!-- TODO: add paper citation -->
+<!-- TODO: different citations for different algorithms -->
 
 
 ## Key Tags
