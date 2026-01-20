@@ -149,7 +149,7 @@ inline void Polytope::PrintInfo() const {
     std::cout << "    (" << v(0) << ", " << v(1) << ", " << v(2) << ")"
               << std::endl;
   }
-  std::cout << "  Inradius: " << margin_ << std::endl
+  std::cout << "  Inradius: " << inradius_ << std::endl
             << "  Margin: " << margin_ << std::endl;
 }
 

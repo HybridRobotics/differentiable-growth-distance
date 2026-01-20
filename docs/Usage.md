@@ -30,10 +30,13 @@ auto b = std::make_unique<Polygon>(verts, /*inradius=*/0.1, /*margin=*/0.0);
 - **Base transforms:** Concrete types store their geometry in their own local frame. Check the documentation for each concrete type to determine its base frame and center point.
 
 - **User-defined convex sets:** To add a custom set, derive from `ConvexSet<dim>` and implement the required virtual function:
- ```cpp
+  ```cpp
   Real SupportFunction(const Vecr<dim>&, Vecr<dim>&, SupportFunctionHint<dim>*);
- ```
- and, optionally, other virtual functions. See the existing implementations (e.g., `Ellipse`, `Polygon`, `Cone`, `Mesh`) for examples.
+  ```
+  and, optionally, other virtual functions. See the existing implementations (e.g., `Ellipse`, `Polygon`, `Cone`, `Mesh`) for examples.  
+  Types of user-defined convex sets that can be defined include:
+  - 2D: semi-circle.
+  - 3D: hemi-sphere, ellipsoidal plate.
 
 ---
 
