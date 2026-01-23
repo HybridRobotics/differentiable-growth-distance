@@ -88,7 +88,7 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
   const Real k2 = n(1) * n(1) + n(2) * n(2);
   const Real k = std::sqrt(k2);
   const Real diff = std::min(radius_ * k, std::abs(hlx_ * n(0)));
-  if (diff < Real(0.5) * eps_diff()) {
+  if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
     deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());

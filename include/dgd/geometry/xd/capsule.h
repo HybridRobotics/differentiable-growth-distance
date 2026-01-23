@@ -93,7 +93,7 @@ template <int dim>
 inline Real CapsuleImpl<dim>::SupportFunction(
     const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
     SupportFunctionHint<dim>* /*hint*/) const {
-  if (std::abs(hlx_ * n(0)) < Real(0.5) * CapsuleImpl<dim>::eps_diff()) {
+  if (std::abs(hlx_ * n(0)) < Real(0.5) * CapsuleImpl<dim>::eps_sp_) {
     deriv.differentiable = false;
   } else {
     deriv.Dsp = CapsuleImpl<dim>::inradius_ *

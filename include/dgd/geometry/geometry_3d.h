@@ -14,7 +14,8 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Header including all 3D convex sets.
+ * @brief Convenience header to include all 3D convex sets.
+ * @note Consider including only specific sets to reduce compilation time.
  */
 
 #ifndef DGD_GEOMETRY_GEOMETRY_3D_H_

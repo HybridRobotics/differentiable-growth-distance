@@ -116,11 +116,11 @@ inline Real Polytope::SupportFunction(const Vec3r& n,
   for (int i = 0; i < static_cast<int>(vert_.size()); ++i) {
     s = n.dot(vert_[i]);
     if (s > sv) {
-      deriv.differentiable = (s >= sv + eps_diff());
+      deriv.differentiable = (s >= sv + eps_sp_);
       idx = i;
       sv = s;
     } else {
-      if (s > sv - eps_diff()) deriv.differentiable = false;
+      if (s > sv - eps_sp_) deriv.differentiable = false;
     }
   }
   if (deriv.differentiable) {

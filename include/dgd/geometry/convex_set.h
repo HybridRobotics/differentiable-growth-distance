@@ -156,6 +156,21 @@ class ConvexSet {
   /// @brief Returns the dimension of the convex set.
   static constexpr int dimension();
 
+  /// @brief Returns the support point differentiability tolerance.
+  static Real eps_sp();
+
+  /// @brief Returns the primal solution differentiability tolerance.
+  Real eps_p() const;
+
+  /// @brief Sets the primal solution differentiability tolerance.
+  void set_eps_p(Real eps_p);
+
+  /// @brief Returns the dual solution differentiability tolerance.
+  Real eps_d() const;
+
+  /// @brief Sets the dual solution differentiability tolerance.
+  void set_eps_d(Real eps_d);
+
   /// @brief Returns the inradius of the convex set.
   Real inradius() const;
 
@@ -168,17 +183,23 @@ class ConvexSet {
   ConvexSet(Real inradius);
 
   /**
-   * @brief Support function differentiability tolerance.
+   * @brief Support point map differentiability tolerance.
    *
    * The support point map is considered differentiable at a unit normal vector
    * \f$n\f$ if the support point is unique and differentiable for all unit
    * normal vectors \f$n'\f$ such that \f{align*}{
-   * s_v[C](n') - \langle n', s_p[C](n) \rangle < k \cdot \text{eps_diff()},
+   * s_v[C](n') - \langle n', s_p[C](n) \rangle < k \cdot \text{eps_sp_},
    * \f}
    * where \f$k > 1\f$ is a constant, \f$s_v[C](\cdot)\f$ is the support
    * function, and \f$s_p[C](\cdot)\f$ is the support point map.
    */
-  static constexpr Real eps_diff();
+  static inline const Real eps_sp_ = dim * std::pow(kEps, Real(0.334));
+
+  /// @brief Primal solution differentiability tolerance.
+  Real eps_p_ = dim * std::pow(kEps, Real(0.5));
+
+  /// @brief Dual solution differentiability tolerance.
+  Real eps_d_ = dim * std::pow(kEps, Real(0.5));
 
   /**
    * @brief Convex set inradius at the origin.
@@ -231,6 +252,39 @@ constexpr int ConvexSet<dim>::dimension() {
 }
 
 template <int dim>
+inline Real ConvexSet<dim>::eps_sp() {
+  return eps_sp_;
+}
+
+template <int dim>
+inline Real ConvexSet<dim>::eps_p() const {
+  return eps_p_;
+}
+
+template <int dim>
+inline void ConvexSet<dim>::set_eps_p(Real eps_p) {
+  if (eps_p < Real(0.0)) {
+    throw std::domain_error(
+        "Primal solution differentiability tolerance is negative");
+  }
+  eps_p_ = eps_p;
+}
+
+template <int dim>
+inline Real ConvexSet<dim>::eps_d() const {
+  return eps_d_;
+}
+
+template <int dim>
+inline void ConvexSet<dim>::set_eps_d(Real eps_d) {
+  if (eps_d < Real(0.0)) {
+    throw std::domain_error(
+        "Dual solution differentiability tolerance is negative");
+  }
+  eps_d_ = eps_d;
+}
+
+template <int dim>
 inline Real ConvexSet<dim>::inradius() const {
   return inradius_;
 }
@@ -241,11 +295,6 @@ inline void ConvexSet<dim>::set_inradius(Real inradius) {
     throw std::domain_error("Inradius is negative");
   }
   inradius_ = inradius;
-}
-
-template <int dim>
-constexpr Real ConvexSet<dim>::eps_diff() {
-  return dim * std::pow(kEps, Real(1.0 / 3.0));
 }
 
 namespace detail {
