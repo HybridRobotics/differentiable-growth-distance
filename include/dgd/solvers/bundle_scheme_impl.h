@@ -15,6 +15,8 @@
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
  * @brief Growth distance algorithm implementations for two compact convex sets.
+ * @warning This is a heavy header. It may significantly increase the
+ * compilation time. Use only when template implementations are needed.
  */
 
 #ifndef DGD_SOLVERS_BUNDLE_SCHEME_IMPL_H_

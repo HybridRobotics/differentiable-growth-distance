@@ -106,7 +106,7 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
   const int len = static_cast<int>(vert_.size()), idx = hint.idx_ws;
   const int prev = (idx == 0) ? len - 1 : idx - 1;
   const int next = (idx == len - 1) ? 0 : idx + 1;
-  if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) > sv - eps_diff()) {
+  if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) > sv - eps_sp_) {
     deriv.differentiable = false;
   } else {
     deriv.Dsp = margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();

@@ -135,7 +135,7 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
   deriv.sp = margin_ * n;
   if (diff >= Real(0.0)) {
     // The support point lies in the frustum top.
-    if (std::min(Real(2.0) * rt_ * k, diff) < eps_diff()) {
+    if (std::min(Real(2.0) * rt_ * k, diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
       deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
@@ -147,7 +147,7 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
     deriv.sp(2) += (h_ - offset_);
   } else {
     // The support point lies in the frustum base.
-    if (std::min(Real(2.0) * rb_ * k, -diff) < eps_diff()) {
+    if (std::min(Real(2.0) * rb_ * k, -diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
       deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());

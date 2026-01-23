@@ -84,7 +84,7 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
                                     SupportFunctionHint<3>* /*hint*/) const {
   const Real diff = std::min(
       {std::abs(hlx_ * n(0)), std::abs(hly_ * n(1)), std::abs(hlz_ * n(2))});
-  if (diff < Real(0.5) * eps_diff()) {
+  if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
     deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());

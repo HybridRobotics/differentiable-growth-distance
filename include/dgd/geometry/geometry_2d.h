@@ -14,7 +14,8 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Header including all 2D convex sets.
+ * @brief Convenience header to include all 2D convex sets.
+ * @note Consider including only specific sets to reduce compilation time.
  */
 
 #ifndef DGD_GEOMETRY_GEOMETRY_2D_H_

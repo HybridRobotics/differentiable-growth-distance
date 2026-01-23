@@ -41,8 +41,5 @@ build/
 # VSCode files
 .vscode/
 
-# Plots
-plots/
-
 # Temporary files
-temp/
+tmp/
