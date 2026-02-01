@@ -32,7 +32,7 @@ namespace dgd {
 /**
  * @brief Support function hint.
  *
- * @tparam dim Dimension of the convex sets.
+ * @tparam dim Dimension of the convex set.
  */
 template <int dim>
 struct SupportFunctionHint {
@@ -46,7 +46,7 @@ struct SupportFunctionHint {
 /**
  * @brief Second-order support function derivatives.
  *
- * @tparam dim Dimension of the convex sets.
+ * @tparam dim Dimension of the convex set.
  */
 template <int dim>
 struct SupportFunctionDerivatives {
@@ -71,6 +71,127 @@ struct SupportFunctionDerivatives {
    */
   bool differentiable;
 };
+
+/**
+ * @brief Normal vector and base point pair for a convex set.
+ *
+ * @note The base point lies on the boundary of the convex set.
+ * @note The normal vector has unit norm and lies in the normal cone at the
+ * base point.
+ *
+ * @tparam dim Dimension of the convex set.
+ */
+template <int dim>
+struct NormalPair {
+  /// @brief Base point in the convex set.
+  Vecr<dim> z = Vecr<dim>::Zero();
+
+  /// @brief Normal vector at the base point.
+  Vecr<dim> n = Vecr<dim>::Zero();
+};
+
+/**
+ * @brief Affine hull of the support patch of a convex set at a normal vector.
+ *
+ * @note The translation vector for the affine hull is not stored.
+ * @note The affine dimension of the support patch is at most dim - 1.
+ *
+ * @tparam dim Dimension of the convex set.
+ */
+template <int dim>
+struct SupportPatchHull {
+  /**
+   * @brief Linear subspace basis for the support patch affine hull.
+   *
+   * The basis is only used if \f$0 < \text{aff_dim} < \text{dim} - 1\f$.
+   */
+  Matr<dim, dim - 2> basis;
+
+  /// @brief Affine dimension of the support patch (number of basis vectors).
+  int aff_dim = dim - 1;
+};
+
+template <>
+struct SupportPatchHull<2> {
+  int aff_dim = 1;
+};
+
+/**
+ * @brief Span of the normal cone of a convex set at a base point-normal vector
+ * pair.
+ *
+ * @attention At a base point-normal vector pair \f$(z, n)\f$, the normal cone
+ * span always contains \f$n\f$. The stored basis vectors are orthogonal to
+ * \f$n\f$, and do not include it.
+ *
+ * @tparam dim Dimension of the convex set.
+ */
+template <int dim>
+struct NormalConeSpan {
+  /**
+   * @brief Basis for the normal cone span, excluding the normal vector.
+   *
+   * The basis is only used if \f$1 < \text{span\_dim} < \text{dim}\f$.
+   */
+  Matr<dim, dim - 2> basis;
+
+  /// @brief Dimension of the normal cone span.
+  int span_dim = dim;
+};
+
+template <>
+struct NormalConeSpan<2> {
+  int span_dim = 2;
+};
+
+/**
+ * @brief Hint for a base point in a convex set.
+ *
+ * @see NormalPair
+ *
+ * @tparam dim Dimension of the convex set.
+ */
+template <int dim>
+struct BasePointHint {
+  /// @brief Simplex representation of the base point.
+  const Matr<dim, dim>* s = nullptr;
+
+  /**
+   * @brief Barycentric coordinates for the base point corresponding to the
+   * simplex.
+   */
+  const Vecr<dim>* bc = nullptr;
+
+  /// @brief Support function hint.
+  SupportFunctionHint<dim>* sfh = nullptr;
+
+  /**
+   * @brief Computes indices for unique simplex points.
+   *
+   * @param[out] idx Simplex indices.
+   * @return     Number of unique simplex points; -1 if s or bc is null.
+   */
+  int ComputeSimplexIndices(Veci<dim>& idx) const;
+};
+
+template <int dim>
+inline int BasePointHint<dim>::ComputeSimplexIndices(Veci<dim>& idx) const {
+  if ((!s) || (!bc)) return -1;
+  constexpr Real kEps2 = kEps * kEps;
+  int max_idx = 0;
+  idx(0) = 0;
+  idx(1) = ((s->col(1) - s->col(0)).squaredNorm() < kEps2) ? 0 : ++max_idx;
+  if constexpr (dim == 3) {
+    if ((s->col(2) - s->col(0)).squaredNorm() < kEps2) {
+      idx(2) = 0;
+    } else if ((idx(1) == 1) && (s->col(2) - s->col(1)).squaredNorm() < kEps2) {
+      idx(2) = 1;
+    } else {
+      idx(2) = ++max_idx;
+    }
+  }
+  return max_idx + 1;
+}
 
 /**
  * @brief Convex set abstract class implementing the support function.
@@ -147,6 +268,23 @@ class ConvexSet {
    */
   virtual bool RequireUnitNormal() const;
 
+  /**
+   * @brief Computes the affine hull of the support patch and the span of the
+   * normal cone at a base point-normal vector pair.
+   *
+   * @see NormalPair
+   * @see SupportPatchHull
+   * @see NormalConeSpan
+   *
+   * @param[in]  zn   Base point-normal vector pair.
+   * @param[out] sph  Support patch affine hull.
+   * @param[out] ncs  Normal cone span.
+   * @param[in]  hint Additional hints for the base point.
+   */
+  virtual void ComputeLocalGeometry(
+      const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
+      NormalConeSpan<dim>& ncs, const BasePointHint<dim>* hint = nullptr) const;
+
   /// @brief Returns true if the convex set is polytopic.
   virtual bool IsPolytopic() const;
 
@@ -159,16 +297,16 @@ class ConvexSet {
   /// @brief Returns the support point differentiability tolerance.
   static Real eps_sp();
 
-  /// @brief Returns the primal solution differentiability tolerance.
+  /// @brief Returns the primal solution geometry tolerance.
   Real eps_p() const;
 
-  /// @brief Sets the primal solution differentiability tolerance.
+  /// @brief Sets the primal solution geometry tolerance.
   void set_eps_p(Real eps_p);
 
-  /// @brief Returns the dual solution differentiability tolerance.
+  /// @brief Returns the dual solution geometry tolerance.
   Real eps_d() const;
 
-  /// @brief Sets the dual solution differentiability tolerance.
+  /// @brief Sets the dual solution geometry tolerance.
   void set_eps_d(Real eps_d);
 
   /// @brief Returns the inradius of the convex set.
@@ -195,10 +333,10 @@ class ConvexSet {
    */
   static inline const Real eps_sp_ = dim * std::pow(kEps, Real(0.334));
 
-  /// @brief Primal solution differentiability tolerance.
+  /// @brief Primal solution geometry tolerance.
   Real eps_p_ = dim * std::pow(kEps, Real(0.5));
 
-  /// @brief Dual solution differentiability tolerance.
+  /// @brief Dual solution geometry tolerance.
   Real eps_d_ = dim * std::pow(kEps, Real(0.5));
 
   /**
@@ -236,6 +374,14 @@ inline bool ConvexSet<dim>::RequireUnitNormal() const {
 }
 
 template <int dim>
+inline void ConvexSet<dim>::ComputeLocalGeometry(
+    const NormalPair<dim>& /*zn*/, SupportPatchHull<dim>& sph,
+    NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
+  sph.aff_dim = dim - 1;
+  ncs.span_dim = dim;
+}
+
+template <int dim>
 inline bool ConvexSet<dim>::IsPolytopic() const {
   return false;
 }
@@ -264,8 +410,7 @@ inline Real ConvexSet<dim>::eps_p() const {
 template <int dim>
 inline void ConvexSet<dim>::set_eps_p(Real eps_p) {
   if (eps_p < Real(0.0)) {
-    throw std::domain_error(
-        "Primal solution differentiability tolerance is negative");
+    throw std::domain_error("Primal solution geometry tolerance is negative");
   }
   eps_p_ = eps_p;
 }
@@ -278,8 +423,7 @@ inline Real ConvexSet<dim>::eps_d() const {
 template <int dim>
 inline void ConvexSet<dim>::set_eps_d(Real eps_d) {
   if (eps_d < Real(0.0)) {
-    throw std::domain_error(
-        "Dual solution differentiability tolerance is negative");
+    throw std::domain_error("Dual solution geometry tolerance is negative");
   }
   eps_d_ = eps_d;
 }

@@ -43,7 +43,17 @@ inline const Real kSqrtEps = std::sqrt(kEps);
 inline const Real kPi = static_cast<Real>(EIGEN_PI);
 
 /**
- * @brief Fixed-size vector.
+ * @brief Fixed-size integer-valued vector.
+ *
+ * @tparam dim Dimension of the vector.
+ */
+template <int dim>
+using Veci = Eigen::Matrix<int, dim, 1>;
+using Vec2i = Veci<2>;
+using Vec3i = Veci<3>;
+
+/**
+ * @brief Fixed-size floating-point vector.
  *
  * @tparam T   Floating-point type.
  * @tparam dim Dimension of the vector.
