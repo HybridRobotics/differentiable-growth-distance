@@ -172,6 +172,8 @@ Note that, due to the nature of the algorithms, the dual infeasibility error is 
 Full example:
 
 ```cpp
+// main.cc
+
 #include <iostream>
 #include <memory>
 
@@ -249,4 +251,23 @@ int main() {
 
   return EXIT_SUCCESS;
 }
+```
+
+CMake file:
+
+```cmake
+cmake_minimum_required(VERSION 3.15)
+project(DgdExample)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+find_package(Eigen3 5.0 REQUIRED)
+find_package(dgd REQUIRED)
+
+# Main executable
+add_executable(dgd_example "main.cc")
+
+target_link_libraries(dgd_example PRIVATE dgd::dgd)
 ```

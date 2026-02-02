@@ -380,8 +380,7 @@ inline Real UpdateOriginCoordinates<BcSolverType::kLU>(
     }
     return bsc.s.row(2) * bc;
   } else {  // The projected simplex is degenerate.
-    if (bsc.e.row(0).lpNorm<Eigen::Infinity>() >
-        bsc.e.row(1).lpNorm<Eigen::Infinity>()) {
+    if (bsc.e.row(0).lpNorm<1>() > bsc.e.row(1).lpNorm<1>()) {
       return UpdateOriginCoordinates1D<0>(bsc, bc);
     } else {
       return UpdateOriginCoordinates1D<1>(bsc, bc);

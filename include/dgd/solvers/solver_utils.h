@@ -118,7 +118,7 @@ inline void NormalizeNormal(Vecr<dim>& n, bool normalize_2norm) {
   if (normalize_2norm) {
     n.normalize();
   } else {
-    n /= n.template lpNorm<Eigen::Infinity>();
+    n /= n.template lpNorm<1>();
   }
 }
 

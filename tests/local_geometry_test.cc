@@ -145,7 +145,7 @@ PolytopeTestData CreatePolytopeTestData() {
 
   data.vertices.resize(12);
   for (int i = 0; i < 6; ++i) {
-    Real theta = i * kPi / Real(3.0);
+    Real theta = static_cast<Real>(i) * kPi / Real(3.0);
     data.vertices[i] = Vec3r(rt * std::cos(theta), rt * std::sin(theta), ht);
     data.vertices[i + 6] = data.vertices[i];
     data.vertices[i + 6](2) = -hb;
@@ -781,7 +781,8 @@ TEST(ConeTest, LocalGeometry) {
 
   base_pts.clear();
   for (int i = 0; i < static_cast<int>(angs.size()); ++i) {
-    const Real f = (i + Real(0.5)) / static_cast<Real>(angs.size());
+    const Real f =
+        (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(angs.size());
     Vec3r sp = (-set.offset() + (Real(1.0) - f) * height) * ez;
     sp.head<2>() += f * height * tha * normals[i].head<2>().normalized();
     base_pts.push_back(sp);
@@ -814,7 +815,8 @@ TEST(ConeTest, LocalGeometry) {
   aff_dim = 0;
 
   for (int i = 0; i < static_cast<int>(normals.size()); ++i) {
-    const Real f = (i + Real(0.5)) / static_cast<Real>(normals.size());
+    const Real f =
+        (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(normals.size());
     normals[i] = (normals[i] - f * ez).normalized();
   }
 
@@ -840,7 +842,8 @@ TEST(ConeTest, LocalGeometry) {
   span_dim = 1;
 
   for (int i = 0; i < static_cast<int>(base_pts.size()); ++i) {
-    const Real f = (i + Real(0.5)) / static_cast<Real>(base_pts.size());
+    const Real f =
+        (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(base_pts.size());
     base_pts[i].head<2>() *= f;
   }
 
@@ -1107,7 +1110,8 @@ TEST(CylinderTest, LocalGeometry) {
 
   base_pts.clear();
   for (int i = 0; i < static_cast<int>(angs.size()); ++i) {
-    const Real f = (i + Real(0.5)) / static_cast<Real>(angs.size());
+    const Real f =
+        (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(angs.size());
     Vec3r sp;
     sp.tail<2>() = normals[i].tail<2>().normalized() * radius;
     sp(0) = (Real(2.0) * f - Real(1.0)) * hlx;
@@ -1138,7 +1142,7 @@ TEST(CylinderTest, LocalGeometry) {
   aff_dim = 2;
 
   for (int i = 0; i < static_cast<int>(normals.size()); ++i) {
-    const Real sign = Real(2.0) * (((i + 1) % 2) - Real(0.5));
+    const Real sign = Real(2.0) * (static_cast<Real>((i + 1) % 2) - Real(0.5));
     normals[i] = sign * ex;
   }
 
@@ -1153,7 +1157,8 @@ TEST(CylinderTest, LocalGeometry) {
   span_dim = 1;
 
   for (int i = 0; i < static_cast<int>(base_pts.size()); ++i) {
-    const Real f = (i + Real(0.5)) / static_cast<Real>(base_pts.size());
+    const Real f =
+        (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(base_pts.size());
     base_pts[i].tail<2>() *= f;
   }
 
@@ -1299,7 +1304,8 @@ TEST(FrustumTest, LocalGeometry) {
 
     base_pts.clear();
     for (int i = 0; i < static_cast<int>(angs.size()); ++i) {
-      const Real f = (i + Real(0.5)) / static_cast<Real>(angs.size());
+      const Real f =
+          (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(angs.size());
       Vec3r sp = (-set.offset() + (Real(1.0) - f) * height) * ez;
       const Real r = rt + f * (rb - rt);
       sp.head<2>() += f * r * normals[i].head<2>().normalized();
@@ -1319,8 +1325,9 @@ TEST(FrustumTest, LocalGeometry) {
 
     normals.clear();
     for (int i = 0; i < static_cast<int>(angs.size()); ++i) {
-      Real f = (i + Real(0.5)) / static_cast<Real>(angs.size());
-      Real sign = Real(2.0) * (((i + 1) % 2) - Real(0.5));
+      Real f =
+          (static_cast<Real>(i) + Real(0.5)) / static_cast<Real>(angs.size());
+      Real sign = Real(2.0) * (static_cast<Real>((i + 1) % 2) - Real(0.5));
       Vec3r n_edge =
           Vec3r(std::cos(angs[i]), std::sin(angs[i]), tha).normalized();
       normals.push_back((n_edge + sign * f * ez).normalized());
@@ -1349,7 +1356,7 @@ TEST(FrustumTest, LocalGeometry) {
     }
 
     for (int i = 0; i < static_cast<int>(angs.size()); ++i) {
-      Real sign = Real(2.0) * (((i + 1) % 2) - Real(0.5));
+      Real sign = Real(2.0) * (static_cast<Real>((i + 1) % 2) - Real(0.5));
       test_cases.push_back({sign * ez,
                             base_pts[i],
                             {Vec3r::Zero(), aff_dim},
@@ -1364,12 +1371,13 @@ TEST(FrustumTest, LocalGeometry) {
     span_dim = 1;
 
     for (int i = 0; i < static_cast<int>(base_pts.size()); ++i) {
-      const Real f = (i + Real(0.5)) / static_cast<Real>(base_pts.size());
+      const Real f = (static_cast<Real>(i) + Real(0.5)) /
+                     static_cast<Real>(base_pts.size());
       base_pts[i].head<2>() *= f;
     }
 
     for (int i = 0; i < static_cast<int>(angs.size()); ++i) {
-      Real sign = Real(2.0) * (((i + 1) % 2) - Real(0.5));
+      Real sign = Real(2.0) * (static_cast<Real>((i + 1) % 2) - Real(0.5));
       test_cases.push_back({sign * ez,
                             base_pts[i],
                             {Vec3r::Zero(), aff_dim},
