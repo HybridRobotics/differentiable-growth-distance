@@ -243,7 +243,7 @@ inline Real MeshImpl<HCT>::SupportFunction(const Vec3r& n,
   int nidx = -1;
   for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
        ++i) {
-    if (n.dot(vert_[nidx]) > sv - eps_sp_) {
+    if (n.dot(vert_[nidx]) > sv - margin_ - eps_sp_) {
       deriv.differentiable = false;
       break;
     }

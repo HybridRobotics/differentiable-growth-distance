@@ -863,8 +863,8 @@ TEST(ConeTest, LocalGeometry) {
   }
 
   // Case 8: Positive margin.
-  const Real margin2 = Real(0.5);
-  auto set_m = Cone(radius, height, margin2);
+  margin = Real(0.5);
+  auto set_m = Cone(radius, height, margin);
 
   EXPECT_FALSE(set_m.IsPolytopic());
 
