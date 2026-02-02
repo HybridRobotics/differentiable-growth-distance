@@ -20,6 +20,7 @@
 #ifndef DGD_GEOMETRY_3D_CYLINDER_H_
 #define DGD_GEOMETRY_3D_CYLINDER_H_
 
+#include <Eigen/Geometry>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -54,6 +55,10 @@ class Cylinder : public ConvexSet<3> {
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
+
+  void ComputeLocalGeometry(
+      const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -104,6 +109,35 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
 
 inline bool Cylinder::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
+}
+
+inline void Cylinder::ComputeLocalGeometry(
+    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+    const BasePointHint<3>* /*hint*/) const {
+  if (std::abs(zn.n(0)) <= eps_d_) {
+    // Support patch is a line segment.
+    sph.aff_dim = 1;
+    sph.basis.col(0) = Vec3r::UnitX();
+  } else if (zn.n.tail<2>().squaredNorm() <= eps_d_ * eps_d_) {
+    // Support patch is a disk.
+    sph.aff_dim = 2;
+  } else {
+    // Support patch is a point.
+    sph.aff_dim = 0;
+  }
+
+  Real r2;
+  if ((margin_ > Real(0.0)) || (hlx_ - std::abs(zn.z(0)) > eps_p_) ||
+      ((r2 = zn.z.tail<2>().squaredNorm()) <
+       (radius_ - eps_p_) * (radius_ - eps_p_))) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else {
+    // Normal cone is a 2D cone.
+    ncs.span_dim = 2;
+    ncs.basis.col(0) =
+        Vec3r(Real(0.0), zn.z(2), -zn.z(1)).cross(zn.n) / std::sqrt(r2);
+  }
 }
 
 inline bool Cylinder::IsPolytopic() const { return false; }

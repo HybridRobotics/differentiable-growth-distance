@@ -50,6 +50,11 @@ class Ellipsoid : public ConvexSet<3> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometry(
+      const NormalPair<3>& /*zn*/, SupportPatchHull<3>& sph,
+      NormalConeSpan<3>& ncs,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -100,6 +105,13 @@ inline Real Ellipsoid::SupportFunction(const Vec3r& n,
 
 inline bool Ellipsoid::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
+}
+
+inline void Ellipsoid::ComputeLocalGeometry(
+    const NormalPair<3>& /*zn*/, SupportPatchHull<3>& sph,
+    NormalConeSpan<3>& ncs, const BasePointHint<3>* /*hint*/) const {
+  sph.aff_dim = 0;
+  ncs.span_dim = 1;
 }
 
 inline bool Ellipsoid::IsPolytopic() const { return false; }

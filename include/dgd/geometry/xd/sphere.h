@@ -53,6 +53,11 @@ class SphereImpl : public ConvexSet<dim> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometry(
+      const NormalPair<dim>& /*zn*/, SupportPatchHull<dim>& sph,
+      NormalConeSpan<dim>& ncs,
+      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -88,6 +93,14 @@ inline Real SphereImpl<dim>::SupportFunction(
 template <int dim>
 inline bool SphereImpl<dim>::RequireUnitNormal() const {
   return (radius_ > Real(0.0));
+}
+
+template <int dim>
+inline void SphereImpl<dim>::ComputeLocalGeometry(
+    const NormalPair<dim>& /*zn*/, SupportPatchHull<dim>& sph,
+    NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
+  sph.aff_dim = 0;
+  ncs.span_dim = IsPolytopic() ? dim : 1;
 }
 
 template <int dim>

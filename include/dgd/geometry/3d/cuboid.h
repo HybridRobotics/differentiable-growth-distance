@@ -50,6 +50,10 @@ class Cuboid : public ConvexSet<3> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometry(
+      const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -94,6 +98,48 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
 }
 
 inline bool Cuboid::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
+
+inline void Cuboid::ComputeLocalGeometry(
+    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+    const BasePointHint<3>* /*hint*/) const {
+  sph.aff_dim = 0;
+  // Check if the support patch contains each axis as a direction.
+  if (std::abs(zn.n(0)) <= eps_d_) {
+    sph.basis.col(0) = Vec3r::UnitX();
+    ++sph.aff_dim;
+  }
+  if (std::abs(zn.n(1)) <= eps_d_) {
+    if (sph.aff_dim == 0) sph.basis.col(0) = Vec3r::UnitY();
+    ++sph.aff_dim;
+  }
+  if (std::abs(zn.n(2)) <= eps_d_) {
+    if (sph.aff_dim == 0) sph.basis.col(0) = Vec3r::UnitZ();
+    ++sph.aff_dim;
+  }
+
+  const bool bx = (hlx_ - std::abs(zn.z(0)) > eps_p_);
+  const bool by = (hly_ - std::abs(zn.z(1)) > eps_p_);
+  const bool bz = (hlz_ - std::abs(zn.z(2)) > eps_p_);
+  if ((margin_ > Real(0.0)) || (bx && (by || bz)) || (by && bz)) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else if (!(bx || by || bz)) {
+    // Normal cone is a 3D cone.
+    ncs.span_dim = 3;
+  } else {
+    if (bx) {
+      // Normal cone lies in the y-z plane.
+      ncs.basis.col(0) = Vec3r(Real(0.0), zn.n(2), -zn.n(1));
+    } else if (by) {
+      // Normal cone lies in the x-z plane.
+      ncs.basis.col(0) = Vec3r(-zn.n(2), Real(0.0), zn.n(0));
+    } else {
+      // Normal cone lies in the x-y plane.
+      ncs.basis.col(0) = Vec3r(zn.n(1), -zn.n(0), Real(0.0));
+    }
+    ncs.span_dim = 2;
+  }
+}
 
 inline bool Cuboid::IsPolytopic() const { return (margin_ == Real(0.0)); }
 

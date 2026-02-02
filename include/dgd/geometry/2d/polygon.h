@@ -54,13 +54,21 @@ class Polygon : public ConvexSet<2> {
 
   Real SupportFunction(
       const Vec2r& n, SupportFunctionDerivatives<2>& deriv,
-      SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
+      SupportFunctionHint<2>* hint = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
+
+  void ComputeLocalGeometry(
+      const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
+      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
+
+  const std::vector<Vec2r>& vertices() const;
+
+  int nvertices() const;
 
  private:
   const std::vector<Vec2r> vert_; /**< Polygon vertices. */
@@ -83,7 +91,7 @@ inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
   int idx = 0;
   Real s = Real(0.0), sv = n.dot(vert_[idx]);
 
-  for (int i = 1; i < static_cast<int>(vert_.size()); ++i) {
+  for (int i = 1; i < nvertices(); ++i) {
     s = n.dot(vert_[i]);
     if (s > sv) {
       idx = i;
@@ -99,13 +107,12 @@ inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
 
 inline Real Polygon::SupportFunction(const Vec2r& n,
                                      SupportFunctionDerivatives<2>& deriv,
-                                     SupportFunctionHint<2>* /*hint*/) const {
-  SupportFunctionHint<2> hint{};
-  const Real sv = SupportFunction(n, deriv.sp, &hint);
+                                     SupportFunctionHint<2>* hint) const {
+  const Real sv = SupportFunction(n, deriv.sp, hint);
 
-  const int len = static_cast<int>(vert_.size()), idx = hint.idx_ws;
-  const int prev = (idx == 0) ? len - 1 : idx - 1;
-  const int next = (idx == len - 1) ? 0 : idx + 1;
+  const int idx = hint->idx_ws;
+  const int prev = (idx == 0) ? nvertices() - 1 : idx - 1;
+  const int next = (idx == nvertices() - 1) ? 0 : idx + 1;
   if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) > sv - eps_sp_) {
     deriv.differentiable = false;
   } else {
@@ -116,6 +123,31 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
 }
 
 inline bool Polygon::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
+
+inline void Polygon::ComputeLocalGeometry(
+    const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
+    const BasePointHint<2>* /*hint*/) const {
+  sph.aff_dim = 0;
+  int idx = 0;
+  Real s = Real(0.0), sv = zn.n.dot(vert_[0]);
+  for (int i = 1; i < nvertices(); ++i) {
+    s = zn.n.dot(vert_[i]);
+    if (s > sv) {
+      sph.aff_dim = (s <= sv + eps_d_);
+      idx = i;
+      sv = s;
+    } else {
+      if (s >= sv - eps_d_) sph.aff_dim = 1;
+    }
+  }
+
+  const Real eps_p2 = eps_p_ * eps_p_;
+  const int prev = (idx == 0) ? nvertices() - 1 : idx - 1;
+  const int next = (idx == nvertices() - 1) ? 0 : idx + 1;
+  ncs.span_dim = 1 + (((zn.z - vert_[idx]).squaredNorm() < eps_p2) ||
+                      ((zn.z - vert_[prev]).squaredNorm() < eps_p2) ||
+                      ((zn.z - vert_[next]).squaredNorm() < eps_p2));
+}
 
 inline bool Polygon::IsPolytopic() const { return (margin_ == Real(0.0)); }
 
@@ -128,6 +160,10 @@ inline void Polygon::PrintInfo() const {
   std::cout << "  Inradius: " << inradius_ << std::endl
             << "  Margin: " << margin_ << std::endl;
 }
+
+inline const std::vector<Vec2r>& Polygon::vertices() const { return vert_; }
+
+inline int Polygon::nvertices() const { return static_cast<int>(vert_.size()); }
 
 }  // namespace dgd
 

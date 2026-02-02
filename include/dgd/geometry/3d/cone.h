@@ -20,6 +20,7 @@
 #ifndef DGD_GEOMETRY_3D_CONE_H_
 #define DGD_GEOMETRY_3D_CONE_H_
 
+#include <Eigen/Geometry>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -59,6 +60,10 @@ class Cone : public ConvexSet<3> {
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
+
+  void ComputeLocalGeometry(
+      const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -140,6 +145,49 @@ inline Real Cone::SupportFunction(const Vec3r& n,
 }
 
 inline bool Cone::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
+
+inline void Cone::ComputeLocalGeometry(const NormalPair<3>& zn,
+                                       SupportPatchHull<3>& sph,
+                                       NormalConeSpan<3>& ncs,
+                                       const BasePointHint<3>* /*hint*/) const {
+  const Real k = std::sqrt(zn.n(0) * zn.n(0) + zn.n(1) * zn.n(1));
+  if (zn.n(2) > (tha_ + eps_d_) * k) {
+    // Support patch is a point.
+    sph.aff_dim = 0;
+  } else if (zn.n(2) >= (tha_ - eps_d_) * k) {
+    // Support patch is a line segment.
+    sph.aff_dim = 1;
+    sph.basis.col(0).head<2>() = tha_ * zn.n.head<2>();
+    sph.basis.col(0)(2) = -k;
+    sph.basis.col(0) /= k * std::sqrt(Real(1.0) + tha_ * tha_);
+  } else if (k <= eps_d_) {
+    // Support patch is a disk.
+    sph.aff_dim = 2;
+  } else {
+    // Support patch is a point.
+    sph.aff_dim = 0;
+  }
+
+  if (margin_ > Real(0.0)) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else if (zn.z(2) >= h_ - rho_ - eps_p_) {
+    // Normal cone is a 3D cone.
+    ncs.span_dim = 3;
+  } else {
+    Real r2;
+    if ((zn.z(2) > -rho_ + eps_p_) ||
+        ((r2 = zn.z.head<2>().squaredNorm()) < (r_ - eps_p_) * (r_ - eps_p_))) {
+      // Normal cone is a ray.
+      ncs.span_dim = 1;
+    } else {
+      // Normal cone is a 2D cone.
+      ncs.span_dim = 2;
+      ncs.basis.col(0) =
+          Vec3r(zn.z(1), -zn.z(0), Real(0.0)).cross(zn.n) / std::sqrt(r2);
+    }
+  }
+}
 
 inline bool Cone::IsPolytopic() const { return false; }
 

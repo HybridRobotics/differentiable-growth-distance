@@ -50,6 +50,10 @@ class Rectangle : public ConvexSet<2> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometry(
+      const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
+      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -91,6 +95,27 @@ inline Real Rectangle::SupportFunction(const Vec2r& n,
 
 inline bool Rectangle::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
+}
+
+inline void Rectangle::ComputeLocalGeometry(
+    const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
+    const BasePointHint<2>* /*hint*/) const {
+  if ((std::abs(zn.n(0)) <= eps_d_) || (std::abs(zn.n(1)) <= eps_d_)) {
+    // Support patch is a line segment.
+    sph.aff_dim = 1;
+  } else {
+    // Support patch is a point.
+    sph.aff_dim = 0;
+  }
+
+  if ((margin_ > Real(0.0)) || (hlx_ - std::abs(zn.z(0)) > eps_p_) ||
+      (hly_ - std::abs(zn.z(1)) > eps_p_)) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else {
+    // Normal cone is a 2D cone.
+    ncs.span_dim = 2;
+  }
 }
 
 inline bool Rectangle::IsPolytopic() const { return (margin_ == Real(0.0)); }

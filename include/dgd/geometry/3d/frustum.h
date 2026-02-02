@@ -20,6 +20,7 @@
 #ifndef DGD_GEOMETRY_3D_FRUSTUM_H_
 #define DGD_GEOMETRY_3D_FRUSTUM_H_
 
+#include <Eigen/Geometry>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -67,6 +68,10 @@ class Frustum : public ConvexSet<3> {
       SupportFunctionHint<3>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
+
+  void ComputeLocalGeometry(
+      const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -162,6 +167,56 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
 }
 
 inline bool Frustum::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
+
+inline void Frustum::ComputeLocalGeometry(
+    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+    const BasePointHint<3>* /*hint*/) const {
+  const Real k = std::sqrt(zn.n(0) * zn.n(0) + zn.n(1) * zn.n(1));
+  if (zn.n(2) > (tha_ + eps_d_) * k) {
+    if ((rt_ > Real(0.0)) && (k <= eps_d_)) {
+      // Support patch is a disk.
+      sph.aff_dim = 2;
+    } else {
+      // Support patch is a point.
+      sph.aff_dim = 0;
+    }
+  } else if (zn.n(2) >= (tha_ - eps_d_) * k) {
+    // Support patch is a line segment.
+    sph.aff_dim = 1;
+    sph.basis.col(0).head<2>() = tha_ * zn.n.head<2>();
+    sph.basis.col(0)(2) = -k;
+    sph.basis.col(0) /= k * std::sqrt(Real(1.0) + tha_ * tha_);
+  } else if ((rb_ > Real(0.0)) && (k <= eps_d_)) {
+    // Support patch is a disk.
+    sph.aff_dim = 2;
+  } else {
+    // Support patch is a point.
+    sph.aff_dim = 0;
+  }
+
+  const Real h = zn.z(2) + offset_;
+  if ((margin_ > Real(0.0)) || ((h < h_ - eps_p_) && (h > eps_p_))) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else {
+    const Real rd = (h <= eps_p_) ? rb_ : rt_;
+    Real r2;
+    if (rd > Real(0.0)) {
+      if ((r2 = zn.z.head<2>().squaredNorm()) < (rd - eps_p_) * (rd - eps_p_)) {
+        // Normal cone is a ray.
+        ncs.span_dim = 1;
+      } else {
+        // Normal cone is a 2D cone.
+        ncs.span_dim = 2;
+        ncs.basis.col(0) =
+            Vec3r(zn.z(1), -zn.z(0), Real(0.0)).cross(zn.n) / std::sqrt(r2);
+      }
+    } else {
+      // Normal cone is a 3D cone.
+      ncs.span_dim = 3;
+    }
+  }
+}
 
 inline bool Frustum::IsPolytopic() const { return false; }
 

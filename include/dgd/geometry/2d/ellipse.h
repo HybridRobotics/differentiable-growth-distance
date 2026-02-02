@@ -50,6 +50,11 @@ class Ellipse : public ConvexSet<2> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometry(
+      const NormalPair<2>& /*zn*/, SupportPatchHull<2>& sph,
+      NormalConeSpan<2>& ncs,
+      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -89,6 +94,13 @@ inline Real Ellipse::SupportFunction(const Vec2r& n,
 }
 
 inline bool Ellipse::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
+
+inline void Ellipse::ComputeLocalGeometry(
+    const NormalPair<2>& /*zn*/, SupportPatchHull<2>& sph,
+    NormalConeSpan<2>& ncs, const BasePointHint<2>* /*hint*/) const {
+  sph.aff_dim = 0;
+  ncs.span_dim = 1;
+}
 
 inline bool Ellipse::IsPolytopic() const { return false; }
 

@@ -59,6 +59,11 @@ class CapsuleImpl : public ConvexSet<dim> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometry(
+      const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
+      NormalConeSpan<dim>& ncs,
+      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -106,6 +111,33 @@ inline Real CapsuleImpl<dim>::SupportFunction(
 template <int dim>
 inline bool CapsuleImpl<dim>::RequireUnitNormal() const {
   return (CapsuleImpl<dim>::inradius_ > Real(0.0));
+}
+
+template <int dim>
+inline void CapsuleImpl<dim>::ComputeLocalGeometry(
+    const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
+    NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
+  if (std::abs(zn.n(0)) <= CapsuleImpl<dim>::eps_d_) {
+    // Support patch is a line segment.
+    sph.aff_dim = 1;
+    if constexpr (dim == 3) sph.basis.col(0) = Vec3r::UnitX();
+  } else {
+    // Support patch is a point.
+    sph.aff_dim = 0;
+  }
+
+  if (!IsPolytopic()) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else if (hlx_ - std::abs(zn.z(0)) > CapsuleImpl<dim>::eps_p_) {
+    // Normal cone is a ray (dim = 2) or a 2D plane (dim = 3).
+    ncs.span_dim = dim - 1;
+    if constexpr (dim == 3)
+      ncs.basis.col(0) = Vec3r(Real(0.0), zn.n(2), -zn.n(1));
+  } else {
+    // Normal cone is a halfspace.
+    ncs.span_dim = dim;
+  }
 }
 
 template <int dim>
