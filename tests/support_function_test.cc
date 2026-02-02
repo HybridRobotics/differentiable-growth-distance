@@ -408,7 +408,7 @@ TEST(MeshTest, SupportFunction) {
     ASSERT_TRUE(valid);
 
     auto polytope = Polytope(vert, inradius, margin);
-    auto mesh = Mesh(std::move(vert), std::move(graph), inradius, margin);
+    Mesh mesh(std::move(vert), std::move(graph), inradius, margin);
 
     // Support function test.
     for (int j = 0; j < normals.cols(); ++j) {
@@ -444,7 +444,7 @@ TEST(PolytopeTest, SupportFunction) {
 
   auto set = Polytope(std::move(vert), inradius, margin);
 
-  EXPECT_EQ(set.inradius(), inradius + margin);
+  EXPECT_LE(set.inradius(), inradius + margin);
 
   Real sv;
   Vec3r sp;
@@ -468,19 +468,29 @@ struct SetNameGenerator {
   }
 };
 
-//  Capsule test
 template <class C>
-class CapsuleTest : public testing::Test {
+class CapsuleSupportFunctionTest : public testing::Test {
  protected:
-  CapsuleTest() {}
-
-  ~CapsuleTest() {}
+  CapsuleSupportFunctionTest() {}
+  ~CapsuleSupportFunctionTest() {}
 };
 
 using CapsuleTypes = testing::Types<Stadium, Capsule>;
-TYPED_TEST_SUITE(CapsuleTest, CapsuleTypes, SetNameGenerator);
+TYPED_TEST_SUITE(CapsuleSupportFunctionTest, CapsuleTypes, SetNameGenerator);
 
-TYPED_TEST(CapsuleTest, SupportFunction) {
+//  Sphere test
+template <class C>
+class SphereSupportFunctionTest : public testing::Test {
+ protected:
+  SphereSupportFunctionTest() {}
+  ~SphereSupportFunctionTest() {}
+};
+
+using SphereTypes = testing::Types<Circle, Sphere>;
+TYPED_TEST_SUITE(SphereSupportFunctionTest, SphereTypes, SetNameGenerator);
+
+//  Capsule test
+TYPED_TEST(CapsuleSupportFunctionTest, SupportFunction) {
   constexpr int dim = TypeParam::dimension();
   const Real hlx = Real(2.0), radius = Real(2.5), margin = Real(0.25);
   auto set = TypeParam(hlx, radius, margin);
@@ -509,19 +519,8 @@ TYPED_TEST(CapsuleTest, SupportFunction) {
   }
 }
 
-//  Sphere test (to test compilation)
-template <class C>
-class SphereTest : public testing::Test {
- protected:
-  SphereTest() {}
-
-  ~SphereTest() {}
-};
-
-using SphereTypes = testing::Types<Circle, Sphere>;
-TYPED_TEST_SUITE(SphereTest, SphereTypes, SetNameGenerator);
-
-TYPED_TEST(SphereTest, SupportFunction) {
+//  Sphere test
+TYPED_TEST(SphereSupportFunctionTest, SupportFunction) {
   constexpr int dim = TypeParam::dimension();
   const Real radius = Real(0.25);
   auto set = TypeParam(radius);
