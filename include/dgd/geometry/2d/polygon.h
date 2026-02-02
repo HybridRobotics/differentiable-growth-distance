@@ -54,7 +54,7 @@ class Polygon : public ConvexSet<2> {
 
   Real SupportFunction(
       const Vec2r& n, SupportFunctionDerivatives<2>& deriv,
-      SupportFunctionHint<2>* hint = nullptr) const final override;
+      SupportFunctionHint<2>* /*hint*/ = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
 
@@ -107,13 +107,15 @@ inline Real Polygon::SupportFunction(const Vec2r& n, Vec2r& sp,
 
 inline Real Polygon::SupportFunction(const Vec2r& n,
                                      SupportFunctionDerivatives<2>& deriv,
-                                     SupportFunctionHint<2>* hint) const {
-  const Real sv = SupportFunction(n, deriv.sp, hint);
+                                     SupportFunctionHint<2>* /*hint*/) const {
+  SupportFunctionHint<2> hint;  // Note: hint passed to function can be null.
+  const Real sv = SupportFunction(n, deriv.sp, &hint);
 
-  const int idx = hint->idx_ws;
+  const int idx = hint.idx_ws;
   const int prev = (idx == 0) ? nvertices() - 1 : idx - 1;
   const int next = (idx == nvertices() - 1) ? 0 : idx + 1;
-  if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) > sv - eps_sp_) {
+  if (std::max(n.dot(vert_[prev]), n.dot(vert_[next])) >
+      sv - margin_ - eps_sp_) {
     deriv.differentiable = false;
   } else {
     deriv.Dsp = margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
