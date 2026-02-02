@@ -92,7 +92,9 @@ ConvexSetPtr<2> ConvexSetGenerator::GetPrimitiveSet(Primitive2D type) {
       }
       CenterVertices(polygon_vert_);
 
-      return std::make_shared<Polygon>(std::move(polygon_vert_), kEps, margin);
+      // Add a small margin to ensure that the set is solid.
+      return std::make_shared<Polygon>(std::move(polygon_vert_), kEps,
+                                       margin + kSqrtEps);
     }
 
     case Primitive2D::Rectangle: {
@@ -164,7 +166,7 @@ ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(CurvedPrimitive3D type) {
 }
 
 ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(FlatPrimitive3D type) {
-  Real margin = GetMargin();
+  const Real margin = GetMargin();
 
   switch (type) {
     case FlatPrimitive3D::Cuboid: {
@@ -201,9 +203,8 @@ ConvexSetPtr<3> ConvexSetGenerator::GetPrimitiveSet(FlatPrimitive3D type) {
       CenterVertices(polytope_vert_);
 
       // Add a small margin to ensure that the set is solid.
-      margin += 1e-2;
-      return std::make_shared<Polytope>(std::move(polytope_vert_), kSqrtEps,
-                                        margin);
+      return std::make_shared<Polytope>(std::move(polytope_vert_), kEps,
+                                        margin + 10 * kSqrtEps);
     }
 
     default:

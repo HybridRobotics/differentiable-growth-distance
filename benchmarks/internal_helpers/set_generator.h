@@ -7,15 +7,10 @@
 #include <vector>
 
 #include "dgd/data_types.h"
+#include "dgd/geometry/3d/mesh.h"
 #include "dgd/utils/random.h"
 
 namespace dgd {
-
-// Forward declarations.
-template <int dim>
-class ConvexSet;
-
-class Mesh;
 
 namespace bench {
 
