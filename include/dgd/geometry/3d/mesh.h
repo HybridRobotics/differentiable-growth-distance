@@ -20,6 +20,7 @@
 #ifndef DGD_GEOMETRY_3D_MESH_H_
 #define DGD_GEOMETRY_3D_MESH_H_
 
+#include <Eigen/Geometry>
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -33,11 +34,21 @@
 
 namespace dgd {
 
+/// @brief Hill-climbing type for the Mesh support function.
+enum class HillClimbingType {
+  kGreedy, /**< Greedy ascent. */
+
+  kOptimal, /**< Optimal ascent. */
+};
+
 /**
  * @brief 3D convex mesh class using hill-climbing for support function
  * computation.
+ *
+ * @tparam HCT Hill-climbing type for the Mesh support function.
  */
-class Mesh : public ConvexSet<3> {
+template <HillClimbingType HCT>
+class MeshImpl : public ConvexSet<3> {
  public:
   /**
    * @attention The mesh must contain the origin in its interior, and the
@@ -53,16 +64,17 @@ class Mesh : public ConvexSet<3> {
    * @param thresh      Support function threshold.
    * @param guess_level Guess level for the warm start index.
    */
-  explicit Mesh(std::vector<Vec3r> vert, std::vector<int> graph, Real inradius,
-                Real margin = Real(0.0), Real thresh = Real(0.9),
-                int guess_level = 1, const std::string& name = "__Mesh__");
+  explicit MeshImpl(std::vector<Vec3r> vert, std::vector<int> graph,
+                    Real inradius, Real margin = Real(0.0),
+                    Real thresh = Real(0.9), int guess_level = 1,
+                    const std::string& name = "__Mesh__");
 
-  ~Mesh() = default;
+  ~MeshImpl() = default;
 
-  Mesh(const Mesh&) = delete;
-  Mesh& operator=(const Mesh&) = delete;
-  Mesh(Mesh&&) noexcept = delete;
-  Mesh& operator=(Mesh&&) noexcept = delete;
+  MeshImpl(const MeshImpl&) = delete;
+  MeshImpl& operator=(const MeshImpl&) = delete;
+  MeshImpl(MeshImpl&&) noexcept = delete;
+  MeshImpl& operator=(MeshImpl&&) noexcept = delete;
 
   Real SupportFunction(
       const Vec3r& n, Vec3r& sp,
@@ -73,6 +85,10 @@ class Mesh : public ConvexSet<3> {
       SupportFunctionHint<3>* hint = nullptr) const final override;
 
   bool RequireUnitNormal() const final override;
+
+  void ComputeLocalGeometry(
+      const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+      const BasePointHint<3>* hint = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -103,10 +119,11 @@ class Mesh : public ConvexSet<3> {
   std::string name_; /**< Mesh name. */
 };
 
-inline Mesh::Mesh(std::vector<Vec3r> vert, std::vector<int> graph,
-                  Real inradius, Real margin, Real thresh, int guess_level,
-                  const std::string& name)
-    : ConvexSet<3>(margin + inradius),
+template <HillClimbingType HCT>
+inline MeshImpl<HCT>::MeshImpl(std::vector<Vec3r> vert, std::vector<int> graph,
+                               Real inradius, Real margin, Real thresh,
+                               int guess_level, const std::string& name)
+    : ConvexSet<3>(margin + Real(0.99) * inradius),
       vert_(std::move(vert)),
       graph_(std::move(graph)),
       margin_(margin),
@@ -166,28 +183,29 @@ inline Mesh::Mesh(std::vector<Vec3r> vert, std::vector<int> graph,
   }
 }
 
-inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
-                                  SupportFunctionHint<3>* hint) const {
+template <HillClimbingType HCT>
+inline Real MeshImpl<HCT>::SupportFunction(const Vec3r& n, Vec3r& sp,
+                                           SupportFunctionHint<3>* hint) const {
   // If the current normal is much different than the previous normal,
   // compute a new warm start index.
-  int idx_ws = hint ? hint->idx_ws : 0;
+  int idx = hint ? hint->idx_ws : 0;
   if (hint && hint->n_prev.dot(n) < thresh_) {
     if (idx_ws0_.empty()) {
-      idx_ws = 0;
+      idx = 0;
     } else {
       Real s = Real(0.0), smax = -kInf;
       for (int i : idx_ws0_) {
         if ((s = n.dot(vert_[i])) > smax) {
-          idx_ws = i;
+          idx = i;
           smax = s;
         }
       }
     }
   }
+  assert(idx >= 0);
 
-  assert(idx_ws >= 0);
   // Current best index, neighbour index, previous best index.
-  int idx = idx_ws, nidx = -1, pidx = -1;
+  int nidx = -1, pidx = -1;
   // Current support value, current best support value.
   Real s = Real(0.0), sv = n.dot(vert_[idx]);
 
@@ -200,6 +218,7 @@ inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
       if (s > sv) {
         idx = nidx;
         sv = s;
+        if constexpr (HCT == HillClimbingType::kGreedy) break;
       }
     }
   } while (idx != pidx);
@@ -213,9 +232,10 @@ inline Real Mesh::SupportFunction(const Vec3r& n, Vec3r& sp,
   return sv + margin_;
 }
 
-inline Real Mesh::SupportFunction(const Vec3r& n,
-                                  SupportFunctionDerivatives<3>& deriv,
-                                  SupportFunctionHint<3>* hint) const {
+template <HillClimbingType HCT>
+inline Real MeshImpl<HCT>::SupportFunction(const Vec3r& n,
+                                           SupportFunctionDerivatives<3>& deriv,
+                                           SupportFunctionHint<3>* hint) const {
   const Real sv = SupportFunction(n, deriv.sp, hint);
 
   deriv.differentiable = true;
@@ -234,11 +254,162 @@ inline Real Mesh::SupportFunction(const Vec3r& n,
   return sv;
 }
 
-inline bool Mesh::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
+template <HillClimbingType HCT>
+inline bool MeshImpl<HCT>::RequireUnitNormal() const {
+  return (margin_ > Real(0.0));
+}
 
-inline bool Mesh::IsPolytopic() const { return (margin_ == Real(0.0)); }
+template <HillClimbingType HCT>
+inline void MeshImpl<HCT>::ComputeLocalGeometry(
+    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
+    const BasePointHint<3>* hint) const {
+  // See the implementation in the Polytope class for reference.
+  Vec3r e_perp;
+  Real sv_e;
+  bool check_edge = false;
 
-inline void Mesh::PrintInfo() const {
+  auto set_edge = [&](int i, int j) -> void {
+    const Matr<3, 3>& s = (*hint->s);
+    e_perp = (s.col(j) - s.col(i)).cross(zn.n).normalized();
+    sv_e = e_perp.dot(s.col(i));
+    check_edge = true;
+  };
+
+  // Compute the normal cone span.
+  if (!IsPolytopic()) {
+    ncs.span_dim = 1;  // Normal cone is a ray.
+  } else {
+    Vec3i sidx;
+    int ns;
+    if ((!hint) || ((ns = hint->ComputeSimplexIndices(sidx)) < 0)) {
+      ncs.span_dim = 3;  // Over-approximation.
+    } else {
+      const Vec3r& bc = (*hint->bc);
+      if (ns == 1) {  // Unique simplex point (base point must be a vertex).
+        ncs.span_dim = 3;  // Normal cone is a 3D cone.
+      } else if (ns == 2) {
+        // Two unique simplex points (base point can be on a face/edge/vertex).
+        const Real bc1 = bc.dot(sidx.cast<Real>());
+        if ((bc1 <= eps_p_) || (bc1 >= Real(1.0) - eps_p_)) {
+          ncs.span_dim = 3;  // Normal cone is a 3D cone.
+        } else {
+          set_edge(0, 2 - sidx(1));
+        }
+      } else {  // Three unique simplex points.
+        const Real eps = Real(0.5) * eps_p_;
+        // Check all face/edge/vertex combinations.
+        if (bc(0) <= eps) {
+          if ((bc(1) <= eps) || (bc(2) <= eps)) {
+            ncs.span_dim = 3;
+          } else {
+            set_edge(1, 2);
+          }
+        } else if (bc(1) <= eps) {
+          if (bc(2) <= eps) {
+            ncs.span_dim = 3;
+          } else {
+            set_edge(0, 2);
+          }
+        } else if (bc(2) <= eps) {
+          set_edge(0, 1);
+        } else {
+          ncs.span_dim = 1;
+        }
+      }
+    }
+  }
+
+  // Compute the support function value and vertex index.
+  int idx = (hint && hint->sfh) ? hint->sfh->idx_ws : 0;
+  int nidx = -1, pidx = -1;
+  Real s = Real(0.0), sv = zn.n.dot(vert_[idx]);
+  // Hill-climbing.
+  do {
+    pidx = idx;
+    for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
+         ++i) {
+      s = zn.n.dot(vert_[nidx]);
+      if (s > sv) {
+        idx = nidx;
+        sv = s;
+        if constexpr (HCT == HillClimbingType::kGreedy) break;
+      }
+    }
+  } while (idx != pidx);
+
+  // Compute the support patch affine hull using adjacency graph.
+  sph.aff_dim = 0;
+  int idx_e = -1;
+  for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
+       ++i) {
+    if (zn.n.dot(vert_[nidx]) >= sv - eps_d_) {
+      // nidx lies on the support patch.
+      ++sph.aff_dim;
+      idx_e = nidx;
+    }
+  }
+  if (sph.aff_dim > 2) {
+    sph.aff_dim = 2;
+  } else if (sph.aff_dim == 1) {
+    // Support patch is a line segment.
+    sph.basis.col(0) = (vert_[idx_e] - vert_[idx]).normalized();
+  }
+
+  // Compute the normal cone span for the edge case.
+  if (check_edge) {
+    Real s_e, sv_pm = -kInf;
+    bool sv_p = false;
+    for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;) {
+      if (zn.n.dot(vert_[nidx]) >= sv - eps_d_) {
+        s_e = e_perp.dot(vert_[nidx]);
+        if (s_e > sv_e + eps_d_) {
+          sv_p = true;
+          break;
+        }
+        if (s_e > sv_pm) {
+          sv_pm = s_e;
+          i = *(vert_edgeadr_ + nidx);
+          continue;
+        }
+      }
+      ++i;
+    }
+    sv_pm = kInf;
+    bool sv_m = false;
+    for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;) {
+      if (zn.n.dot(vert_[nidx]) >= sv - eps_d_) {
+        s_e = e_perp.dot(vert_[nidx]);
+        if (s_e < sv_e - eps_d_) {
+          sv_m = true;
+          break;
+        }
+        if (s_e < sv_pm) {
+          sv_pm = s_e;
+          i = *(vert_edgeadr_ + nidx);
+          continue;
+        }
+      }
+      ++i;
+    }
+
+    if (sv_p && sv_m) {
+      // Normal cone is a ray.
+      ncs.span_dim = 1;
+    } else {
+      // Normal cone is a 2D cone.
+      ncs.span_dim = 2;
+      ncs.basis.col(0) = e_perp;
+    }
+  }
+}
+
+template <HillClimbingType HCT>
+inline bool MeshImpl<HCT>::IsPolytopic() const {
+  return (margin_ == Real(0.0));
+}
+
+template <HillClimbingType HCT>
+inline void MeshImpl<HCT>::PrintInfo() const {
   std::cout << "Type: Mesh (dim = 3)" << std::endl
             << "  Name: " << name_ << std::endl
             << "  #Vertices: " << vert_.size() << std::endl
@@ -246,11 +417,22 @@ inline void Mesh::PrintInfo() const {
             << "  Margin: " << margin_ << std::endl;
 }
 
-inline const std::vector<Vec3r>& Mesh::vertices() const { return vert_; }
+template <HillClimbingType HCT>
+inline const std::vector<Vec3r>& MeshImpl<HCT>::vertices() const {
+  return vert_;
+}
 
-inline const std::vector<int>& Mesh::graph() const { return graph_; }
+template <HillClimbingType HCT>
+inline const std::vector<int>& MeshImpl<HCT>::graph() const {
+  return graph_;
+}
 
-inline int Mesh::nvertices() const { return nvert_; }
+template <HillClimbingType HCT>
+inline int MeshImpl<HCT>::nvertices() const {
+  return nvert_;
+}
+
+using Mesh = MeshImpl<HillClimbingType::kGreedy>;
 
 }  // namespace dgd
 
