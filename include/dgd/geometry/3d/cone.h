@@ -65,6 +65,8 @@ class Cone : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -187,6 +189,13 @@ inline void Cone::ComputeLocalGeometry(const NormalPair<3>& zn,
           Vec3r(zn.z(1), -zn.z(0), Real(0.0)).cross(zn.n) / std::sqrt(r2);
     }
   }
+}
+
+inline Real Cone::Bounds(Vec3r* min, Vec3r* max) const {
+  const Real r_m = r_ + margin_;
+  if (min) *min = -Vec3r(r_m, r_m, rho_ + margin_);
+  if (max) *max = Vec3r(r_m, r_m, h_ - rho_ + margin_);
+  return Real(2.0) * Vec3r(r_m, r_m, Real(0.5) * h_ + margin_).norm();
 }
 
 inline bool Cone::IsPolytopic() const { return false; }

@@ -55,6 +55,8 @@ class Ellipse : public ConvexSet<2> {
       NormalConeSpan<2>& ncs,
       const BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec2r* min = nullptr, Vec2r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -100,6 +102,14 @@ inline void Ellipse::ComputeLocalGeometry(
     NormalConeSpan<2>& ncs, const BasePointHint<2>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = 1;
+}
+
+inline Real Ellipse::Bounds(Vec2r* min, Vec2r* max) const {
+  const Real hlx = std::sqrt(hlx2_);
+  const Real hly = std::sqrt(hly2_);
+  if (min) *min = -Vec2r(hlx + margin_, hly + margin_);
+  if (max) *max = Vec2r(hlx + margin_, hly + margin_);
+  return Real(2.0) * Vec2r(hlx + margin_, hly + margin_).norm();
 }
 
 inline bool Ellipse::IsPolytopic() const { return false; }

@@ -285,6 +285,15 @@ class ConvexSet {
       const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
       NormalConeSpan<dim>& ncs, const BasePointHint<dim>* hint = nullptr) const;
 
+  /**
+   * @brief Computes the axis-aligned bounding box (AABB) of the convex set.
+   *
+   * @param[out] min Minimum corner of the bounding box.
+   * @param[out] max Maximum corner of the bounding box.
+   * @return     Diagonal length of the AABB.
+   */
+  virtual Real Bounds(Vecr<dim>* min = nullptr, Vecr<dim>* max = nullptr) const;
+
   /// @brief Returns true if the convex set is polytopic.
   virtual bool IsPolytopic() const;
 
@@ -379,6 +388,20 @@ inline void ConvexSet<dim>::ComputeLocalGeometry(
     NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
   sph.aff_dim = dim - 1;
   ncs.span_dim = dim;
+}
+
+template <int dim>
+inline Real ConvexSet<dim>::Bounds(Vecr<dim>* min, Vecr<dim>* max) const {
+  Vecr<dim> aabb_min, aabb_max, sp;
+  for (int i = 0; i < dim; ++i) {
+    Vecr<dim> n = Vecr<dim>::Zero();
+    n(i) = Real(1.0);
+    aabb_max(i) = SupportFunction(n, sp);
+    aabb_min(i) = -SupportFunction(-n, sp);
+  }
+  if (min) *min = aabb_min;
+  if (max) *max = aabb_max;
+  return (aabb_max - aabb_min).norm();
 }
 
 template <int dim>

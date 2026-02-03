@@ -73,6 +73,8 @@ class Frustum : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -216,6 +218,13 @@ inline void Frustum::ComputeLocalGeometry(
       ncs.span_dim = 3;
     }
   }
+}
+
+inline Real Frustum::Bounds(Vec3r* min, Vec3r* max) const {
+  const Real r_m = std::max(rb_, rt_) + margin_;
+  if (min) *min = -Vec3r(r_m, r_m, offset_ + margin_);
+  if (max) *max = Vec3r(r_m, r_m, h_ - offset_ + margin_);
+  return Real(2.0) * Vec3r(r_m, r_m, Real(0.5) * h_ + margin_).norm();
 }
 
 inline bool Frustum::IsPolytopic() const { return false; }

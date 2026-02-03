@@ -55,6 +55,8 @@ class Ellipsoid : public ConvexSet<3> {
       NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -112,6 +114,15 @@ inline void Ellipsoid::ComputeLocalGeometry(
     NormalConeSpan<3>& ncs, const BasePointHint<3>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = 1;
+}
+
+inline Real Ellipsoid::Bounds(Vec3r* min, Vec3r* max) const {
+  const Real hlx = std::sqrt(hlx2_);
+  const Real hly = std::sqrt(hly2_);
+  const Real hlz = std::sqrt(hlz2_);
+  if (min) *min = -Vec3r(hlx + margin_, hly + margin_, hlz + margin_);
+  if (max) *max = Vec3r(hlx + margin_, hly + margin_, hlz + margin_);
+  return Real(2.0) * Vec3r(hlx + margin_, hly + margin_, hlz + margin_).norm();
 }
 
 inline bool Ellipsoid::IsPolytopic() const { return false; }

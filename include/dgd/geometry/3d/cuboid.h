@@ -54,6 +54,8 @@ class Cuboid : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -139,6 +141,13 @@ inline void Cuboid::ComputeLocalGeometry(
     }
     ncs.span_dim = 2;
   }
+}
+
+inline Real Cuboid::Bounds(Vec3r* min, Vec3r* max) const {
+  if (min) *min = -Vec3r(hlx_ + margin_, hly_ + margin_, hlz_ + margin_);
+  if (max) *max = Vec3r(hlx_ + margin_, hly_ + margin_, hlz_ + margin_);
+  return Real(2.0) *
+         Vec3r(hlx_ + margin_, hly_ + margin_, hlz_ + margin_).norm();
 }
 
 inline bool Cuboid::IsPolytopic() const { return (margin_ == Real(0.0)); }
