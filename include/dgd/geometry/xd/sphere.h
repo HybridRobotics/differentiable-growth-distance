@@ -58,6 +58,9 @@ class SphereImpl : public ConvexSet<dim> {
       NormalConeSpan<dim>& ncs,
       const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vecr<dim>* min = nullptr,
+              Vecr<dim>* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -101,6 +104,13 @@ inline void SphereImpl<dim>::ComputeLocalGeometry(
     NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = IsPolytopic() ? dim : 1;
+}
+
+template <int dim>
+inline Real SphereImpl<dim>::Bounds(Vecr<dim>* min, Vecr<dim>* max) const {
+  if (min) min->setConstant(-radius_);
+  if (max) max->setConstant(radius_);
+  return Real(2.0) * radius_ * std::sqrt(static_cast<Real>(dim));
 }
 
 template <int dim>

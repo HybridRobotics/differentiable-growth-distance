@@ -60,6 +60,8 @@ class Cylinder : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -138,6 +140,14 @@ inline void Cylinder::ComputeLocalGeometry(
     ncs.basis.col(0) =
         Vec3r(Real(0.0), zn.z(2), -zn.z(1)).cross(zn.n) / std::sqrt(r2);
   }
+}
+
+inline Real Cylinder::Bounds(Vec3r* min, Vec3r* max) const {
+  const Real r_m = radius_ + margin_;
+  const Real hlx_m = hlx_ + margin_;
+  if (min) *min = -Vec3r(hlx_m, r_m, r_m);
+  if (max) *max = Vec3r(hlx_m, r_m, r_m);
+  return Real(2.0) * std::sqrt(hlx_m * hlx_m + Real(2.0) * r_m * r_m);
 }
 
 inline bool Cylinder::IsPolytopic() const { return false; }

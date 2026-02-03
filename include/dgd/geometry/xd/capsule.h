@@ -64,6 +64,9 @@ class CapsuleImpl : public ConvexSet<dim> {
       NormalConeSpan<dim>& ncs,
       const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vecr<dim>* min = nullptr,
+              Vecr<dim>* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -138,6 +141,21 @@ inline void CapsuleImpl<dim>::ComputeLocalGeometry(
     // Normal cone is a halfspace.
     ncs.span_dim = dim;
   }
+}
+
+template <int dim>
+inline Real CapsuleImpl<dim>::Bounds(Vecr<dim>* min, Vecr<dim>* max) const {
+  const Real r = radius_ + margin_;
+  if (min) {
+    (*min)(0) = -(hlx_ + r);
+    for (int i = 1; i < dim; ++i) (*min)(i) = -r;
+  }
+  if (max) {
+    (*max)(0) = hlx_ + r;
+    for (int i = 1; i < dim; ++i) (*max)(i) = r;
+  }
+  const Real diag_sq = (hlx_ + r) * (hlx_ + r) + Real(dim - 1) * r * r;
+  return Real(2.0) * std::sqrt(diag_sq);
 }
 
 template <int dim>

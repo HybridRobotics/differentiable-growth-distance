@@ -18,7 +18,18 @@
 
 // Constants.
 const double position_lim = 5.0;
-const double dx_max = 0.1, ang_max = dgd::kPi / 18.0;
+
+// Step ratio:
+//  1. < 1e-4:      Microadjustments,
+//  2. 1e-3 - 1e-2: Normal robot motion,
+//  3. 5e-2 - 0.10: Fast motion,
+//  4. > 0.20:      "Teleoperation"
+const double rho = 0.01;
+const double dt = 1e-3;
+
+inline double lin_velocity(double size) { return size * rho / dt; }
+
+inline double ang_velocity(double /*size*/) { return 2.0 * rho / dt; }
 
 // Configuration.
 struct Config {
@@ -219,11 +230,13 @@ void WarmStart(std::function<const SetPtr<C1>()> gen1,
   for (int i = 0; i < config.npair; ++i) {
     const SetPtr<C1> set1 = gen1();
     const SetPtr<C2> set2 = gen2();
+    const dgd::Real size = set1->Bounds();
     for (int j = 0; j < config.nwpose; ++j) {
       dgd::bench::SetRandomTransforms(rng, tf1, tf2, -position_lim,
                                       position_lim);
       tf1_c = tf1;
-      dgd::bench::SetRandomDisplacement(rng, dx, drot, dx_max, ang_max);
+      dgd::bench::SetRandomDisplacement(rng, dx, drot, lin_velocity(size) * dt,
+                                        ang_velocity(size) * dt);
       // Initial cold-start call.
       growth_distance(set1.get(), tf1, set2.get(), tf2, settings, out, false);
       int total_iter = 0;

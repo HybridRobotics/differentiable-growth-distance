@@ -54,6 +54,8 @@ class Rectangle : public ConvexSet<2> {
       const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
       const BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
+  Real Bounds(Vec2r* min = nullptr, Vec2r* max = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -116,6 +118,12 @@ inline void Rectangle::ComputeLocalGeometry(
     // Normal cone is a 2D cone.
     ncs.span_dim = 2;
   }
+}
+
+inline Real Rectangle::Bounds(Vec2r* min, Vec2r* max) const {
+  if (min) *min = -Vec2r(hlx_ + margin_, hly_ + margin_);
+  if (max) *max = Vec2r(hlx_ + margin_, hly_ + margin_);
+  return Real(2.0) * Vec2r(hlx_ + margin_, hly_ + margin_).norm();
 }
 
 inline bool Rectangle::IsPolytopic() const { return (margin_ == Real(0.0)); }
