@@ -53,6 +53,14 @@ struct Settings {
 
   /// @brief Warm start type.
   WarmStartType ws_type = WarmStartType::Primal;
+
+  /**
+   * @brief Tolerance for primal and dual null space computations in 3D.
+   *
+   * Two vectors (corresponding to perturbation directions) are considered
+   * parallel if their cross product norm is less than this value.
+   */
+  Real nullspace_tol = kSqrtEps;
 };
 
 }  // namespace dgd

@@ -20,6 +20,7 @@
 #ifndef DGD_SOLVERS_SOLVER_UTILS_H_
 #define DGD_SOLVERS_SOLVER_UTILS_H_
 
+#include <Eigen/Geometry>
 #include <cmath>
 #include <type_traits>
 
@@ -54,6 +55,16 @@ inline constexpr int Inv(int i) { return 1 - i; }
 
 /// @brief Rectified Linear Unit (ReLU) function.
 inline constexpr Real Relu(Real x) { return std::max(x, Real(0.0)); }
+
+/// @brief Projects a vector onto the orthogonal plane of a unit-norm vector.
+inline Vec3r Projection(const Vec3r& v, const Vec3r& n) {
+  return v - n.dot(v) * n;
+}
+
+/// @brief Computes the volume of a parallelepiped defined by three vectors.
+inline Real Volume(const Vec3r& v1, const Vec3r& v2, const Vec3r& v3) {
+  return std::abs(v1.cross(v2).dot(v3));
+}
 
 /// @brief Alignment rotation function.
 template <int dim>

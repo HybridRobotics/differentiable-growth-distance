@@ -14,7 +14,7 @@
 
 /**
  * @author Akshay Thirugnanam (akshay_t@berkeley.edu)
- * @brief Growth distance algorithm output.
+ * @brief Differentiable growth distance algorithm output.
  */
 
 #ifndef DGD_OUTPUT_H_
@@ -64,7 +64,7 @@ enum class SolutionStatus {
 };
 
 /**
- * @brief Growth distance algorithm output.
+ * @brief Differentiable growth distance algorithm output.
  *
  * @attention When using cold start, an Output instance can be shared across
  * different pairs of convex sets. However, when using warm start, each
@@ -74,6 +74,10 @@ enum class SolutionStatus {
  */
 template <int dim>
 struct Output {
+  /*
+   * Growth distance algorithm output (hot variables).
+   */
+
   /**
    * @name Convex set simplex vertices
    * @brief Simplex vertices for the convex sets (in the local frame),
@@ -150,6 +154,56 @@ struct Output {
   std::vector<Real> lbs;
   std::vector<Real> ubs;
 #endif  // DGD_EXTRACT_METRICS
+
+  /*
+   * Derivative output (cold variables).
+   */
+
+  /**
+   * @brief Orthonormal basis for the primal solution set affine hull.
+   *
+   * @note The null space is an overapproximation of the linear subspace
+   * corresponding to the primal solution set affine hull, i.e., it represents
+   * the directions along which the primal solution (of both sets) can vary
+   * locally while maintaining optimality.
+   *
+   * @note The basis vectors are in the world frame of reference, and orthogonal
+   * to the normal vector.
+   *
+   * @see z_nullity
+   */
+  Matr<dim, dim - 1> z_nullspace = Matr<dim, dim - 1>::Zero();
+
+  /**
+   * @brief Orthonormal basis for the dual solution set span.
+   *
+   * @note The null space is an overapproximation of the dual solution set,
+   * i.e., it represents the directions along which the dual solution (normal
+   * vector) can vary locally while maintaining optimality.
+   *
+   * @note The basis vectors are in the world frame of reference, and the first
+   * column is the computed optimal normal vector.
+   *
+   * @see n_nullity
+   */
+  Matr<dim, dim> n_nullspace = Matr<dim, dim>::Zero();
+
+  /**
+   * @brief Dimension of the primal solution set null space.
+   *
+   * @see z_nullspace
+   */
+  int z_nullity = 0;
+
+  /**
+   * @brief Dimension of the dual solution set null space.
+   *
+   * @see n_nullspace
+   */
+  int n_nullity = 0;
+
+  /// @brief Differentiability of the optimal growth distance value.
+  bool value_differentiable = false;
 };
 
 using Output2 = Output<2>;

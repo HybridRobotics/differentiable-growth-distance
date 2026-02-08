@@ -27,6 +27,7 @@
 #include "dgd/output.h"
 #include "dgd/settings.h"
 #include "dgd/solvers/bundle_scheme_impl.h"
+#include "dgd/solvers/derivative_impl.h"
 #include "dgd/solvers/dgd_halfspace_impl.h"
 
 namespace dgd {
@@ -94,6 +95,24 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
 }
 
 /*
+ * KKT solution set null space algorithm.
+ */
+
+template <int dim>
+int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings, Output<dim>& out) {
+  return ComputeKktNullspaceTpl(set1, tf1, set2, tf2, settings, out);
+}
+
+template <int dim>
+int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const Halfspace<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings, Output<dim>& out) {
+  return ComputeKktNullspaceHalfspaceTpl(set1, tf1, set2, tf2, settings, out);
+}
+
+/*
  * Explicit instantiations.
  */
 
@@ -138,5 +157,19 @@ template bool DetectCollision(const ConvexSet<2>*, const Transformr<2>&,
 template bool DetectCollision(const ConvexSet<3>*, const Transformr<3>&,
                               const Halfspace<3>*, const Transformr<3>&,
                               const Settings&, Output<3>&, bool);
+
+template int ComputeKktNullspace(const ConvexSet<2>*, const Transformr<2>&,
+                                 const ConvexSet<2>*, const Transformr<2>&,
+                                 const Settings&, Output<2>&);
+template int ComputeKktNullspace(const ConvexSet<3>*, const Transformr<3>&,
+                                 const ConvexSet<3>*, const Transformr<3>&,
+                                 const Settings&, Output<3>&);
+
+template int ComputeKktNullspace(const ConvexSet<2>*, const Transformr<2>&,
+                                 const Halfspace<2>*, const Transformr<2>&,
+                                 const Settings&, Output<2>&);
+template int ComputeKktNullspace(const ConvexSet<3>*, const Transformr<3>&,
+                                 const Halfspace<3>*, const Transformr<3>&,
+                                 const Settings&, Output<3>&);
 
 }  // namespace dgd

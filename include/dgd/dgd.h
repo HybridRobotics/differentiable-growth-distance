@@ -160,6 +160,49 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                      const Settings& settings, Output<dim>& out,
                      bool warm_start = false);
 
+/*
+ * KKT solution set null space algorithm.
+ */
+
+/**
+ * @brief KKT solution set null space algorithm for 2D and 3D compact convex
+ * sets.
+ *
+ * The KKT solution set null space determines the uniqueness of the primal and
+ * dual optimal solutions (not including positive scaling of the optimal normal
+ * vector).
+ *
+ * @param[in]     set1,set2  Compact convex sets.
+ * @param[in]     tf1,tf2    Rigid body transformations for the sets.
+ * @param[in]     settings   Settings.
+ * @param[in,out] out        Output.
+ * @return        KKT solution set nullity; -1 if the solution is not optimal.
+ */
+template <int dim>
+int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings, Output<dim>& out);
+
+/**
+ * @brief KKT solution set null space algorithm for a compact convex set and a
+ * half-space.
+ *
+ * The KKT solution set null space determines the uniqueness of the primal and
+ * dual optimal solutions (not including positive scaling of the optimal normal
+ * vector).
+ *
+ * @param[in]     set1       Compact convex set.
+ * @param[in]     set2       Half-space.
+ * @param[in]     tf1,tf2    Rigid body transformations for the sets.
+ * @param[in]     settings   Settings.
+ * @param[in,out] out        Output.
+ * @return        KKT solution set nullity; -1 if the solution is not optimal.
+ */
+template <int dim>
+int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const Halfspace<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings, Output<dim>& out);
+
 }  // namespace dgd
 
 #endif  // DGD_DGD_H_

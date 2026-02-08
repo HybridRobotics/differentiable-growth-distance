@@ -28,6 +28,7 @@
 #include "dgd/geometry/halfspace.h"
 #include "dgd/output.h"
 #include "dgd/settings.h"
+#include "dgd/solvers/solver_utils.h"
 
 namespace dgd {
 
@@ -41,7 +42,7 @@ inline Real GrowthDistanceHalfspaceTpl(
     const C1* set1, const Transformr<dim>& tf1, const Halfspace<dim>* set2,
     const Transformr<dim>& tf2, const Settings& settings, Output<dim>& out,
     bool warm_start = false) {
-  static_assert(detail::ConvexSetValidator<dim, C1, false>::valid,
+  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
                 "Incompatible compact set C1");
 
   if (!warm_start) out.hint1_.n_prev = Vecr<dim>::Zero();
@@ -92,12 +93,71 @@ inline bool DetectCollisionHalfspaceTpl(
     const C1* set1, const Transformr<dim>& tf1, const Halfspace<dim>* set2,
     const Transformr<dim>& tf2, const Settings& settings, Output<dim>& out,
     bool warm_start = false) {
-  static_assert(detail::ConvexSetValidator<dim, C1, false>::valid,
+  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
                 "Incompatible compact set C1");
   const Real gd = GrowthDistanceHalfspaceTpl<dim, C1>(
       set1, tf1, set2, tf2, settings, out, warm_start);
   return ((out.status == SolutionStatus::CoincidentCenters) ||
           (gd <= Real(1.0)));
+}
+
+/*
+ * KKT solution set null space algorithm.
+ */
+
+/**
+ * @brief KKT solution set null space algorithm for a compact convex set and a
+ * half-space.
+ */
+template <int dim, class C1>
+inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
+                                           const Transformr<dim>& tf1,
+                                           const Halfspace<dim>* /*set2*/,
+                                           const Transformr<dim>& tf2,
+                                           const Settings& /*settings*/,
+                                           Output<dim>& out) {
+  static_assert(detail::ConvexSetValidator<dim, C1>::valid,
+                "Incompatible compact set C1");
+
+  if (out.status != SolutionStatus::Optimal) {
+    out.z_nullspace = Matr<dim, dim - 1>::Zero();
+    out.n_nullspace = Matr<dim, dim>::Zero();
+    out.z_nullity = dim - 1;
+    out.n_nullity = dim;
+    return -1;
+  }
+
+  NormalPair<dim> zn;
+  zn.z = Linear(tf1).transpose() * (out.z1 - Affine(tf1));
+  zn.n = -Linear(tf1).transpose() * Linear(tf2).col(dim - 1);
+
+  BasePointHint<dim> hint;
+  // Note: out.s1 and out.bc are not set.
+  hint.sfh = &out.hint1_;
+
+  SupportPatchHull<dim> sph;
+  NormalConeSpan<dim> ncs;
+
+  set1->ComputeLocalGeometry(zn, sph, ncs, &hint);
+
+  // Compute primal solution set null space.
+  if constexpr (dim == 2) {
+    out.z_nullspace = Linear(tf2).col(0);
+  } else {  // dim = 3
+    if (sph.aff_dim == 1) {
+      out.z_nullspace.col(0) =
+          Linear(tf1) * detail::Projection(sph.basis.col(0), zn.n).normalized();
+    } else if (sph.aff_dim == 2) {
+      out.z_nullspace = Linear(tf2).template leftCols<2>();
+    }
+  }
+  out.z_nullity = sph.aff_dim;
+
+  // Compute dual solution set null space.
+  out.n_nullspace.col(0) = -Linear(tf2).col(dim - 1);
+  out.n_nullity = 1;
+
+  return out.z_nullity + out.n_nullity;
 }
 
 }  // namespace dgd
