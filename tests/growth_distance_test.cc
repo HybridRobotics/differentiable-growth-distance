@@ -113,12 +113,12 @@ struct GrowthDistanceNameGenerator {
   static std::string GetName(int) {
     if (T::growth_distance ==
         static_cast<GrowthDistanceType<T::dim>>(GrowthDistanceCp<T::dim>)) {
-      return "CuttingPlane_" + std::to_string(T::dim) + "D";
+      return "CuttingPlane" + std::to_string(T::dim) + "D";
     } else if (T::growth_distance == static_cast<GrowthDistanceType<T::dim>>(
                                          GrowthDistanceTrn<T::dim>)) {
-      return "TrustRegionNewton_" + std::to_string(T::dim) + "D";
+      return "TrustRegionNewton" + std::to_string(T::dim) + "D";
     } else {
-      return "Unknown_" + std::to_string(T::dim) + "D";
+      return "Unknown" + std::to_string(T::dim) + "D";
     }
   }
 };
