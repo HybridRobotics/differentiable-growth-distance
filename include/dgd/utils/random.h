@@ -231,6 +231,8 @@ inline void Rng::RandomTransform(const Vecr<dim>& low, const Vecr<dim>& high,
 
   Linear(tf) = RandomRotation<dim>();
   for (int i = 0; i < dim; ++i) tf(i, dim) = Random(low(i), high(i));
+  tf.template bottomLeftCorner<1, dim>() = Vecr<dim>::Zero();
+  tf(dim, dim) = Real(1.0);
 }
 
 template <int hdim>

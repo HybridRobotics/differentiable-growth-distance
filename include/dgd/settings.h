@@ -25,7 +25,29 @@
 
 namespace dgd {
 
-/// @brief Settings for the growth distance algorithm.
+/// @brief Rigid body twist reference frame.
+enum class TwistFrame {
+  /**
+   * @brief Spatial twist in the world frame of reference.
+   *
+   * The translational velocity is the velocity of the point on the rigid body
+   * coincident with the origin of the world frame.
+   */
+  kSpatial,
+
+  /**
+   * @brief Hybrid twist in the world frame of reference.
+   *
+   * The translational velocity is the velocity of the origin of the local frame
+   * (center point of the convex set).
+   */
+  kHybrid,
+
+  /// @brief Body twist in the local frame of reference.
+  kBody,
+};
+
+/// @brief Settings for the differentiable growth distance algorithm.
 struct Settings {
   /**
    * @brief Minimum distance between the center points of the convex sets.
@@ -48,12 +70,6 @@ struct Settings {
    */
   Real rel_tol = Real(1.0) + kSqrtEps;
 
-  /// @brief Maximum number of solver iterations.
-  int max_iter = 100;
-
-  /// @brief Warm start type.
-  WarmStartType ws_type = WarmStartType::Primal;
-
   /**
    * @brief Tolerance for primal and dual null space computations in 3D.
    *
@@ -61,6 +77,19 @@ struct Settings {
    * parallel if their cross product norm is less than this value.
    */
   Real nullspace_tol = kSqrtEps;
+
+  /// @brief Maximum number of solver iterations.
+  int max_iter = 100;
+
+  /// @brief Warm start type.
+  WarmStartType ws_type = WarmStartType::Primal;
+
+  /**
+   * @brief Rigid body twist reference frame.
+   *
+   * This value determines the frame of reference for input twist vectors.
+   */
+  TwistFrame twist_frame = TwistFrame::kHybrid;
 };
 
 }  // namespace dgd

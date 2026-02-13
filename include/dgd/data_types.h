@@ -112,32 +112,111 @@ using Transform2r = Transformr<2>;
 using Transform3r = Transformr<3>;
 
 /**
- * @name Affine and linear block functions
+ * @brief Rigid body twist vector.
+ *
+ * In 2D, the twist is \f$(v_x, v_y, \omega_z)\f$.
+ * In 3D, the twist is \f$(v_x, v_y, v_z, \omega_x, \omega_y, \omega_z)\f$.
+ *
+ * @tparam dim Dimension of the space.
+ */
+template <int dim>
+using Twistr = Vecr<dim == 2 ? 3 : 6>;
+using Twist2r = Twistr<2>;
+using Twist3r = Twistr<3>;
+
+/**
+ * @brief Kinematic state of a rigid body.
+ *
+ * @tparam dim Dimension of the space.
+ */
+template <int dim>
+struct KinematicState {
+  /// @brief Rigid body transformation.
+  Transformr<dim> tf = Transformr<dim>::Identity();
+
+  /// @brief Rigid body twist.
+  Twistr<dim> tw = Twistr<dim>::Zero();
+};
+
+/**
+ * @name Helper functions to unwrap kinematic state.
+ * @brief Returns the rigid body transformation from a kinematic state.
+ */
+///@{
+template <int dim>
+inline const Transformr<dim>& Unwrap(const KinematicState<dim>& state) {
+  return state.tf;
+}
+
+template <int dim>
+inline const Transformr<dim>& Unwrap(const Transformr<dim>& tf) {
+  return tf;
+}
+///@}
+
+/**
+ * @name Transform block functions
  * @brief Affine and linear block functions for rigid body transformations.
  */
 ///@{
 template <int hdim>
 inline auto Affine(Matr<hdim, hdim>& tf)
     -> decltype(tf.template topRightCorner<hdim - 1, 1>()) {
+  static_assert((hdim == 3) || (hdim == 4), "Dimension must be 2 or 3");
   return tf.template topRightCorner<hdim - 1, 1>();
 }
 
 template <int hdim>
 inline auto Affine(const Matr<hdim, hdim>& tf)
     -> decltype(tf.template topRightCorner<hdim - 1, 1>()) {
+  static_assert((hdim == 3) || (hdim == 4), "Dimension must be 2 or 3");
   return tf.template topRightCorner<hdim - 1, 1>();
 }
 
 template <int hdim>
 inline auto Linear(Matr<hdim, hdim>& tf)
     -> decltype(tf.template topLeftCorner<hdim - 1, hdim - 1>()) {
+  static_assert((hdim == 3) || (hdim == 4), "Dimension must be 2 or 3");
   return tf.template topLeftCorner<hdim - 1, hdim - 1>();
 }
 
 template <int hdim>
 inline auto Linear(const Matr<hdim, hdim>& tf)
     -> decltype(tf.template topLeftCorner<hdim - 1, hdim - 1>()) {
+  static_assert((hdim == 3) || (hdim == 4), "Dimension must be 2 or 3");
   return tf.template topLeftCorner<hdim - 1, hdim - 1>();
+}
+///@}
+
+/**
+ * @name Twist block functions
+ * @brief Linear and angular block functions for rigid body twists.
+ */
+///@{
+template <int tdim>
+inline auto Linear(Vecr<tdim>& tw)
+    -> decltype(tw.template head<tdim == 3 ? 2 : 3>()) {
+  static_assert((tdim == 3) || (tdim == 6), "Dimension must be 2 or 3");
+  return tw.template head<tdim == 3 ? 2 : 3>();
+}
+
+template <int tdim>
+inline auto Linear(const Vecr<tdim>& tw)
+    -> decltype(tw.template head<tdim == 3 ? 2 : 3>()) {
+  static_assert((tdim == 3) || (tdim == 6), "Dimension must be 2 or 3");
+  return tw.template head<tdim == 3 ? 2 : 3>();
+}
+
+inline Real& Angular(Twist2r& tw) { return tw(2); }
+
+inline const Real& Angular(const Twist2r& tw) { return tw(2); }
+
+inline auto Angular(Twist3r& tw) -> decltype(tw.tail<3>()) {
+  return tw.tail<3>();
+}
+
+inline auto Angular(const Twist3r& tw) -> decltype(tw.tail<3>()) {
+  return tw.tail<3>();
 }
 ///@}
 

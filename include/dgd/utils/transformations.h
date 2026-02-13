@@ -20,6 +20,7 @@
 #ifndef DGD_UTILS_TRANSFORMATIONS_H_
 #define DGD_UTILS_TRANSFORMATIONS_H_
 
+#include <Eigen/Geometry>
 #include <cmath>
 #include <type_traits>
 
@@ -63,7 +64,9 @@ inline Rotation3r EulerToRotation(const Vec3r& euler) {
 /**
  * @brief Returns a rotation matrix using the angle-axis representation.
  *
- * @param  ax  Rotation axis with unit 2-norm.
+ * @attention The rotation axis must be a unit vector.
+ *
+ * @param  ax  Rotation axis with unit norm.
  * @param  ang Rotation angle.
  * @return Rotation matrix.
  */
@@ -76,6 +79,55 @@ inline Rotation3r AngleAxisToRotation(const Vec3r& ax, Real ang) {
         std::sin(ang) * Hat(ax);
   return rot;
 }
+
+/**
+ * @name Velocity computation functions
+ * @brief Returns the velocity of a point on a rigid body given its twist.
+ *
+ * @attention The twist, point, and the velocity are expressed in the same frame
+ * of reference.
+ *
+ * @param  tw Rigid body twist.
+ * @param  pt Point on the rigid body.
+ * @return Velocity of the point.
+ */
+///@{
+inline Vec2r VelocityAtPoint(const Twist2r& tw, const Vec2r& pt) {
+  return Linear(tw) + Angular(tw) * Vec2r(-pt(1), pt(0));
+}
+
+inline Vec3r VelocityAtPoint(const Twist3r& tw, const Vec3r& pt) {
+  return Linear(tw) + Angular(tw).cross(pt);
+}
+///@}
+
+/**
+ * @name Dual twist computation functions
+ * @brief Returns the dual twist on a rigid body given a dual velocity at a
+ * point.
+ *
+ * This function is the adjoint of the VelocityAtPoint function (for a given
+ * point).
+ *
+ * @attention The dual velocity, point, and the dual twist are expressed in the
+ * same frame of reference.
+ *
+ * @param  f  Dual velocity at a point.
+ * @param  pt Point on the rigid body.
+ * @return Dual twist on the rigid body.
+ */
+///@{
+inline Twist2r DualTwistAtPoint(const Vec2r& f, const Vec2r& pt) {
+  return Twist2r(Linear(f)(0), Linear(f)(1), pt(0) * f(1) - pt(1) * f(0));
+}
+
+inline Twist3r DualTwistAtPoint(const Vec3r& f, const Vec3r& pt) {
+  Twist3r wr;
+  Linear(wr) = Linear(f);
+  Angular(wr) = pt.cross(Linear(f));
+  return wr;
+}
+///@}
 
 }  // namespace dgd
 
