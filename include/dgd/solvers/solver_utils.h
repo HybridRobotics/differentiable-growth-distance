@@ -29,6 +29,7 @@
 #include "dgd/output.h"
 #include "dgd/solvers/solver_settings.h"
 #include "dgd/solvers/solver_types.h"
+#include "dgd/utils/transformations.h"
 
 namespace dgd {
 
@@ -138,8 +139,8 @@ template <int dim>
 inline Real ComputePrimalSolution(const Transformr<dim>& tf1,
                                   const Transformr<dim>& tf2, Real cdist,
                                   Real lb, Output<dim>& out) {
-  out.z1.noalias() = Linear(tf1) * out.s1 * out.bc + Affine(tf1);
-  out.z2.noalias() = Linear(tf2) * out.s2 * out.bc + Affine(tf2);
+  out.z1.noalias() = TransformPoint<dim>(tf1, out.s1 * out.bc);
+  out.z2.noalias() = TransformPoint<dim>(tf2, out.s2 * out.bc);
   return out.growth_dist_ub = cdist / lb;
 }
 
@@ -258,6 +259,59 @@ struct SupportFunctionOutput<dim, 2> {
   const Vecr<dim>& sp1() const { return deriv1.sp; }
   const Vecr<dim>& sp2() const { return deriv2.sp; }
 };
+
+/// @brief Sets zero KKT solution set null space.
+template <int dim>
+inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
+  dd.z_nullspace = Matr<dim, dim - 1>::Zero();
+  dd.n_nullspace = Matr<dim, dim>::Zero();
+  dd.z_nullity = 0;
+  dd.n_nullity = 0;
+  return 0;
+}
+
+/**
+ * @brief Returns the velocity of a point on a rigid body given its twist.
+ *
+ * @note The twist frame of reference is given by twist_frame.
+ *
+ * @param  state Kinematic state of the rigid body.
+ * @param  pt    Point on the rigid body in the world frame.
+ * @return Velocity of the point in the world frame.
+ */
+template <TwistFrame twist_frame, int dim>
+inline Vecr<dim> VelocityAtPoint(const KinematicState<dim>& state,
+                                 const Vecr<dim>& pt) {
+  if constexpr (twist_frame == TwistFrame::Spatial) {
+    return VelocityAtPoint(state.tw, pt);
+  } else if constexpr (twist_frame == TwistFrame::Hybrid) {
+    return VelocityAtPoint(state.tw, pt - Affine(state.tf));
+  } else {  // Body
+    return Linear(state.tf) *
+           VelocityAtPoint(state.tw, InverseTransformPoint(state.tf, pt));
+  }
+}
+
+/**
+ * @brief Returns the dual twist on a rigid body given a dual velocity at a
+ * point.
+ *
+ * @param  f  Dual velocity at the point in the world frame.
+ * @param  pt Point on the rigid body in the world frame.
+ * @return Dual twist on the rigid body in the twist_frame frame.
+ */
+template <TwistFrame twist_frame, int dim>
+inline Twistr<dim> DualTwistAtPoint([[maybe_unused]] const Transformr<dim>& tf,
+                                    const Vecr<dim>& f, const Vecr<dim>& pt) {
+  if constexpr (twist_frame == TwistFrame::Spatial) {
+    return DualTwistAtPoint(f, pt);
+  } else if constexpr (twist_frame == TwistFrame::Hybrid) {
+    return DualTwistAtPoint(f, pt - Affine(tf));
+  } else {  // Body
+    return DualTwistAtPoint(Linear(tf).transpose() * f,
+                            InverseTransformPoint(tf, pt));
+  }
+}
 
 }  // namespace detail
 

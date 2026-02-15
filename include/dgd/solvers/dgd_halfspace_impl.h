@@ -29,6 +29,7 @@
 #include "dgd/output.h"
 #include "dgd/settings.h"
 #include "dgd/solvers/solver_utils.h"
+#include "dgd/utils/transformations.h"
 
 namespace dgd {
 
@@ -115,25 +116,26 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
                                            const Halfspace<dim>* /*set2*/,
                                            const Transformr<dim>& tf2,
                                            const Settings& /*settings*/,
-                                           Output<dim>& out) {
+                                           OutputBundle<dim>& bundle) {
   static_assert(detail::ConvexSetValidator<dim, C1>::valid,
                 "Incompatible compact set C1");
 
-  if (out.status != SolutionStatus::Optimal) {
-    out.z_nullspace = Matr<dim, dim - 1>::Zero();
-    out.n_nullspace = Matr<dim, dim>::Zero();
-    out.z_nullity = dim - 1;
-    out.n_nullity = dim;
-    return -1;
+  const auto& out = bundle.output;
+  const auto& dd = bundle.dir_derivative;
+
+  if ((!out) || (!dd)) return 0;
+
+  if (out->status != SolutionStatus::Optimal) {
+    return detail::SetZeroKktNullspace(*dd);
   }
 
   NormalPair<dim> zn;
-  zn.z = Linear(tf1).transpose() * (out.z1 - Affine(tf1));
-  zn.n = -Linear(tf1).transpose() * Linear(tf2).col(dim - 1);
+  zn.z.noalias() = InverseTransformPoint(tf1, out->z1);
+  zn.n.noalias() = -Linear(tf1).transpose() * Linear(tf2).col(dim - 1);
 
   BasePointHint<dim> hint;
-  // Note: out.s1 and out.bc are not set.
-  hint.sfh = &out.hint1_;
+  // Note: out->s1 and out->bc are not set.
+  hint.sfh = &out->hint1_;
 
   SupportPatchHull<dim> sph;
   NormalConeSpan<dim> ncs;
@@ -142,22 +144,22 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
 
   // Compute primal solution set null space.
   if constexpr (dim == 2) {
-    out.z_nullspace = Linear(tf2).col(0);
+    dd->z_nullspace = Linear(tf2).col(0);
   } else {  // dim = 3
     if (sph.aff_dim == 1) {
-      out.z_nullspace.col(0) =
+      dd->z_nullspace.col(0) =
           Linear(tf1) * detail::Projection(sph.basis.col(0), zn.n).normalized();
     } else if (sph.aff_dim == 2) {
-      out.z_nullspace = Linear(tf2).template leftCols<2>();
+      dd->z_nullspace = Linear(tf2).template leftCols<2>();
     }
   }
-  out.z_nullity = sph.aff_dim;
+  dd->z_nullity = sph.aff_dim;
 
   // Compute dual solution set null space.
-  out.n_nullspace.col(0) = -Linear(tf2).col(dim - 1);
-  out.n_nullity = 1;
+  dd->n_nullspace.col(0) = -Linear(tf2).col(dim - 1);
+  dd->n_nullity = 1;
 
-  return out.z_nullity + out.n_nullity;
+  return dd->z_nullity + dd->n_nullity;
 }
 
 }  // namespace dgd

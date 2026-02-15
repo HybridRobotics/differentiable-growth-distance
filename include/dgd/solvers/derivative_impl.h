@@ -36,35 +36,37 @@ namespace dgd {
 template <int dim, class C1, class C2>
 inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
                                   const C2* set2, const Transformr<dim>& tf2,
-                                  const Settings& settings, Output<dim>& out) {
+                                  const Settings& settings,
+                                  OutputBundle<dim>& bundle) {
   static_assert(detail::ConvexSetValidator<dim, C1>::valid,
                 "Incompatible set C1");
   static_assert(detail::ConvexSetValidator<dim, C2>::valid,
                 "Incompatible set C2");
 
-  if (out.status != SolutionStatus::Optimal) {
-    out.z_nullspace = Matr<dim, dim - 1>::Zero();
-    out.n_nullspace = Matr<dim, dim>::Zero();
-    out.z_nullity = dim - 1;
-    out.n_nullity = dim;
-    return -1;
+  const auto& out = bundle.output;
+  const auto& dd = bundle.dir_derivative;
+
+  if ((!out) || (!dd)) return 0;
+
+  if (out->status != SolutionStatus::Optimal) {
+    return detail::SetZeroKktNullspace(*dd);
   }
 
-  const Vecr<dim> n = out.normal.normalized();
+  const Vecr<dim> n = out->normal.normalized();
 
   NormalPair<dim> zn1, zn2;
-  zn1.z = out.s1 * out.bc;
-  zn1.n = Linear(tf1).transpose() * n;
-  zn2.z = out.s2 * out.bc;
-  zn2.n = -Linear(tf2).transpose() * n;
+  zn1.z.noalias() = out->s1 * out->bc;
+  zn1.n.noalias() = Linear(tf1).transpose() * n;
+  zn2.z.noalias() = out->s2 * out->bc;
+  zn2.n.noalias() = -Linear(tf2).transpose() * n;
 
   BasePointHint<dim> hint1, hint2;
-  hint1.s = &out.s1;
-  hint1.bc = &out.bc;
-  hint1.sfh = &out.hint1_;
-  hint2.s = &out.s2;
-  hint2.bc = &out.bc;
-  hint2.sfh = &out.hint2_;
+  hint1.s = &out->s1;
+  hint1.bc = &out->bc;
+  hint1.sfh = &out->hint1_;
+  hint2.s = &out->s2;
+  hint2.bc = &out->bc;
+  hint2.sfh = &out->hint2_;
 
   SupportPatchHull<dim> sph1, sph2;
   NormalConeSpan<dim> ncs1, ncs2;
@@ -75,19 +77,19 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
   if constexpr (dim == 2) {
     // Compute primal solution set null space.
     if ((sph1.aff_dim == 0) || (sph2.aff_dim == 0)) {
-      out.z_nullity = 0;
+      dd->z_nullity = 0;
     } else {
-      out.z_nullspace.col(0) = Vec2r(n(1), -n(0));
-      out.z_nullity = 1;
+      dd->z_nullspace.col(0) = Vec2r(n(1), -n(0));
+      dd->z_nullity = 1;
     }
 
     // Compute dual solution set null space.
-    out.n_nullspace.col(0) = n;
+    dd->n_nullspace.col(0) = n;
     if ((ncs1.span_dim == 1) || (ncs2.span_dim == 1)) {
-      out.n_nullity = 1;
+      dd->n_nullity = 1;
     } else {
-      out.n_nullspace.col(1) = Vec2r(n(1), -n(0));
-      out.n_nullity = 2;
+      dd->n_nullspace.col(1) = Vec2r(n(1), -n(0));
+      dd->n_nullity = 2;
     }
   } else {  // dim = 3
     const Vec3r m =
@@ -104,49 +106,111 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
 
     // Compute primal solution set null space.
     if ((sph1.aff_dim == 0) || (sph2.aff_dim == 0)) {
-      out.z_nullity = 0;
+      dd->z_nullity = 0;
     } else if (sph1.aff_dim == 2) {
       if (sph2.aff_dim == 2) {
-        out.z_nullspace.col(0) = m.cross(n).normalized();
-        out.z_nullspace.col(1) = n.cross(out.z_nullspace.col(0));
-        out.z_nullity = 2;
+        dd->z_nullspace.col(0) = m.cross(n).normalized();
+        dd->z_nullspace.col(1) = n.cross(dd->z_nullspace.col(0));
+        dd->z_nullity = 2;
       } else {
-        out.z_nullspace.col(0) = Projection(sph2.basis.col(0), n).normalized();
-        out.z_nullity = 1;
+        dd->z_nullspace.col(0) = Projection(sph2.basis.col(0), n).normalized();
+        dd->z_nullity = 1;
       }
     } else if ((sph2.aff_dim == 2) ||
                (Volume(sph1.basis.col(0), sph2.basis.col(0), n) <
                 settings.nullspace_tol)) {
-      out.z_nullspace.col(0) = Projection(sph1.basis.col(0), n).normalized();
-      out.z_nullity = 1;
+      dd->z_nullspace.col(0) = Projection(sph1.basis.col(0), n).normalized();
+      dd->z_nullity = 1;
     } else {
-      out.z_nullity = 0;
+      dd->z_nullity = 0;
     }
 
     // Compute dual solution set null space.
-    out.n_nullspace.col(0) = n;
+    dd->n_nullspace.col(0) = n;
     if ((ncs1.span_dim == 1) || (ncs2.span_dim == 1)) {
-      out.n_nullity = 1;
+      dd->n_nullity = 1;
     } else if (ncs1.span_dim == 3) {
       if (ncs2.span_dim == 3) {
-        out.n_nullspace.col(1) = m.cross(n).normalized();
-        out.n_nullspace.col(2) = n.cross(out.n_nullspace.col(1));
-        out.n_nullity = 3;
+        dd->n_nullspace.col(1) = m.cross(n).normalized();
+        dd->n_nullspace.col(2) = n.cross(dd->n_nullspace.col(1));
+        dd->n_nullity = 3;
       } else {
-        out.n_nullspace.col(1) = Projection(ncs2.basis.col(0), n);
-        out.n_nullity = 2;
+        dd->n_nullspace.col(1) = Projection(ncs2.basis.col(0), n);
+        dd->n_nullity = 2;
       }
     } else if ((ncs2.span_dim == 3) ||
                (Volume(ncs1.basis.col(0), ncs2.basis.col(0), n) <
                 settings.nullspace_tol)) {
-      out.n_nullspace.col(1) = Projection(ncs1.basis.col(0), n);
-      out.n_nullity = 2;
+      dd->n_nullspace.col(1) = Projection(ncs1.basis.col(0), n);
+      dd->n_nullity = 2;
     } else {
-      out.n_nullity = 1;
+      dd->n_nullity = 1;
     }
   }
 
-  return out.z_nullity + out.n_nullity;
+  return dd->z_nullity + dd->n_nullity;
+}
+
+/**
+ * @brief Derivative of the growth distance function for 2D and 3D convex sets
+ * (including half-spaces).
+ *
+ * @note This function does not check for optimal value differentiability.
+ */
+template <TwistFrame twist_frame, int dim>
+inline Real GrowthDistanceDerivativeTpl(const KinematicState<dim>& state1,
+                                        const KinematicState<dim>& state2,
+                                        OutputBundle<dim>& bundle) {
+  const auto& out = bundle.output;
+  const auto& dd = bundle.dir_derivative;
+
+  if ((!out) || (!dd)) return Real(0.0);
+
+  if (out->status != SolutionStatus::Optimal) return (dd->d_gd = Real(0.0));
+
+  const auto& tf1 = state1.tf;
+  const auto& tf2 = state2.tf;
+
+  const Real gd = out->growth_dist_ub;  // Corresponding to the primal solution.
+  // Note: out->z2 is not set when the second convex set is a half-space.
+  const Vecr<dim> z = gd * (out->z1 - Affine(tf1)) + Affine(tf1);
+
+  dd->d_gd = gd *
+             out->normal.dot(detail::VelocityAtPoint<twist_frame>(state2, z) -
+                             detail::VelocityAtPoint<twist_frame>(state1, z)) /
+             out->normal.dot(Affine(tf2) - Affine(tf1));
+
+  return dd->d_gd;
+}
+
+/**
+ * @brief Gradient of the growth distance function for 2D and 3D convex sets
+ * (including half-spaces).
+ *
+ * @note This function does not check for optimal value differentiability.
+ */
+template <TwistFrame twist_frame, int dim>
+inline void GrowthDistanceGradientTpl(const Transformr<dim>& tf1,
+                                      const Transformr<dim>& tf2,
+                                      OutputBundle<dim>& bundle) {
+  const auto& out = bundle.output;
+  const auto& td = bundle.total_derivative;
+
+  if ((!out) || (!td)) return;
+
+  if (out->status != SolutionStatus::Optimal) {
+    td->d_gd_tf1 = Twistr<dim>::Zero();
+    td->d_gd_tf2 = Twistr<dim>::Zero();
+    return;
+  }
+
+  const Real gd = out->growth_dist_ub;  // Corresponding to the primal solution.
+  // Note: out->z2 is not set when the second convex set is a half-space.
+  const Vecr<dim> z = gd * (out->z1 - Affine(tf1)) + Affine(tf1);
+
+  const Real f = gd / out->normal.dot(Affine(tf2) - Affine(tf1));
+  td->d_gd_tf1 = f * detail::DualTwistAtPoint<twist_frame>(tf1, out->normal, z);
+  td->d_gd_tf2 = f * detail::DualTwistAtPoint<twist_frame>(tf2, out->normal, z);
 }
 
 }  // namespace dgd
