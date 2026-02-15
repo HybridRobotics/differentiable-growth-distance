@@ -36,9 +36,9 @@ namespace dgd {
 
 /// @brief Hill-climbing type for the Mesh support function.
 enum class HillClimbingType {
-  kGreedy, /**< Greedy ascent. */
+  Greedy, /**< Greedy ascent. */
 
-  kOptimal, /**< Optimal ascent. */
+  Optimal, /**< Optimal ascent. */
 };
 
 /**
@@ -218,7 +218,7 @@ inline Real MeshImpl<HCT>::SupportFunction(const Vec3r& n, Vec3r& sp,
       if (s > sv) {
         idx = nidx;
         sv = s;
-        if constexpr (HCT == HillClimbingType::kGreedy) break;
+        if constexpr (HCT == HillClimbingType::Greedy) break;
       }
     }
   } while (idx != pidx);
@@ -332,7 +332,7 @@ inline void MeshImpl<HCT>::ComputeLocalGeometry(
       if (s > sv) {
         idx = nidx;
         sv = s;
-        if constexpr (HCT == HillClimbingType::kGreedy) break;
+        if constexpr (HCT == HillClimbingType::Greedy) break;
       }
     }
   } while (idx != pidx);
@@ -432,7 +432,7 @@ inline int MeshImpl<HCT>::nvertices() const {
   return nvert_;
 }
 
-using Mesh = MeshImpl<HillClimbingType::kGreedy>;
+using Mesh = MeshImpl<HillClimbingType::Greedy>;
 
 }  // namespace dgd
 

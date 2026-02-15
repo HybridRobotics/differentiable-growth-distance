@@ -20,6 +20,7 @@
 #ifndef DGD_GEOMETRY_HALFSPACE_H
 #define DGD_GEOMETRY_HALFSPACE_H
 
+#include <iostream>
 #include <stdexcept>
 
 #include "dgd/data_types.h"
@@ -42,6 +43,12 @@ struct Halfspace {
    * @param margin Safety margin.
    */
   explicit Halfspace(Real margin = Real(0.0));
+
+  /// @brief Prints information about the half-space.
+  void PrintInfo() const;
+
+  /// @brief Returns the dimension of the half-space.
+  static constexpr int dimension();
 };
 
 template <int dim>
@@ -49,6 +56,17 @@ inline Halfspace<dim>::Halfspace(Real margin) : margin(margin) {
   if (margin < Real(0.0)) {
     throw std::domain_error("Margin is negative");
   }
+}
+
+template <int dim>
+inline void Halfspace<dim>::PrintInfo() const {
+  std::cout << "Type: Half-space (dim = " << dim << ")" << std::endl
+            << "  Margin: " << margin << std::endl;
+}
+
+template <int dim>
+constexpr int Halfspace<dim>::dimension() {
+  return dim;
 }
 
 }  // namespace dgd

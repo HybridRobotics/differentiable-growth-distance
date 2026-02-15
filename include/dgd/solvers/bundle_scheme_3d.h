@@ -44,7 +44,7 @@ template <BcSolverType /*BST*/>
 struct BundleScheme3Context;
 
 template <>
-struct BundleScheme3Context<BcSolverType::kCramer> {
+struct BundleScheme3Context<BcSolverType::Cramer> {
   /**
    * @brief Simplex points in the aligned coordinates.
    *
@@ -60,7 +60,7 @@ struct BundleScheme3Context<BcSolverType::kCramer> {
 };
 
 template <>
-struct BundleScheme3Context<BcSolverType::kLU> {
+struct BundleScheme3Context<BcSolverType::LU> {
   /// @brief Simplex points in the aligned coordinates.
   Matr<3, 3> s;
   /**
@@ -94,8 +94,8 @@ template <BcSolverType BST>
 void InitializeSimplex(BundleScheme3Context<BST>& bsc, Real r, Output<3>& out);
 
 template <>
-inline void InitializeSimplex<BcSolverType::kCramer>(
-    BundleScheme3Context<BcSolverType::kCramer>& bsc, Real r, Output<3>& out) {
+inline void InitializeSimplex<BcSolverType::Cramer>(
+    BundleScheme3Context<BcSolverType::Cramer>& bsc, Real r, Output<3>& out) {
   bsc.s.col(0) = r * Vec3r(Real(0.5), Real(0.5), Real(0.0));
   bsc.s.col(1) = r * Vec3r(Real(-0.5), Real(0.5), Real(0.0));
   bsc.s.col(2) = Vec3r(Real(0.0), -r, Real(0.0));
@@ -105,8 +105,8 @@ inline void InitializeSimplex<BcSolverType::kCramer>(
 }
 
 template <>
-inline void InitializeSimplex<BcSolverType::kLU>(
-    BundleScheme3Context<BcSolverType::kLU>& bsc, Real r, Output<3>& out) {
+inline void InitializeSimplex<BcSolverType::LU>(
+    BundleScheme3Context<BcSolverType::LU>& bsc, Real r, Output<3>& out) {
   bsc.s.col(0) = r * Vec3r(Real(0.5), Real(0.5), Real(0.0));
   bsc.s.col(1) = r * Vec3r(Real(-0.5), Real(0.5), Real(0.0));
   bsc.s.col(2) = Vec3r(Real(0.0), -r, Real(0.0));
@@ -150,9 +150,9 @@ void ComputePointCoordinates(const Eigen::Ref<const Vec2r>& p,
                              BundleScheme3Context<BST>& bsc);
 
 template <>
-inline void ComputePointCoordinates<BcSolverType::kCramer>(
+inline void ComputePointCoordinates<BcSolverType::Cramer>(
     const Eigen::Ref<const Vec2r>& p,
-    BundleScheme3Context<BcSolverType::kCramer>& bsc) {
+    BundleScheme3Context<BcSolverType::Cramer>& bsc) {
   bsc.bc(0) = ((bsc.s(0, 1) - p(0)) * (bsc.s(1, 2) - p(1)) -
                (bsc.s(1, 1) - p(1)) * (bsc.s(0, 2) - p(0)));
   bsc.bc(1) = ((bsc.s(0, 2) - p(0)) * (bsc.s(1, 0) - p(1)) -
@@ -162,9 +162,9 @@ inline void ComputePointCoordinates<BcSolverType::kCramer>(
 }
 
 template <>
-inline void ComputePointCoordinates<BcSolverType::kLU>(
+inline void ComputePointCoordinates<BcSolverType::LU>(
     const Eigen::Ref<const Vec2r>& p,
-    BundleScheme3Context<BcSolverType::kLU>& bsc) {
+    BundleScheme3Context<BcSolverType::LU>& bsc) {
   // The threshold value below is the same as that used in Eigen's FullPivLU.
   if (std::abs(bsc.lu(0, 0) * bsc.lu(1, 1)) < Real(2.0) * kEps) {
     bsc.bc(bsc.pci) = Real(0.0);
@@ -185,8 +185,8 @@ template <BcSolverType BST>
 Real UpdateOriginCoordinates(BundleScheme3Context<BST>& bsc, Vec3r& bc);
 
 template <>
-inline Real UpdateOriginCoordinates<BcSolverType::kCramer>(
-    BundleScheme3Context<BcSolverType::kCramer>& bsc, Vec3r& bc) {
+inline Real UpdateOriginCoordinates<BcSolverType::Cramer>(
+    BundleScheme3Context<BcSolverType::Cramer>& bsc, Vec3r& bc) {
   // The projected (signed) simplex area is theoretically guaranteed to be
   // positive. However, some coordinates may become slightly negative.
   bc(0) = Relu(bsc.s(0, 1) * bsc.s(1, 2) - bsc.s(1, 1) * bsc.s(0, 2));
@@ -202,7 +202,7 @@ inline Real UpdateOriginCoordinates<BcSolverType::kCramer>(
  * projection of the probability simplex) using the residual error metric, given
  * by \f$|(\text{bsc.s})_{-3} \cdot \text{bc}|_2^2\f$.
  */
-inline void ProjectCoordinates(BundleScheme3Context<BcSolverType::kLU>& bsc,
+inline void ProjectCoordinates(BundleScheme3Context<BcSolverType::LU>& bsc,
                                Vec3r& bc) {
   auto project_edge = [&bsc, &bc](const Eigen::Ref<const Vec2r>& eij, int i,
                                   int j, int k) -> void {
@@ -274,7 +274,7 @@ inline void ProjectCoordinates(BundleScheme3Context<BcSolverType::kLU>& bsc,
  * z-coordinate of the intersection point.
  */
 template <int ax>
-Real UpdateOriginCoordinates1D(BundleScheme3Context<BcSolverType::kLU>& bsc,
+Real UpdateOriginCoordinates1D(BundleScheme3Context<BcSolverType::LU>& bsc,
                                Vec3r& bc) {
   auto update = [&bsc, &bc](Real len, int i, int j, int k) -> Real {
     // len is always greater than (or on the order of) rel_tol / inradius.
@@ -333,8 +333,8 @@ Real UpdateOriginCoordinates1D(BundleScheme3Context<BcSolverType::kLU>& bsc,
 }
 
 template <>
-inline Real UpdateOriginCoordinates<BcSolverType::kLU>(
-    BundleScheme3Context<BcSolverType::kLU>& bsc, Vec3r& bc) {
+inline Real UpdateOriginCoordinates<BcSolverType::LU>(
+    BundleScheme3Context<BcSolverType::LU>& bsc, Vec3r& bc) {
   // Compute triangle edges and signed area.
   bsc.e.col(0) = bsc.s.col(0) - bsc.s.col(2);
   bsc.e.col(1) = bsc.s.col(1) - bsc.s.col(2);
@@ -399,9 +399,9 @@ Real UpdateSimplex(const Vec3r& sp, const Vec3r& sp1, const Vec3r& sp2,
                    int* idxn = nullptr);
 
 template <>
-inline Real UpdateSimplex<BcSolverType::kCramer>(
+inline Real UpdateSimplex<BcSolverType::Cramer>(
     const Vec3r& sp, const Vec3r& sp1, const Vec3r& sp2,
-    BundleScheme3Context<BcSolverType::kCramer>& bsc, Output<3>& out,
+    BundleScheme3Context<BcSolverType::Cramer>& bsc, Output<3>& out,
     int* idxn) {
   int exiting_idx = 0;
   // The simplex is assumed to be nondegenerate when using Cramer's rule.
@@ -424,9 +424,9 @@ inline Real UpdateSimplex<BcSolverType::kCramer>(
 }
 
 template <>
-inline Real UpdateSimplex<BcSolverType::kLU>(
+inline Real UpdateSimplex<BcSolverType::LU>(
     const Vec3r& sp, const Vec3r& sp1, const Vec3r& sp2,
-    BundleScheme3Context<BcSolverType::kLU>& bsc, Output<3>& out, int* idxn) {
+    BundleScheme3Context<BcSolverType::LU>& bsc, Output<3>& out, int* idxn) {
   int exiting_idx = 0;
   if (std::abs(bsc.area) > SolverSettings::kEpsArea3) {
     ComputePointCoordinates((sp - bsc.s.col(2)).head<2>(), bsc);
@@ -455,8 +455,8 @@ template <BcSolverType BST>
 void UpdateNormalCuttingPlane(const BundleScheme3Context<BST>& bsc, Vec3r& n);
 
 template <>
-inline void UpdateNormalCuttingPlane<BcSolverType::kCramer>(
-    const BundleScheme3Context<BcSolverType::kCramer>& bsc, Vec3r& n) {
+inline void UpdateNormalCuttingPlane<BcSolverType::Cramer>(
+    const BundleScheme3Context<BcSolverType::Cramer>& bsc, Vec3r& n) {
   // The simplex edges are used to compute the normal vector because the origin
   // may not exactly lie in the projected simplex interior.
   // n = (bsc.s.col(1) - bsc.s.col(0)).cross(bsc.s.col(2) - bsc.s.col(0));
@@ -468,8 +468,8 @@ inline void UpdateNormalCuttingPlane<BcSolverType::kCramer>(
 }
 
 template <>
-inline void UpdateNormalCuttingPlane<BcSolverType::kLU>(
-    const BundleScheme3Context<BcSolverType::kLU>& bsc, Vec3r& n) {
+inline void UpdateNormalCuttingPlane<BcSolverType::LU>(
+    const BundleScheme3Context<BcSolverType::LU>& bsc, Vec3r& n) {
   if (std::abs(bsc.area) > SolverSettings::kEpsArea3) {
     // Compute the normal vector using the simplex edges.
     n(0) = bsc.e(1, 0) * bsc.e(2, 1) - bsc.e(2, 0) * bsc.e(1, 1);
@@ -677,6 +677,8 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
   LogBounds(iter, lb, ub, out);
 #endif  // DGD_EXTRACT_METRICS
 
+  const bool normalize_2norm = out.normalize_2norm_;
+
   while (true) {
     // Evaluate the support functions at the normal.
     sfo.Evaluate(set1, set2, mdp, bsc.n, out);
@@ -768,7 +770,7 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
         bsc.n = n_cp;
       }
     }
-    NormalizeNormal(bsc.n, out.normalize_2norm_);
+    NormalizeNormal(bsc.n, normalize_2norm);
   }
 
   out.iter = iter;

@@ -63,10 +63,10 @@ enum class BcSolverType {
    *
    * @attention This method can only be used for the cutting plane solver.
    */
-  kCramer,
+  Cramer,
 
   /// @brief Full pivot LU decomposition with projection, handling degeneracy.
-  kLU,
+  LU,
 };
 
 /// @brief Returns the solver name.
@@ -100,9 +100,9 @@ inline std::string WarmStartName(WarmStartType ws_type) {
 /// @brief Returns the barycentric coordinate solver type name.
 template <BcSolverType BST>
 inline constexpr std::string BcSolverName() {
-  if constexpr (BST == BcSolverType::kCramer) {
+  if constexpr (BST == BcSolverType::Cramer) {
     return "Cramer's rule";
-  } else if constexpr (BST == BcSolverType::kLU) {
+  } else if constexpr (BST == BcSolverType::LU) {
     return "LU decomposition";
   } else {
     return "";

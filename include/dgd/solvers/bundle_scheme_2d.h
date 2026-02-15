@@ -255,6 +255,8 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
   LogBounds(iter, lb, ub, out);
 #endif  // DGD_EXTRACT_METRICS
 
+  const bool normalize_2norm = out.normalize_2norm_;
+
   while (true) {
     // Evaluate the support functions at the normal.
     sfo.Evaluate(set1, set2, mdp, n, out);
@@ -334,7 +336,7 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
           n = n_cp;
         }
       }
-      NormalizeNormal(n, out.normalize_2norm_);
+      NormalizeNormal(n, normalize_2norm);
     } else {
       // (Dual warm start) Lower bound was not updated; reset the normal vector.
       n = Vec2r::UnitY();

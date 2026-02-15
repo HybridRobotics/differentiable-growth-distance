@@ -40,7 +40,7 @@ namespace dgd {
  * @brief Growth distance algorithm for compact convex sets using the cutting
  * plane method.
  */
-template <int dim, class C1, class C2, BcSolverType BST = BcSolverType::kCramer>
+template <BcSolverType BST = BcSolverType::Cramer, int dim, class C1, class C2>
 inline Real GrowthDistanceCpTpl(const C1* set1, const Transformr<dim>& tf1,
                                 const C2* set2, const Transformr<dim>& tf2,
                                 const Settings& settings, Output<dim>& out,
@@ -70,7 +70,7 @@ inline Real GrowthDistanceTrnTpl(const C1* set1, const Transformr<dim>& tf1,
   static_assert(detail::ConvexSetValidator<dim, C2>::valid,
                 "Incompatible set C2");
   return detail::BundleScheme<C1, C2, SolverType::TrustRegionNewton,
-                              BcSolverType::kLU, false>(
+                              BcSolverType::LU, false>(
       set1, tf1, set2, tf2, settings, out, warm_start);
 }
 
@@ -79,7 +79,7 @@ inline Real GrowthDistanceTrnTpl(const C1* set1, const Transformr<dim>& tf1,
  */
 
 /// @brief Collision detection algorithm for 2D and 3D compact convex sets.
-template <int dim, class C1, class C2, BcSolverType BST = BcSolverType::kCramer>
+template <BcSolverType BST = BcSolverType::Cramer, int dim, class C1, class C2>
 inline bool DetectCollisionTpl(const C1* set1, const Transformr<dim>& tf1,
                                const C2* set2, const Transformr<dim>& tf2,
                                const Settings& settings, Output<dim>& out,

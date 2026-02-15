@@ -163,7 +163,7 @@ struct BasePointHint {
   const Vecr<dim>* bc = nullptr;
 
   /// @brief Support function hint.
-  SupportFunctionHint<dim>* sfh = nullptr;
+  const SupportFunctionHint<dim>* sfh = nullptr;
 
   /**
    * @brief Computes indices for unique simplex points.

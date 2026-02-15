@@ -33,7 +33,7 @@ enum class TwistFrame {
    * The translational velocity is the velocity of the point on the rigid body
    * coincident with the origin of the world frame.
    */
-  kSpatial,
+  Spatial,
 
   /**
    * @brief Hybrid twist in the world frame of reference.
@@ -41,10 +41,10 @@ enum class TwistFrame {
    * The translational velocity is the velocity of the origin of the local frame
    * (center point of the convex set).
    */
-  kHybrid,
+  Hybrid,
 
   /// @brief Body twist in the local frame of reference.
-  kBody,
+  Body,
 };
 
 /// @brief Settings for the differentiable growth distance algorithm.
@@ -89,7 +89,7 @@ struct Settings {
    *
    * This value determines the frame of reference for input twist vectors.
    */
-  TwistFrame twist_frame = TwistFrame::kHybrid;
+  TwistFrame twist_frame = TwistFrame::Hybrid;
 };
 
 }  // namespace dgd
