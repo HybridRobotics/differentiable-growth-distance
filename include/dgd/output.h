@@ -20,6 +20,7 @@
 #ifndef DGD_OUTPUT_H_
 #define DGD_OUTPUT_H_
 
+#include <memory>
 #include <string>
 #ifdef DGD_EXTRACT_METRICS
 #include <vector>
@@ -64,7 +65,7 @@ enum class SolutionStatus {
 };
 
 /**
- * @brief Differentiable growth distance algorithm output.
+ * @brief Growth distance algorithm output.
  *
  * @attention When using cold start, an Output instance can be shared across
  * different pairs of convex sets. However, when using warm start, each
@@ -74,10 +75,6 @@ enum class SolutionStatus {
  */
 template <int dim>
 struct Output {
-  /*
-   * Growth distance algorithm output (hot variables).
-   */
-
   /**
    * @name Convex set simplex vertices
    * @brief Simplex vertices for the convex sets (in the local frame),
@@ -154,11 +151,16 @@ struct Output {
   std::vector<Real> lbs;
   std::vector<Real> ubs;
 #endif  // DGD_EXTRACT_METRICS
+};
 
-  /*
-   * Derivative output (cold variables).
-   */
-
+/**
+ * @brief Directional (Gateaux) derivatives of the growth distance optimal value
+ * and solution.
+ *
+ * @tparam dim Dimension of the convex sets.
+ */
+template <int dim>
+struct DirectionalDerivative {
   /**
    * @brief Orthonormal basis for the primal solution set affine hull.
    *
@@ -188,6 +190,21 @@ struct Output {
    */
   Matr<dim, dim> n_nullspace = Matr<dim, dim>::Zero();
 
+  /// @brief Derivative of the optimal normal vector (dual optimal solution).
+  Vecr<dim> d_normal = Vecr<dim>::Zero();
+
+  /**
+   * @name Primal optimal solution derivatives
+   * @brief Derivatives of the primal optimal solution.
+   */
+  ///@{
+  Vecr<dim> d_z1 = Vecr<dim>::Zero();
+  Vecr<dim> d_z2 = Vecr<dim>::Zero();
+  ///@}
+
+  /// @brief Derivative of the growth distance.
+  Real d_gd = Real(0.0);
+
   /**
    * @brief Dimension of the primal solution set null space.
    *
@@ -202,12 +219,114 @@ struct Output {
    */
   int n_nullity = 0;
 
-  /// @brief Differentiability of the optimal growth distance value.
+  /// @brief Differentiability of the growth distance optimal value.
   bool value_differentiable = false;
+
+  /// @brief Differentiability of the growth distance optimal solution.
+  bool differentiable = false;
 };
+
+/**
+ * @brief Total (Frechet) derivatives of the growth distance optimal value
+ * and solution.
+ *
+ * @attention The derivatives depend on the twist frame of reference.
+ *
+ * @tparam dim Dimension of the convex sets.
+ */
+template <int dim>
+struct TotalDerivative {
+  /// @brief Gradient of a scalar function with respect to rigid body motion.
+  using Gradr = Twistr<dim>;
+
+  /// @brief Jacobian of a vector function with respect to rigid body motion.
+  using Jacr = Matr<dim, SeDim<dim>()>;
+
+  /**
+   * @name Optimal normal vector Jacobians
+   * @brief Jacobians of the optimal normal vector (dual optimal solution) with
+   * respect to rigid body motion of the convex sets.
+   */
+  ///@{
+  Jacr d_normal_tf1 = Jacr::Zero();
+  Jacr d_normal_tf2 = Jacr::Zero();
+  ///@}
+
+  /**
+   * @name Primal optimal solution Jacobians
+   * @brief Jacobians of the primal optimal solution with respect to rigid body
+   * motion of the convex sets.
+   */
+  ///@{
+  Jacr d_z1_tf1 = Jacr::Zero();
+  Jacr d_z1_tf2 = Jacr::Zero();
+  Jacr d_z2_tf1 = Jacr::Zero();
+  Jacr d_z2_tf2 = Jacr::Zero();
+  ///@}
+
+  /**
+   * @name Growth distance gradients
+   * @brief Gradients of the growth distance with respect to rigid body motion
+   * of the convex sets.
+   */
+  ///@{
+  Gradr d_gd_tf1 = Gradr::Zero();
+  Gradr d_gd_tf2 = Gradr::Zero();
+  ///@}
+};
+
+/**
+ * @brief Output bundle for the differentiable growth distance algorithm.
+ *
+ * @note The total derivatives require the directional derivative outputs
+ * (automatically allocated if total derivatives are requested).
+ *
+ * @tparam dim Dimension of the convex sets.
+ */
+template <int dim>
+struct OutputBundle {
+  /// @brief Growth distance algorithm output (always allocated).
+  std::unique_ptr<Output<dim>> output;
+
+  /**
+   * @brief Directional derivatives of the growth distance optimal value and
+   * solution (optional).
+   */
+  std::unique_ptr<DirectionalDerivative<dim>> dir_derivative;
+
+  /**
+   * @brief Total derivatives of the growth distance optimal value and solution
+   * (optional).
+   */
+  std::unique_ptr<TotalDerivative<dim>> total_derivative;
+
+  /**
+   * @param alloc_directional If true, allocate memory for directional
+   *                          derivatives.
+   * @param alloc_total       If true, allocate memory for total derivatives.
+   */
+  explicit OutputBundle(bool alloc_directional = false,
+                        bool alloc_total = false);
+};
+
+template <int dim>
+OutputBundle<dim>::OutputBundle(bool alloc_directional, bool alloc_total)
+    : output(std::make_unique<Output<dim>>()),
+      dir_derivative(nullptr),
+      total_derivative(nullptr) {
+  if (alloc_total || alloc_directional) {
+    dir_derivative = std::make_unique<DirectionalDerivative<dim>>();
+  }
+  if (alloc_total) {
+    total_derivative = std::make_unique<TotalDerivative<dim>>();
+  }
+}
 
 using Output2 = Output<2>;
 using Output3 = Output<3>;
+
+using OutputBundle2 = OutputBundle<2>;
+using OutputBundle3 = OutputBundle<3>;
 
 /// @brief Returns the solution status name.
 inline std::string SolutionStatusName(SolutionStatus status) {
