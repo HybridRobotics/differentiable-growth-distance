@@ -142,7 +142,8 @@ void ColdStart(std::function<const SetPtr<C1>()> gen1,
 
   GrowthDistanceType<dim, C1, C2> growth_distance;
   if (solver == SolverType::CuttingPlane) {
-    growth_distance = dgd::GrowthDistanceCpTpl<dim, C1, C2>;  // Cramer's rule
+    growth_distance =
+        dgd::GrowthDistanceCpTpl<BcSolverType::Cramer, dim, C1, C2>;
   } else {  // Trust region Newton
     growth_distance = dgd::GrowthDistanceTrnTpl<dim, C1, C2>;
   }
@@ -213,7 +214,8 @@ void WarmStart(std::function<const SetPtr<C1>()> gen1,
 
   GrowthDistanceType<dim, C1, C2> growth_distance;
   if (solver == SolverType::CuttingPlane) {
-    growth_distance = dgd::GrowthDistanceCpTpl<dim, C1, C2>;  // Cramer's rule
+    growth_distance =
+        dgd::GrowthDistanceCpTpl<BcSolverType::Cramer, dim, C1, C2>;
   } else {  // Trust region Newton
     growth_distance = dgd::GrowthDistanceTrnTpl<dim, C1, C2>;
   }
