@@ -81,11 +81,36 @@ inline Rotation3r AngleAxisToRotation(const Vec3r& ax, Real ang) {
 }
 
 /**
+ * @brief Transforms a point from the local frame to the world frame.
+ *
+ * @param  tf Rigid body transformation.
+ * @param  z  Point in the local frame.
+ * @return Point in the world frame.
+ */
+template <int dim>
+inline Vecr<dim> TransformPoint(const Transformr<dim>& tf, const Vecr<dim>& z) {
+  return Linear(tf) * z + Affine(tf);
+}
+
+/**
+ * @brief Transforms a point from the world frame to the local frame.
+ *
+ * @param  tf Rigid body transformation.
+ * @param  z  Point in the world frame.
+ * @return Point in the local frame.
+ */
+template <int dim>
+inline Vecr<dim> InverseTransformPoint(const Transformr<dim>& tf,
+                                       const Vecr<dim>& z) {
+  return Linear(tf).transpose() * (z - Affine(tf));
+}
+
+/**
  * @name Velocity computation functions
  * @brief Returns the velocity of a point on a rigid body given its twist.
  *
- * @attention The twist, point, and the velocity are expressed in the same frame
- * of reference.
+ * @note The twist, point, and the velocity are expressed in the same frame of
+ * reference.
  *
  * @param  tw Rigid body twist.
  * @param  pt Point on the rigid body.
@@ -109,22 +134,22 @@ inline Vec3r VelocityAtPoint(const Twist3r& tw, const Vec3r& pt) {
  * This function is the adjoint of the VelocityAtPoint function (for a given
  * point).
  *
- * @attention The dual velocity, point, and the dual twist are expressed in the
- * same frame of reference.
+ * @note The dual velocity, point, and the dual twist are expressed in the same
+ * frame of reference.
  *
- * @param  f  Dual velocity at a point.
+ * @param  f  Dual velocity at the point.
  * @param  pt Point on the rigid body.
  * @return Dual twist on the rigid body.
  */
 ///@{
 inline Twist2r DualTwistAtPoint(const Vec2r& f, const Vec2r& pt) {
-  return Twist2r(Linear(f)(0), Linear(f)(1), pt(0) * f(1) - pt(1) * f(0));
+  return Twist2r(f(0), f(1), pt(0) * f(1) - pt(1) * f(0));
 }
 
 inline Twist3r DualTwistAtPoint(const Vec3r& f, const Vec3r& pt) {
   Twist3r wr;
-  Linear(wr) = Linear(f);
-  Angular(wr) = pt.cross(Linear(f));
+  Linear(wr) = f;
+  Angular(wr) = pt.cross(f);
   return wr;
 }
 ///@}

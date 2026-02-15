@@ -111,6 +111,12 @@ using Transformr = Matr<dim + 1, dim + 1>;
 using Transform2r = Transformr<2>;
 using Transform3r = Transformr<3>;
 
+/// @brief Returns the dimension of the SE(n) manifold.
+template <int dim>
+inline constexpr int SeDim() {
+  return dim * (dim + 1) / 2;
+}
+
 /**
  * @brief Rigid body twist vector.
  *
@@ -120,7 +126,7 @@ using Transform3r = Transformr<3>;
  * @tparam dim Dimension of the space.
  */
 template <int dim>
-using Twistr = Vecr<dim == 2 ? 3 : 6>;
+using Twistr = Vecr<SeDim<dim>()>;
 using Twist2r = Twistr<2>;
 using Twist3r = Twistr<3>;
 
@@ -137,22 +143,6 @@ struct KinematicState {
   /// @brief Rigid body twist.
   Twistr<dim> tw = Twistr<dim>::Zero();
 };
-
-/**
- * @name Helper functions to unwrap kinematic state.
- * @brief Returns the rigid body transformation from a kinematic state.
- */
-///@{
-template <int dim>
-inline const Transformr<dim>& Unwrap(const KinematicState<dim>& state) {
-  return state.tf;
-}
-
-template <int dim>
-inline const Transformr<dim>& Unwrap(const Transformr<dim>& tf) {
-  return tf;
-}
-///@}
 
 /**
  * @name Transform block functions
