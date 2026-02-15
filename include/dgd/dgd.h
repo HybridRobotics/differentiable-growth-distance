@@ -175,13 +175,14 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * @param[in]     set1,set2  Compact convex sets.
  * @param[in]     tf1,tf2    Rigid body transformations for the sets.
  * @param[in]     settings   Settings.
- * @param[in,out] out        Output.
- * @return        KKT solution set nullity; -1 if the solution is not optimal.
+ * @param[in,out] bundle     Output bundle.
+ * @return        KKT solution set nullity; 0 if the solution is not optimal.
  */
 template <int dim>
 int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings, Output<dim>& out);
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle);
 
 /**
  * @brief KKT solution set null space algorithm for a compact convex set and a
@@ -195,13 +196,61 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * @param[in]     set2       Half-space.
  * @param[in]     tf1,tf2    Rigid body transformations for the sets.
  * @param[in]     settings   Settings.
- * @param[in,out] out        Output.
- * @return        KKT solution set nullity; -1 if the solution is not optimal.
+ * @param[in,out] bundle     Output bundle.
+ * @return        KKT solution set nullity; 0 if the solution is not optimal.
  */
 template <int dim>
 int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const Halfspace<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings, Output<dim>& out);
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle);
+
+/*
+ * Growth distance derivative algorithm.
+ */
+
+/**
+ * @brief Derivative of the growth distance function for 2D and 3D convex sets
+ * (including half-spaces) with respect to rigid body motions.
+ *
+ * @attention bundle.output must contain a valid optimal solution from a prior
+ * call to GrowthDistance with the same set pair and rigid body transforms. If
+ * the solution status is not Optimal, the derivative is set to zero.
+ *
+ * @attention The derivative depends on the twist frame of reference specified
+ * in settings.twist_frame (Spatial, Hybrid, or Body).
+ *
+ * @param[in]     set1,set2     Compact convex sets (set2 can be a half-space).
+ * @param[in]     state1,state2 Kinematic states for the sets.
+ * @param[in]     settings      Settings.
+ * @param[in,out] bundle        Output bundle.
+ * @return        Derivative of the growth distance.
+ */
+template <int dim, class C2>
+Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
+                  const C2* set2, const KinematicState<dim>& state2,
+                  const Settings& settings, const OutputBundle<dim>& bundle);
+
+/**
+ * @brief Gradient of the growth distance function for 2D and 3D convex sets
+ * (including half-spaces) with respect to rigid body motions.
+ *
+ * @attention bundle.output must contain a valid optimal solution from a prior
+ * call to GrowthDistance with the same set pair and rigid body transforms. If
+ * the solution status is not Optimal, the gradient is set to zero.
+ *
+ * @attention The gradient depends on the twist frame of reference specified
+ * in settings.twist_frame (Spatial, Hybrid, or Body).
+ *
+ * @param[in]     set1,set2 Compact convex sets (set2 can be a half-space).
+ * @param[in]     tf1,tf2   Rigid body transformations for the sets.
+ * @param[in]     settings  Settings.
+ * @param[in,out] bundle    Output bundle.
+ */
+template <int dim, class C2>
+void GdGradient(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                const C2* set2, const Transformr<dim>& tf2,
+                const Settings& settings, const OutputBundle<dim>& bundle);
 
 }  // namespace dgd
 

@@ -37,7 +37,7 @@ template <int dim, class C1, class C2>
 inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
                                   const C2* set2, const Transformr<dim>& tf2,
                                   const Settings& settings,
-                                  OutputBundle<dim>& bundle) {
+                                  const OutputBundle<dim>& bundle) {
   static_assert(detail::ConvexSetValidator<dim, C1>::valid,
                 "Incompatible set C1");
   static_assert(detail::ConvexSetValidator<dim, C2>::valid,
@@ -158,9 +158,9 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
  * @note This function does not check for optimal value differentiability.
  */
 template <TwistFrame twist_frame, int dim>
-inline Real GrowthDistanceDerivativeTpl(const KinematicState<dim>& state1,
-                                        const KinematicState<dim>& state2,
-                                        OutputBundle<dim>& bundle) {
+inline Real GdDerivativeImpl(const KinematicState<dim>& state1,
+                             const KinematicState<dim>& state2,
+                             const OutputBundle<dim>& bundle) {
   const auto& out = bundle.output;
   const auto& dd = bundle.dir_derivative;
 
@@ -176,11 +176,28 @@ inline Real GrowthDistanceDerivativeTpl(const KinematicState<dim>& state1,
   const Vecr<dim> z = gd * (out->z1 - Affine(tf1)) + Affine(tf1);
 
   dd->d_gd = gd *
-             out->normal.dot(detail::VelocityAtPoint<twist_frame>(state2, z) -
-                             detail::VelocityAtPoint<twist_frame>(state1, z)) /
+             out->normal.dot(detail::ComputeVelocity<twist_frame>(state2, z) -
+                             detail::ComputeVelocity<twist_frame>(state1, z)) /
              out->normal.dot(Affine(tf2) - Affine(tf1));
 
   return dd->d_gd;
+}
+
+/// @brief Dispatcher for GdDerivativeImpl based on twist frame setting.
+template <int dim>
+inline Real GdDerivativeTpl(const KinematicState<dim>& state1,
+                            const KinematicState<dim>& state2,
+                            const Settings& settings,
+                            const OutputBundle<dim>& bundle) {
+  switch (settings.twist_frame) {
+    case TwistFrame::Spatial:
+      return GdDerivativeImpl<TwistFrame::Spatial>(state1, state2, bundle);
+    case TwistFrame::Hybrid:
+      return GdDerivativeImpl<TwistFrame::Hybrid>(state1, state2, bundle);
+    case TwistFrame::Body:
+      return GdDerivativeImpl<TwistFrame::Body>(state1, state2, bundle);
+  }
+  return Real(0.0);
 }
 
 /**
@@ -190,9 +207,9 @@ inline Real GrowthDistanceDerivativeTpl(const KinematicState<dim>& state1,
  * @note This function does not check for optimal value differentiability.
  */
 template <TwistFrame twist_frame, int dim>
-inline void GrowthDistanceGradientTpl(const Transformr<dim>& tf1,
-                                      const Transformr<dim>& tf2,
-                                      OutputBundle<dim>& bundle) {
+inline void GdGradientImpl(const Transformr<dim>& tf1,
+                           const Transformr<dim>& tf2,
+                           const OutputBundle<dim>& bundle) {
   const auto& out = bundle.output;
   const auto& td = bundle.total_derivative;
 
@@ -208,9 +225,27 @@ inline void GrowthDistanceGradientTpl(const Transformr<dim>& tf1,
   // Note: out->z2 is not set when the second convex set is a half-space.
   const Vecr<dim> z = gd * (out->z1 - Affine(tf1)) + Affine(tf1);
 
-  const Real f = gd / out->normal.dot(Affine(tf2) - Affine(tf1));
-  td->d_gd_tf1 = f * detail::DualTwistAtPoint<twist_frame>(tf1, out->normal, z);
-  td->d_gd_tf2 = f * detail::DualTwistAtPoint<twist_frame>(tf2, out->normal, z);
+  const Real c = gd / out->normal.dot(Affine(tf2) - Affine(tf1));
+  td->d_gd_tf1 = c * detail::ComputeDualTwist<twist_frame>(tf1, out->normal, z);
+  td->d_gd_tf2 = c * detail::ComputeDualTwist<twist_frame>(tf2, out->normal, z);
+}
+
+/// @brief Dispatcher for GdGradientImpl based on twist frame setting.
+template <int dim>
+inline void GdGradientTpl(const Transformr<dim>& tf1,
+                          const Transformr<dim>& tf2, const Settings& settings,
+                          const OutputBundle<dim>& bundle) {
+  switch (settings.twist_frame) {
+    case TwistFrame::Spatial:
+      GdGradientImpl<TwistFrame::Spatial>(tf1, tf2, bundle);
+      break;
+    case TwistFrame::Hybrid:
+      GdGradientImpl<TwistFrame::Hybrid>(tf1, tf2, bundle);
+      break;
+    case TwistFrame::Body:
+      GdGradientImpl<TwistFrame::Body>(tf1, tf2, bundle);
+      break;
+  }
 }
 
 }  // namespace dgd

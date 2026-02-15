@@ -101,15 +101,45 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
 template <int dim>
 int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings, Output<dim>& out) {
-  return ComputeKktNullspaceTpl(set1, tf1, set2, tf2, settings, out);
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle) {
+  return ComputeKktNullspaceTpl(set1, tf1, set2, tf2, settings, bundle);
 }
 
 template <int dim>
 int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const Halfspace<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings, Output<dim>& out) {
-  return ComputeKktNullspaceHalfspaceTpl(set1, tf1, set2, tf2, settings, out);
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle) {
+  return ComputeKktNullspaceHalfspaceTpl(set1, tf1, set2, tf2, settings,
+                                         bundle);
+}
+
+/*
+ * Growth distance gradient algorithm.
+ */
+
+template <int dim, class C2>
+Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
+                  const C2* set2, const KinematicState<dim>& state2,
+                  const Settings& settings, const OutputBundle<dim>& bundle) {
+  if (bundle.dir_derivative) {
+    bundle.dir_derivative->value_differentiable =
+        (ComputeKktNullspace(set1, state1.tf, set2, state2.tf, settings,
+                             bundle) == 1);
+  }
+  return GdDerivativeTpl(state1, state2, settings, bundle);
+}
+
+template <int dim, class C2>
+void GdGradient(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                const C2* set2, const Transformr<dim>& tf2,
+                const Settings& settings, const OutputBundle<dim>& bundle) {
+  if (bundle.dir_derivative) {
+    bundle.dir_derivative->value_differentiable =
+        (ComputeKktNullspace(set1, tf1, set2, tf2, settings, bundle) == 1);
+  }
+  GdGradientTpl(tf1, tf2, settings, bundle);
 }
 
 /*
@@ -160,16 +190,44 @@ template bool DetectCollision(const ConvexSet<3>*, const Transformr<3>&,
 
 template int ComputeKktNullspace(const ConvexSet<2>*, const Transformr<2>&,
                                  const ConvexSet<2>*, const Transformr<2>&,
-                                 const Settings&, Output<2>&);
+                                 const Settings&, const OutputBundle<2>&);
 template int ComputeKktNullspace(const ConvexSet<3>*, const Transformr<3>&,
                                  const ConvexSet<3>*, const Transformr<3>&,
-                                 const Settings&, Output<3>&);
+                                 const Settings&, const OutputBundle<3>&);
 
 template int ComputeKktNullspace(const ConvexSet<2>*, const Transformr<2>&,
                                  const Halfspace<2>*, const Transformr<2>&,
-                                 const Settings&, Output<2>&);
+                                 const Settings&, const OutputBundle<2>&);
 template int ComputeKktNullspace(const ConvexSet<3>*, const Transformr<3>&,
                                  const Halfspace<3>*, const Transformr<3>&,
-                                 const Settings&, Output<3>&);
+                                 const Settings&, const OutputBundle<3>&);
+
+template Real GdDerivative(const ConvexSet<2>*, const KinematicState<2>&,
+                           const ConvexSet<2>*, const KinematicState<2>&,
+                           const Settings&, const OutputBundle<2>&);
+template Real GdDerivative(const ConvexSet<3>*, const KinematicState<3>&,
+                           const ConvexSet<3>*, const KinematicState<3>&,
+                           const Settings&, const OutputBundle<3>&);
+
+template Real GdDerivative(const ConvexSet<2>*, const KinematicState<2>&,
+                           const Halfspace<2>*, const KinematicState<2>&,
+                           const Settings&, const OutputBundle<2>&);
+template Real GdDerivative(const ConvexSet<3>*, const KinematicState<3>&,
+                           const Halfspace<3>*, const KinematicState<3>&,
+                           const Settings&, const OutputBundle<3>&);
+
+template void GdGradient(const ConvexSet<2>*, const Transformr<2>&,
+                         const ConvexSet<2>*, const Transformr<2>&,
+                         const Settings&, const OutputBundle<2>&);
+template void GdGradient(const ConvexSet<3>*, const Transformr<3>&,
+                         const ConvexSet<3>*, const Transformr<3>&,
+                         const Settings&, const OutputBundle<3>&);
+
+template void GdGradient(const ConvexSet<2>*, const Transformr<2>&,
+                         const Halfspace<2>*, const Transformr<2>&,
+                         const Settings&, const OutputBundle<2>&);
+template void GdGradient(const ConvexSet<3>*, const Transformr<3>&,
+                         const Halfspace<3>*, const Transformr<3>&,
+                         const Settings&, const OutputBundle<3>&);
 
 }  // namespace dgd

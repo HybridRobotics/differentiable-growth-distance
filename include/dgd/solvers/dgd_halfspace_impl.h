@@ -116,7 +116,7 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
                                            const Halfspace<dim>* /*set2*/,
                                            const Transformr<dim>& tf2,
                                            const Settings& /*settings*/,
-                                           OutputBundle<dim>& bundle) {
+                                           const OutputBundle<dim>& bundle) {
   static_assert(detail::ConvexSetValidator<dim, C1>::valid,
                 "Incompatible compact set C1");
 

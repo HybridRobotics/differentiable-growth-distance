@@ -271,7 +271,7 @@ inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
 }
 
 /**
- * @brief Returns the velocity of a point on a rigid body given its twist.
+ * @brief Computes the velocity of a point on a rigid body given its twist.
  *
  * @note The twist frame of reference is given by twist_frame.
  *
@@ -280,7 +280,7 @@ inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
  * @return Velocity of the point in the world frame.
  */
 template <TwistFrame twist_frame, int dim>
-inline Vecr<dim> VelocityAtPoint(const KinematicState<dim>& state,
+inline Vecr<dim> ComputeVelocity(const KinematicState<dim>& state,
                                  const Vecr<dim>& pt) {
   if constexpr (twist_frame == TwistFrame::Spatial) {
     return VelocityAtPoint(state.tw, pt);
@@ -293,7 +293,7 @@ inline Vecr<dim> VelocityAtPoint(const KinematicState<dim>& state,
 }
 
 /**
- * @brief Returns the dual twist on a rigid body given a dual velocity at a
+ * @brief Computes the dual twist on a rigid body given a dual velocity at a
  * point.
  *
  * @param  f  Dual velocity at the point in the world frame.
@@ -301,7 +301,7 @@ inline Vecr<dim> VelocityAtPoint(const KinematicState<dim>& state,
  * @return Dual twist on the rigid body in the twist_frame frame.
  */
 template <TwistFrame twist_frame, int dim>
-inline Twistr<dim> DualTwistAtPoint([[maybe_unused]] const Transformr<dim>& tf,
+inline Twistr<dim> ComputeDualTwist([[maybe_unused]] const Transformr<dim>& tf,
                                     const Vecr<dim>& f, const Vecr<dim>& pt) {
   if constexpr (twist_frame == TwistFrame::Spatial) {
     return DualTwistAtPoint(f, pt);

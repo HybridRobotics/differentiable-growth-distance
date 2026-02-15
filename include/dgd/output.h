@@ -278,49 +278,32 @@ struct TotalDerivative {
 /**
  * @brief Output bundle for the differentiable growth distance algorithm.
  *
- * @note The total derivatives require the directional derivative outputs
- * (automatically allocated if total derivatives are requested).
+ * @note The allocation and lifetime of the structs pointed to by the member
+ * pointers must be managed by the user.
+ *
+ * @note The output pointer should always point to a valid Output struct.
+ *
+ * @note The total derivatives require the directional derivative outputs.
+ * If total_derivative is set, dir_derivative should also be set.
  *
  * @tparam dim Dimension of the convex sets.
  */
 template <int dim>
 struct OutputBundle {
-  /// @brief Growth distance algorithm output (always allocated).
-  std::unique_ptr<Output<dim>> output;
+  /// @brief Growth distance algorithm output (should always be set).
+  Output<dim>* output = nullptr;
 
   /**
    * @brief Directional derivatives of the growth distance optimal value and
-   * solution (optional).
+   * solution.
    */
-  std::unique_ptr<DirectionalDerivative<dim>> dir_derivative;
+  DirectionalDerivative<dim>* dir_derivative = nullptr;
 
   /**
-   * @brief Total derivatives of the growth distance optimal value and solution
-   * (optional).
+   * @brief Total derivatives of the growth distance optimal value and solution.
    */
-  std::unique_ptr<TotalDerivative<dim>> total_derivative;
-
-  /**
-   * @param alloc_directional If true, allocate memory for directional
-   *                          derivatives.
-   * @param alloc_total       If true, allocate memory for total derivatives.
-   */
-  explicit OutputBundle(bool alloc_directional = false,
-                        bool alloc_total = false);
+  TotalDerivative<dim>* total_derivative = nullptr;
 };
-
-template <int dim>
-OutputBundle<dim>::OutputBundle(bool alloc_directional, bool alloc_total)
-    : output(std::make_unique<Output<dim>>()),
-      dir_derivative(nullptr),
-      total_derivative(nullptr) {
-  if (alloc_total || alloc_directional) {
-    dir_derivative = std::make_unique<DirectionalDerivative<dim>>();
-  }
-  if (alloc_total) {
-    total_derivative = std::make_unique<TotalDerivative<dim>>();
-  }
-}
 
 using Output2 = Output<2>;
 using Output3 = Output<3>;
