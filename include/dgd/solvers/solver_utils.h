@@ -267,6 +267,7 @@ inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
   dd.n_nullspace = Matr<dim, dim>::Zero();
   dd.z_nullity = 0;
   dd.n_nullity = 0;
+  dd.value_differentiable = false;
   return 0;
 }
 

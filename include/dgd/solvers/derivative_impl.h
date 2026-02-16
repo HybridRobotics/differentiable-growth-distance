@@ -158,7 +158,10 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
     }
   }
 
-  return dd->z_nullity + dd->n_nullity;
+  const int nullity = dd->z_nullity + dd->n_nullity;
+  dd->value_differentiable = (nullity == 1);
+
+  return nullity;
 }
 
 /**

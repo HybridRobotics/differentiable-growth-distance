@@ -163,7 +163,10 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
   dd->n_nullspace.template rightCols<dim - 1>().setZero();
   dd->n_nullity = 1;
 
-  return dd->z_nullity + dd->n_nullity;
+  const int nullity = dd->z_nullity + dd->n_nullity;
+  dd->value_differentiable = (nullity == 1);
+
+  return nullity;
 }
 
 }  // namespace dgd

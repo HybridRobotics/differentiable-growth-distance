@@ -198,9 +198,10 @@ TEST(GdGradientTest, AnalyticalGradient2D) {
     settings.twist_frame = twist_frame;
 
     GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
-    GdGradient(&set1, tf1, &set2, tf2, settings, bundle);
-
+    ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, bundle);
     ASSERT_TRUE(dd.value_differentiable);
+
+    GdGradient(tf1, tf2, settings, bundle);
 
     auto gd_func = [&](const Transform2r& t1, const Transform2r& t2) -> Real {
       Output<2> tmp_out;
@@ -225,7 +226,7 @@ TEST(GdGradientTest, AnalyticalGradient2D) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(&set1, state1, &set2, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, bundle);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -259,9 +260,10 @@ TEST(GdGradientTest, AnalyticalGradient3D) {
     settings.twist_frame = twist_frame;
 
     GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
-    GdGradient(&set1, tf1, &set2, tf2, settings, bundle);
-
+    ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, bundle);
     ASSERT_TRUE(dd.value_differentiable);
+
+    GdGradient(tf1, tf2, settings, bundle);
 
     auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
       Output<3> tmp_out;
@@ -286,7 +288,7 @@ TEST(GdGradientTest, AnalyticalGradient3D) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(&set1, state1, &set2, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, bundle);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -323,9 +325,10 @@ TEST(GdGradientTest, NumericalGradient2D) {
       const auto tf2 = rng.RandomTransform<2>(-2.0, 2.0);
 
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
-      GdGradient(set1.get(), tf1, set2.get(), tf2, settings, bundle);
-
+      ComputeKktNullspace(set1.get(), tf1, set2.get(), tf2, settings, bundle);
       if (!dd.value_differentiable) continue;
+
+      GdGradient(tf1, tf2, settings, bundle);
 
       auto gd_func = [&](const Transform2r& t1, const Transform2r& t2) -> Real {
         Output<2> tmp_out;
@@ -349,7 +352,7 @@ TEST(GdGradientTest, NumericalGradient2D) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(set1.get(), state1, set2.get(), state2, settings, bundle);
+      GdDerivative(state1, state2, settings, bundle);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -386,9 +389,10 @@ TEST(GdGradientTest, NumericalGradient3D) {
       const auto tf2 = rng.RandomTransform<3>(-2.0, 2.0);
 
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
-      GdGradient(set1.get(), tf1, set2.get(), tf2, settings, bundle);
-
+      ComputeKktNullspace(set1.get(), tf1, set2.get(), tf2, settings, bundle);
       if (!dd.value_differentiable) continue;
+
+      GdGradient(tf1, tf2, settings, bundle);
 
       auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
         Output<3> tmp_out;
@@ -412,7 +416,7 @@ TEST(GdGradientTest, NumericalGradient3D) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(set1.get(), state1, set2.get(), state2, settings, bundle);
+      GdDerivative(state1, state2, settings, bundle);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -451,9 +455,10 @@ TEST(GdGradientTest, NumericalGradientHalfspace3D) {
       const auto tf1 = rng.RandomTransform<3>(-2.0, 2.0);
 
       GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
-      GdGradient(&set1, tf1, &set2, tf2, settings, bundle);
-
+      ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, bundle);
       if (!dd.value_differentiable) continue;
+
+      GdGradient(tf1, tf2, settings, bundle);
 
       auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
         Output<3> tmp_out;
@@ -476,7 +481,7 @@ TEST(GdGradientTest, NumericalGradientHalfspace3D) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(&set1, state1, &set2, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, bundle);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);

@@ -172,6 +172,9 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * dual optimal solutions (not including positive scaling of the optimal normal
  * vector).
  *
+ * @note The flag value_differentiable indicates whether the growth distance
+ * function is differentiable with respect to the rigid body transformations.
+ *
  * @param[in]     set1,set2  Compact convex sets.
  * @param[in]     tf1,tf2    Rigid body transformations for the sets.
  * @param[in]     settings   Settings.
@@ -192,6 +195,9 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * dual optimal solutions (not including positive scaling of the optimal normal
  * vector).
  *
+ * @note The flag value_differentiable indicates whether the growth distance
+ * function is differentiable with respect to the rigid body transformations.
+ *
  * @param[in]     set1       Compact convex set.
  * @param[in]     set2       Half-space.
  * @param[in]     tf1,tf2    Rigid body transformations for the sets.
@@ -210,7 +216,6 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  */
 
 /**
- * @name Growth distance derivative functions
  * @brief Derivative of the growth distance function for 2D and 3D convex sets
  * (including half-spaces) with respect to rigid body motions.
  *
@@ -221,26 +226,17 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * @attention The derivative depends on the twist frame of reference specified
  * in settings.twist_frame (Spatial, Hybrid, or Body).
  *
- * @param[in]     set1,set2     Convex sets.
  * @param[in]     state1,state2 Kinematic states for the sets.
  * @param[in]     settings      Settings.
  * @param[in,out] bundle        Output bundle.
  * @return        Derivative of the growth distance.
  */
-///@{
 template <int dim>
-Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
-                  const ConvexSet<dim>* set2, const KinematicState<dim>& state2,
-                  const Settings& settings, const OutputBundle<dim>& bundle);
-
-template <int dim>
-Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
-                  const Halfspace<dim>* set2, const KinematicState<dim>& state2,
-                  const Settings& settings, const OutputBundle<dim>& bundle);
-///@}
+Real GdDerivative(const KinematicState<dim>& state1,
+                  const KinematicState<dim>& state2, const Settings& settings,
+                  const OutputBundle<dim>& bundle);
 
 /**
- * @name Growth distance gradient functions
  * @brief Gradient of the growth distance function for 2D and 3D convex sets
  * (including half-spaces) with respect to rigid body motions.
  *
@@ -251,22 +247,13 @@ Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
  * @attention The gradient depends on the twist frame of reference specified
  * in settings.twist_frame (Spatial, Hybrid, or Body).
  *
- * @param[in]     set1,set2 Convex sets.
  * @param[in]     tf1,tf2   Rigid body transformations for the sets.
  * @param[in]     settings  Settings.
  * @param[in,out] bundle    Output bundle.
  */
-///@{
 template <int dim>
-void GdGradient(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
-                const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+void GdGradient(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
                 const Settings& settings, const OutputBundle<dim>& bundle);
-
-template <int dim>
-void GdGradient(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
-                const Halfspace<dim>* set2, const Transformr<dim>& tf2,
-                const Settings& settings, const OutputBundle<dim>& bundle);
-///@}
 
 }  // namespace dgd
 
