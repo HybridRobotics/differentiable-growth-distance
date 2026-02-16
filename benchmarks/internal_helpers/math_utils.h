@@ -13,8 +13,8 @@ template <int hdim>
 inline void SetRandomTransforms(Rng& rng, Matr<hdim, hdim>& tf1,
                                 Matr<hdim, hdim>& tf2, Real range_from,
                                 Real range_to) {
-  rng.RandomTransform(range_from, range_to, tf1);
-  rng.RandomTransform(range_from, range_to, tf2);
+  tf1 = rng.RandomTransform<hdim - 1>(range_from, range_to);
+  tf2 = rng.RandomTransform<hdim - 1>(range_from, range_to);
 }
 
 // Sets a random displacement.

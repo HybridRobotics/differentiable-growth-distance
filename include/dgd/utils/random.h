@@ -113,19 +113,18 @@ class Rng {
 
   /**
    * @name Random transformation functions
-   * @brief Sets a random rigid body transformation.
+   * @brief Returns a random rigid body transformation.
    *
-   * @param[in]  low  Lower bound of position.
-   * @param[in]  high Upper bound of position.
-   * @param[out] tf   Transformation matrix.
+   * @param  low  Lower bound of position.
+   * @param  high Upper bound of position.
+   * @return Rigid body transformation matrix.
    */
   ///@{
   template <int dim>
-  void RandomTransform(const Vecr<dim>& low, const Vecr<dim>& high,
-                       Matr<dim + 1, dim + 1>& tf);
+  Transformr<dim> RandomTransform(const Vecr<dim>& low, const Vecr<dim>& high);
 
-  template <int hdim>
-  void RandomTransform(Real low, Real high, Matr<hdim, hdim>& tf);
+  template <int dim>
+  Transformr<dim> RandomTransform(Real low, Real high);
   ///@}
 
  private:
@@ -225,20 +224,22 @@ inline Rotation3r Rng::RandomRotation(Real ang_max) {
 }
 
 template <int dim>
-inline void Rng::RandomTransform(const Vecr<dim>& low, const Vecr<dim>& high,
-                                 Matr<dim + 1, dim + 1>& tf) {
+inline Transformr<dim> Rng::RandomTransform(const Vecr<dim>& low,
+                                            const Vecr<dim>& high) {
   static_assert((dim == 2) || (dim == 3), "Dimension must be 2 or 3");
 
+  Transformr<dim> tf;
   Linear(tf) = RandomRotation<dim>();
   for (int i = 0; i < dim; ++i) tf(i, dim) = Random(low(i), high(i));
   tf.template bottomLeftCorner<1, dim>() = Vecr<dim>::Zero();
   tf(dim, dim) = Real(1.0);
+  return tf;
 }
 
-template <int hdim>
-inline void Rng::RandomTransform(Real low, Real high, Matr<hdim, hdim>& tf) {
-  constexpr int dim = hdim - 1;
-  RandomTransform<dim>(Vecr<dim>::Constant(low), Vecr<dim>::Constant(high), tf);
+template <int dim>
+inline Transformr<dim> Rng::RandomTransform(Real low, Real high) {
+  return RandomTransform<dim>(Vecr<dim>::Constant(low),
+                              Vecr<dim>::Constant(high));
 }
 
 }  // namespace dgd

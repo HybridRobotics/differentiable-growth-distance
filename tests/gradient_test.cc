@@ -203,7 +203,8 @@ TEST(GdGradientTest, AnalyticalGradient2D) {
     ASSERT_TRUE(dd.value_differentiable);
 
     auto gd_func = [&](const Transform2r& t1, const Transform2r& t2) -> Real {
-      return GrowthDistance(&set1, t1, &set2, t2, settings, out);
+      Output<2> tmp_out;
+      return GrowthDistance(&set1, t1, &set2, t2, settings, tmp_out);
     };
 
     auto [d_gd_tf1_num, d_gd_tf2_num] =
@@ -263,8 +264,8 @@ TEST(GdGradientTest, AnalyticalGradient3D) {
     ASSERT_TRUE(dd.value_differentiable);
 
     auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
-      Output<3> temp_out;
-      return GrowthDistance(&set1, t1, &set2, t2, settings, temp_out);
+      Output<3> tmp_out;
+      return GrowthDistance(&set1, t1, &set2, t2, settings, tmp_out);
     };
 
     auto [d_gd_tf1_num, d_gd_tf2_num] =
@@ -317,11 +318,9 @@ TEST(GdGradientTest, NumericalGradient2D) {
   for (const auto twist_frame : kTwistFrames) {
     settings.twist_frame = twist_frame;
 
-    Transform2r tf1, tf2;
-
     for (int i = 0; i < nsamples; ++i) {
-      rng.RandomTransform(-2.0, 2.0, tf1);
-      rng.RandomTransform(-2.0, 2.0, tf2);
+      const auto tf1 = rng.RandomTransform<2>(-2.0, 2.0);
+      const auto tf2 = rng.RandomTransform<2>(-2.0, 2.0);
 
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
       GdGradient(set1.get(), tf1, set2.get(), tf2, settings, bundle);
@@ -329,9 +328,9 @@ TEST(GdGradientTest, NumericalGradient2D) {
       if (!dd.value_differentiable) continue;
 
       auto gd_func = [&](const Transform2r& t1, const Transform2r& t2) -> Real {
-        Output<2> temp_out;
+        Output<2> tmp_out;
         return GrowthDistance(set1.get(), t1, set2.get(), t2, settings,
-                              temp_out);
+                              tmp_out);
       };
 
       auto [d_gd_tf1_num, d_gd_tf2_num] =
@@ -382,11 +381,9 @@ TEST(GdGradientTest, NumericalGradient3D) {
   for (const auto twist_frame : kTwistFrames) {
     settings.twist_frame = twist_frame;
 
-    Transform3r tf1, tf2;
-
     for (int i = 0; i < nsamples; ++i) {
-      rng.RandomTransform(-2.0, 2.0, tf1);
-      rng.RandomTransform(-2.0, 2.0, tf2);
+      const auto tf1 = rng.RandomTransform<3>(-2.0, 2.0);
+      const auto tf2 = rng.RandomTransform<3>(-2.0, 2.0);
 
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
       GdGradient(set1.get(), tf1, set2.get(), tf2, settings, bundle);
@@ -394,9 +391,9 @@ TEST(GdGradientTest, NumericalGradient3D) {
       if (!dd.value_differentiable) continue;
 
       auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
-        Output<3> temp_out;
+        Output<3> tmp_out;
         return GrowthDistance(set1.get(), t1, set2.get(), t2, settings,
-                              temp_out);
+                              tmp_out);
       };
 
       auto [d_gd_tf1_num, d_gd_tf2_num] =
@@ -448,11 +445,10 @@ TEST(GdGradientTest, NumericalGradientHalfspace3D) {
   for (const auto twist_frame : kTwistFrames) {
     settings.twist_frame = twist_frame;
 
-    Transform3r tf1, tf2;
-    tf2 = Transform3r::Identity();
+    const Transform3r tf2 = Transform3r::Identity();
 
     for (int i = 0; i < 20; ++i) {
-      rng.RandomTransform(-2.0, 2.0, tf1);
+      const auto tf1 = rng.RandomTransform<3>(-2.0, 2.0);
 
       GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
       GdGradient(&set1, tf1, &set2, tf2, settings, bundle);
@@ -460,8 +456,8 @@ TEST(GdGradientTest, NumericalGradientHalfspace3D) {
       if (!dd.value_differentiable) continue;
 
       auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
-        Output<3> temp_out;
-        return GrowthDistance(&set1, t1, &set2, t2, settings, temp_out);
+        Output<3> tmp_out;
+        return GrowthDistance(&set1, t1, &set2, t2, settings, tmp_out);
       };
 
       auto [d_gd_tf1_num, d_gd_tf2_num] =

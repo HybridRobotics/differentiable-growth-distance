@@ -20,7 +20,6 @@
 #ifndef DGD_OUTPUT_H_
 #define DGD_OUTPUT_H_
 
-#include <memory>
 #include <string>
 #ifdef DGD_EXTRACT_METRICS
 #include <vector>

@@ -154,14 +154,13 @@ TYPED_TEST(GrowthDistanceTest, SolutionConvergence) {
   SetConvexSets<dim>(set1, set2, Real(0.1), Real(0.1));
 
   // Compute growth distance for random transformations.
-  Transformr<dim> tf1, tf2;
   Settings settings;
   Output<dim> out;
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    rng.RandomTransform(Real(-2.0), Real(2.0), tf1);
-    rng.RandomTransform(Real(-2.0), Real(2.0), tf2);
+    auto tf1 = rng.RandomTransform<dim>(Real(-2.0), Real(2.0));
+    auto tf2 = rng.RandomTransform<dim>(Real(-2.0), Real(2.0));
     Vecr<dim> v;
     for (int k = 0; k < dim; ++k) v(k) = rng.Random();
     const Rotationr<dim> dR = rng.RandomRotation<dim>(kPi * dt);
@@ -225,14 +224,13 @@ TYPED_TEST(DetectCollisionTest, CollisionAssertion) {
   SetConvexSets<dim>(set1, set2, Real(0.1), Real(0.1));
 
   // Check collisions for random transformations.
-  Transformr<dim> tf1, tf2;
   Settings settings;
   Output<dim> out;
   const Real dt = Real(0.1);
 
   for (int i = 0; i < nsamples_cold; ++i) {
-    rng.RandomTransform(Real(-5.0), Real(5.0), tf1);
-    rng.RandomTransform(Real(-5.0), Real(5.0), tf2);
+    auto tf1 = rng.RandomTransform<dim>(Real(-5.0), Real(5.0));
+    auto tf2 = rng.RandomTransform<dim>(Real(-5.0), Real(5.0));
     Vecr<dim> v;
     for (int k = 0; k < dim; ++k) v(k) = rng.Random();
     const Rotationr<dim> dR = rng.RandomRotation<dim>(kPi * dt);
