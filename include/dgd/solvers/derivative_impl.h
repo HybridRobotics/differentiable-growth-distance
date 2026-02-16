@@ -77,6 +77,7 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
   if constexpr (dim == 2) {
     // Compute primal solution set null space.
     if ((sph1.aff_dim == 0) || (sph2.aff_dim == 0)) {
+      dd->z_nullspace.setZero();
       dd->z_nullity = 0;
     } else {
       dd->z_nullspace.col(0) = Vec2r(n(1), -n(0));
@@ -86,6 +87,7 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
     // Compute dual solution set null space.
     dd->n_nullspace.col(0) = n;
     if ((ncs1.span_dim == 1) || (ncs2.span_dim == 1)) {
+      dd->n_nullspace.col(1).setZero();
       dd->n_nullity = 1;
     } else {
       dd->n_nullspace.col(1) = Vec2r(n(1), -n(0));
@@ -106,6 +108,7 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
 
     // Compute primal solution set null space.
     if ((sph1.aff_dim == 0) || (sph2.aff_dim == 0)) {
+      dd->z_nullspace.setZero();
       dd->z_nullity = 0;
     } else if (sph1.aff_dim == 2) {
       if (sph2.aff_dim == 2) {
@@ -114,20 +117,24 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
         dd->z_nullity = 2;
       } else {
         dd->z_nullspace.col(0) = Projection(sph2.basis.col(0), n).normalized();
+        dd->z_nullspace.col(1).setZero();
         dd->z_nullity = 1;
       }
     } else if ((sph2.aff_dim == 2) ||
                (Volume(sph1.basis.col(0), sph2.basis.col(0), n) <
                 settings.nullspace_tol)) {
       dd->z_nullspace.col(0) = Projection(sph1.basis.col(0), n).normalized();
+      dd->z_nullspace.col(1).setZero();
       dd->z_nullity = 1;
     } else {
+      dd->z_nullspace.setZero();
       dd->z_nullity = 0;
     }
 
     // Compute dual solution set null space.
     dd->n_nullspace.col(0) = n;
     if ((ncs1.span_dim == 1) || (ncs2.span_dim == 1)) {
+      dd->n_nullspace.template rightCols<2>().setZero();
       dd->n_nullity = 1;
     } else if (ncs1.span_dim == 3) {
       if (ncs2.span_dim == 3) {
@@ -136,14 +143,17 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
         dd->n_nullity = 3;
       } else {
         dd->n_nullspace.col(1) = Projection(ncs2.basis.col(0), n);
+        dd->n_nullspace.col(2).setZero();
         dd->n_nullity = 2;
       }
     } else if ((ncs2.span_dim == 3) ||
                (Volume(ncs1.basis.col(0), ncs2.basis.col(0), n) <
                 settings.nullspace_tol)) {
       dd->n_nullspace.col(1) = Projection(ncs1.basis.col(0), n);
+      dd->n_nullspace.col(2).setZero();
       dd->n_nullity = 2;
     } else {
+      dd->n_nullspace.template rightCols<2>().setZero();
       dd->n_nullity = 1;
     }
   }

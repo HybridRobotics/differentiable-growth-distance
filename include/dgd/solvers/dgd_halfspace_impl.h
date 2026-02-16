@@ -144,12 +144,15 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
 
   // Compute primal solution set null space.
   if constexpr (dim == 2) {
-    dd->z_nullspace = Linear(tf2).col(0);
+    dd->z_nullspace = sph.aff_dim * Linear(tf2).col(0);
   } else {  // dim = 3
-    if (sph.aff_dim == 1) {
+    if (sph.aff_dim == 0) {
+      dd->z_nullspace.setZero();
+    } else if (sph.aff_dim == 1) {
       dd->z_nullspace.col(0) =
           Linear(tf1) * detail::Projection(sph.basis.col(0), zn.n).normalized();
-    } else if (sph.aff_dim == 2) {
+      dd->z_nullspace.col(1).setZero();
+    } else {
       dd->z_nullspace = Linear(tf2).template leftCols<2>();
     }
   }
@@ -157,6 +160,7 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
 
   // Compute dual solution set null space.
   dd->n_nullspace.col(0) = -Linear(tf2).col(dim - 1);
+  dd->n_nullspace.template rightCols<dim - 1>().setZero();
   dd->n_nullity = 1;
 
   return dd->z_nullity + dd->n_nullity;
