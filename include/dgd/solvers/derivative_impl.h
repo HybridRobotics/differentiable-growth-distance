@@ -161,6 +161,8 @@ template <TwistFrame twist_frame, int dim>
 inline Real GdDerivativeImpl(const KinematicState<dim>& state1,
                              const KinematicState<dim>& state2,
                              const OutputBundle<dim>& bundle) {
+  using detail::ComputeVelocity;
+
   const auto& out = bundle.output;
   const auto& dd = bundle.dir_derivative;
 
@@ -176,8 +178,8 @@ inline Real GdDerivativeImpl(const KinematicState<dim>& state1,
   const Vecr<dim> z = gd * (out->z1 - Affine(tf1)) + Affine(tf1);
 
   dd->d_gd = gd *
-             out->normal.dot(detail::ComputeVelocity<twist_frame>(state2, z) -
-                             detail::ComputeVelocity<twist_frame>(state1, z)) /
+             out->normal.dot(ComputeVelocity<twist_frame>(state2, z) -
+                             ComputeVelocity<twist_frame>(state1, z)) /
              out->normal.dot(Affine(tf2) - Affine(tf1));
 
   return dd->d_gd;
@@ -210,6 +212,8 @@ template <TwistFrame twist_frame, int dim>
 inline void GdGradientImpl(const Transformr<dim>& tf1,
                            const Transformr<dim>& tf2,
                            const OutputBundle<dim>& bundle) {
+  using detail::ComputeDualTwist;
+
   const auto& out = bundle.output;
   const auto& td = bundle.total_derivative;
 
@@ -226,8 +230,8 @@ inline void GdGradientImpl(const Transformr<dim>& tf1,
   const Vecr<dim> z = gd * (out->z1 - Affine(tf1)) + Affine(tf1);
 
   const Real c = gd / out->normal.dot(Affine(tf2) - Affine(tf1));
-  td->d_gd_tf1 = c * detail::ComputeDualTwist<twist_frame>(tf1, out->normal, z);
-  td->d_gd_tf2 = c * detail::ComputeDualTwist<twist_frame>(tf2, out->normal, z);
+  td->d_gd_tf1 = -c * ComputeDualTwist<twist_frame>(tf1, out->normal, z);
+  td->d_gd_tf2 = c * ComputeDualTwist<twist_frame>(tf2, out->normal, z);
 }
 
 /// @brief Dispatcher for GdGradientImpl based on twist frame setting.

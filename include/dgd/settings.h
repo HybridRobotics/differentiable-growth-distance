@@ -20,6 +20,8 @@
 #ifndef DGD_SETTINGS_H_
 #define DGD_SETTINGS_H_
 
+#include <string>
+
 #include "dgd/data_types.h"
 #include "dgd/solvers/solver_types.h"
 
@@ -91,6 +93,19 @@ struct Settings {
    */
   TwistFrame twist_frame = TwistFrame::Hybrid;
 };
+
+/// @brief Returns the twist frame type name.
+inline std::string TwistFrameName(TwistFrame twist_frame) {
+  if (twist_frame == TwistFrame::Spatial) {
+    return "Spatial";
+  } else if (twist_frame == TwistFrame::Hybrid) {
+    return "Hybrid";
+  } else if (twist_frame == TwistFrame::Body) {
+    return "Body";
+  } else {
+    return "";
+  }
+}
 
 }  // namespace dgd
 

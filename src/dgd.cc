@@ -119,9 +119,9 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * Growth distance gradient algorithm.
  */
 
-template <int dim, class C2>
+template <int dim>
 Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
-                  const C2* set2, const KinematicState<dim>& state2,
+                  const ConvexSet<dim>* set2, const KinematicState<dim>& state2,
                   const Settings& settings, const OutputBundle<dim>& bundle) {
   if (bundle.dir_derivative) {
     bundle.dir_derivative->value_differentiable =
@@ -131,9 +131,32 @@ Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
   return GdDerivativeTpl(state1, state2, settings, bundle);
 }
 
-template <int dim, class C2>
+template <int dim>
+Real GdDerivative(const ConvexSet<dim>* set1, const KinematicState<dim>& state1,
+                  const Halfspace<dim>* set2, const KinematicState<dim>& state2,
+                  const Settings& settings, const OutputBundle<dim>& bundle) {
+  if (bundle.dir_derivative) {
+    bundle.dir_derivative->value_differentiable =
+        (ComputeKktNullspace(set1, state1.tf, set2, state2.tf, settings,
+                             bundle) == 1);
+  }
+  return GdDerivativeTpl(state1, state2, settings, bundle);
+}
+
+template <int dim>
 void GdGradient(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
-                const C2* set2, const Transformr<dim>& tf2,
+                const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                const Settings& settings, const OutputBundle<dim>& bundle) {
+  if (bundle.dir_derivative) {
+    bundle.dir_derivative->value_differentiable =
+        (ComputeKktNullspace(set1, tf1, set2, tf2, settings, bundle) == 1);
+  }
+  GdGradientTpl(tf1, tf2, settings, bundle);
+}
+
+template <int dim>
+void GdGradient(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                const Halfspace<dim>* set2, const Transformr<dim>& tf2,
                 const Settings& settings, const OutputBundle<dim>& bundle) {
   if (bundle.dir_derivative) {
     bundle.dir_derivative->value_differentiable =
