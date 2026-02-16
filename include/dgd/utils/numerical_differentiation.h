@@ -71,7 +71,7 @@ class NumericalDifferentiator {
    * @param[out] grad Gradient vector.
    */
   void Gradient(VectorFunctionType f, const Eigen::Ref<const VecXr>& x,
-                Eigen::Ref<VecXr>& grad) const;
+                Eigen::Ref<VecXr> grad) const;
 
   /**
    * @brief Computes the numerical Jacobian of a vector-valued vector function
@@ -118,7 +118,7 @@ inline Real NumericalDifferentiator::Derivative(RealFunctionType f,
 
 inline void NumericalDifferentiator::Gradient(VectorFunctionType f,
                                               const Eigen::Ref<const VecXr>& x,
-                                              Eigen::Ref<VecXr>& grad) const {
+                                              Eigen::Ref<VecXr> grad) const {
   if (grad.size() != x.size()) {
     throw std::domain_error("x and grad have different sizes");
   }
