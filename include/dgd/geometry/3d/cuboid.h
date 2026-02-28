@@ -93,7 +93,7 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
   if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);

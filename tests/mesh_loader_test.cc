@@ -78,12 +78,12 @@ TEST(MeshLoaderTest, InputFile) {
 
 TEST(MeshLoaderTest, MakeVertexGraph) {
   std::vector<Vec3r> pts;
-  pts.push_back({0.0, 0.0, 0.0});
-  pts.push_back({0.0, 0.0, 0.0});
-  pts.push_back({0.0, 0.0, 1.0});
-  pts.push_back({0.0, 1.0, 0.0});
-  pts.push_back({0.0, 1.0, 1.0});
-  pts.push_back({1.0, 1.0, 1.0});
+  pts.emplace_back(0.0, 0.0, 0.0);
+  pts.emplace_back(0.0, 0.0, 0.0);
+  pts.emplace_back(0.0, 0.0, 1.0);
+  pts.emplace_back(0.0, 1.0, 0.0);
+  pts.emplace_back(0.0, 1.0, 1.0);
+  pts.emplace_back(1.0, 1.0, 1.0);
 
   MeshLoader ml{};
   ml.ProcessPoints(pts);
@@ -103,12 +103,12 @@ TEST(MeshLoaderTest, MakeVertexGraph) {
 
 TEST(MeshLoaderTest, MakeFacetGraph) {
   std::vector<Vec3r> pts;
-  pts.push_back({0.0, 0.0, 0.0});
-  pts.push_back({0.0, 0.0, 0.0});
-  pts.push_back({0.0, 0.0, 1.0});
-  pts.push_back({0.0, 1.0, 0.0});
-  pts.push_back({0.0, 1.0, 1.0});
-  pts.push_back({1.0, 1.0, 1.0});
+  pts.emplace_back(0.0, 0.0, 0.0);
+  pts.emplace_back(0.0, 0.0, 0.0);
+  pts.emplace_back(0.0, 0.0, 1.0);
+  pts.emplace_back(0.0, 1.0, 0.0);
+  pts.emplace_back(0.0, 1.0, 1.0);
+  pts.emplace_back(1.0, 1.0, 1.0);
 
   MeshLoader ml{};
   ml.ProcessPoints(pts);

@@ -199,8 +199,8 @@ PolytopeTestData CreatePolytopeTestData() {
   span_dim = 1;
 
   //  Three distinct simplex points; bc1, bc2, bc3 > 0.
-  data.s.push_back((Matr<3, 3>() << v[0], v[2], v[3]).finished());
-  data.bc.push_back({Real(0.3), Real(0.3), Real(0.4)});
+  data.s.emplace_back((Matr<3, 3>() << v[0], v[2], v[3]).finished());
+  data.bc.emplace_back(Real(0.3), Real(0.3), Real(0.4));
   data.sfh.push_back({ez, 4});
   data.test_cases.push_back({ez,
                              data.s.back() * data.bc.back(),
@@ -209,7 +209,7 @@ PolytopeTestData CreatePolytopeTestData() {
 
   //  Three distinct simplex points; bci = 0, bcj, bck > 0.
   for (int i = 0; i < 3; ++i) {
-    data.s.push_back((Matr<3, 3>() << v[0], v[2], v[4]).finished());
+    data.s.emplace_back((Matr<3, 3>() << v[0], v[2], v[4]).finished());
     Vec3r bc;
     bc(i) = Real(0.3);
     bc((i + 1) % 3) = Real(0.7);
@@ -223,8 +223,8 @@ PolytopeTestData CreatePolytopeTestData() {
   }
 
   //  Two distinct simplex points; bc1, bc2, bc3 > 0.
-  data.s.push_back((Matr<3, 3>() << v[0], v[2], v[0]).finished());
-  data.bc.push_back({Real(0.55), Real(0.3), Real(0.15)});
+  data.s.emplace_back((Matr<3, 3>() << v[0], v[2], v[0]).finished());
+  data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
   data.sfh.push_back({ez, 4});
   data.test_cases.push_back({ez,
                              data.s.back() * data.bc.back(),
@@ -238,7 +238,8 @@ PolytopeTestData CreatePolytopeTestData() {
   for (int i = 0; i < 3; ++i) {
     Vec3i i1(0, 1, 2), i2(3, 5, 3), i3(4, 2, 0);
     Vec3i in(3, 1, 2);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(i) = Real(0.0);
     bc((i + 1) % 3) = Real(0.6);
@@ -255,7 +256,8 @@ PolytopeTestData CreatePolytopeTestData() {
   for (int i = 0; i < 3; ++i) {
     Vec3i i1(7, 9, 11), i2(8, 9, 6), i3(7, 10, 6);
     Vec3i in(1, 3, 5);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(i) = Real(0.05);
     bc((i + 1) % 3) = Real(0.55);
@@ -274,7 +276,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  Three distinct simplex points; bci = 1, bcj, bck = 0.
   for (int i = 0; i < 3; ++i) {
     Vec3i i1(8, 6, 3), i2(10, 9, 1), i3(6, 2, 11);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc = Vec3r::Zero();
     bc(i) = Real(1.0);
     data.bc.push_back(bc);
@@ -288,7 +291,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  Two distinct simplex points.
   for (int i = 0; i < 3; ++i) {
     Vec3i i1(2, 5, 0), i2(5, 0, 0), i3(2, 0, 4);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(0) = (i == 2) ? Real(0.5) : Real(1.0);
     bc(1) = (i == 2) ? Real(0.5) : Real(0.0);
@@ -302,8 +306,8 @@ PolytopeTestData CreatePolytopeTestData() {
   }
 
   //  One distinct simplex point; bc1, bc2, bc3 > 0.
-  data.s.push_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
-  data.bc.push_back({Real(0.55), Real(0.3), Real(0.15)});
+  data.s.emplace_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
+  data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
   data.sfh.push_back({-ez, 4});
   data.test_cases.push_back({-ez,
                              data.s.back() * data.bc.back(),
@@ -319,7 +323,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3i i1(0, 1, 2), i2(3, 5, 3), i3(4, 2, 0);
     Vec3i ie1(3, 1, 3), ie2(4, 2, 2);
     Vec3i in(3, 1, 2);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(i) = Real(0.0);
     bc((i + 1) % 3) = Real(0.6);
@@ -338,7 +343,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3i i1(7, 9, 11), i2(8, 9, 6), i3(7, 10, 6);
     Vec3i ie1(7, 9, 11), ie2(8, 10, 6);
     Vec3i in(1, 3, 5);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(i) = Real(0.05);
     bc((i + 1) % 3) = Real(0.55);
@@ -361,7 +367,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3i i1(8, 6, 10), i2(9, 11, 1), i3(6, 2, 11);
     Vec3i ie1(8, 11, 10), ie2(9, 6, 11);
     Vec3i in(2, 5, 4);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc = Vec3r::Zero();
     bc(i) = Real(1.0);
     data.bc.push_back(bc);
@@ -378,7 +385,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3i i1(2, 5, 0), i2(3, 0, 0), i3(2, 0, 1);
     Vec3i ie1(2, 5, 0), ie2(3, 0, 1);
     Vec3i in(2, 5, 0);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(0) = (i == 2) ? Real(0.5) : Real(1.0);
     bc(1) = (i == 2) ? Real(0.5) : Real(0.0);
@@ -393,8 +401,8 @@ PolytopeTestData CreatePolytopeTestData() {
   }
 
   //  One distinct simplex point; bc1, bc2, bc3 > 0.
-  data.s.push_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
-  data.bc.push_back({Real(0.55), Real(0.3), Real(0.15)});
+  data.s.emplace_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
+  data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
   data.sfh.push_back({-ez, 4});
   data.test_cases.push_back({(n[1] - 2 * ez).normalized(),
                              data.s.back() * data.bc.back(),
@@ -409,7 +417,8 @@ PolytopeTestData CreatePolytopeTestData() {
   for (int i = 0; i < 3; ++i) {
     Vec3i i1(8, 6, 3), i2(10, 9, 1), i3(6, 2, 11);
     Vec3i in1(1, 2, 4), in2(2, 3, 5);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc = Vec3r::Zero();
     bc(i) = Real(1.0);
     data.bc.push_back(bc);
@@ -425,7 +434,8 @@ PolytopeTestData CreatePolytopeTestData() {
   for (int i = 0; i < 3; ++i) {
     Vec3i i1(2, 5, 0), i2(5, 0, 0), i3(2, 0, 4);
     Vec3i in1(1, 4, 5), in2(2, 5, 0);
-    data.s.push_back((Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
+    data.s.emplace_back(
+        (Matr<3, 3>() << v[i1(i)], v[i2(i)], v[i3(i)]).finished());
     Vec3r bc;
     bc(0) = (i == 2) ? Real(0.5) : Real(1.0);
     bc(1) = (i == 2) ? Real(0.5) : Real(0.0);
@@ -440,8 +450,8 @@ PolytopeTestData CreatePolytopeTestData() {
   }
 
   //  One distinct simplex point; bc1, bc2, bc3 > 0.
-  data.s.push_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
-  data.bc.push_back({Real(0.55), Real(0.3), Real(0.15)});
+  data.s.emplace_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
+  data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
   data.sfh.push_back({-ez, 4});
   data.test_cases.push_back({(n[0] + 2 * n[1] - 3 * ez).normalized(),
                              data.s.back() * data.bc.back(),

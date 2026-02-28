@@ -88,8 +88,8 @@ inline Real Ellipse::SupportFunction(const Vec2r& n,
   const Real k = std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1));
   const Real k_inv = Real(1.0) / k;
   const Vec2r g = Vec2r(hlx2_, hly2_) * k_inv;
-  deriv.Dsp = (margin_ + g(0) * g(1) * k_inv) * Vec2r(n(1), -n(0)) *
-              Vec2r(n(1), -n(0)).transpose();
+  deriv.d_sp_n = (margin_ + g(0) * g(1) * k_inv) * Vec2r(n(1), -n(0)) *
+                 Vec2r(n(1), -n(0)).transpose();
   deriv.sp.array() = n.array() * (margin_ + g.array());
   deriv.differentiable = true;
   return k + margin_;

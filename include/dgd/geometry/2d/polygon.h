@@ -118,7 +118,8 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
       sv - margin_ - eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.Dsp = margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+    deriv.d_sp_n =
+        margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
     deriv.differentiable = true;
   }
   return sv;

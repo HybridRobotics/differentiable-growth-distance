@@ -89,7 +89,8 @@ inline Real Rectangle::SupportFunction(const Vec2r& n,
   if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.Dsp = margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+    deriv.d_sp_n =
+        margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);

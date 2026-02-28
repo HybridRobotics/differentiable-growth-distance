@@ -216,7 +216,7 @@ struct SupportFunctionOutput<dim, 2> {
   SupportFunctionDerivatives<dim> deriv1, deriv2;
 
   /// @brief Support function Hessian.
-  Matr<dim, dim> Dsp;
+  Matr<dim, dim> d_sp_n;
 
   /// @brief Support point.
   Vecr<dim> sp;
@@ -237,8 +237,8 @@ struct SupportFunctionOutput<dim, 2> {
     sp.noalias() = mdp.rot1 * deriv1.sp - mdp.rot2 * deriv2.sp;
     differentiable = deriv1.differentiable & deriv2.differentiable;
     if (differentiable) {
-      Dsp.noalias() = mdp.rot1 * deriv1.Dsp * mdp.rot1.transpose() +
-                      mdp.rot2 * deriv2.Dsp * mdp.rot2.transpose();
+      d_sp_n.noalias() = mdp.rot1 * deriv1.d_sp_n * mdp.rot1.transpose() +
+                         mdp.rot2 * deriv2.d_sp_n * mdp.rot2.transpose();
     }
   }
 

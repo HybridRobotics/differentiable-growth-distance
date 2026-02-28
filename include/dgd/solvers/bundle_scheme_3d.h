@@ -761,9 +761,9 @@ Real BundleScheme(const C1* set1, const Transform3r& tf1, const C2* set2,
     } else {  // TrustRegionNewton
       UpdateNormalCuttingPlane(bsc, n_cp);
       if (update_lb && sfo.differentiable &&
-          (bsc.n(2) * (sfo.Dsp(0, 0) + sfo.Dsp(1, 1)) >
+          (bsc.n(2) * (sfo.d_sp_n(0, 0) + sfo.d_sp_n(1, 1)) >
            SolverSettings::kPinvTol3)) {
-        hess = bsc.n(2) * sfo.Dsp.template block<2, 2>(0, 0);
+        hess = bsc.n(2) * sfo.d_sp_n.template block<2, 2>(0, 0);
         n_cp /= n_cp(2);
         UpdateNormalTrustRegionNewton(hess, n_cp, bsc, idxn);
       } else {

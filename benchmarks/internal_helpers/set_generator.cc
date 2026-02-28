@@ -57,9 +57,9 @@ void ConvexSetGenerator::LoadMeshesFromObjFiles(
     }
     mp.SetZeroVertexCenter();
 
-    meshes_.push_back(std::make_shared<Mesh>(std::move(mp.vert),
-                                             std::move(mp.vgraph), mp.inradius,
-                                             0.0, 0.9, 1, mp.name));
+    meshes_.emplace_back(
+        std::make_shared<Mesh>(std::move(mp.vert), std::move(mp.vgraph),
+                               mp.inradius, 0.0, 0.9, 1, mp.name));
   }
   nmeshes_ = static_cast<int>(meshes_.size());
 }
