@@ -87,7 +87,7 @@ template <int dim>
 inline Real SphereImpl<dim>::SupportFunction(
     const Vecr<dim>& n, SupportFunctionDerivatives<dim>& deriv,
     SupportFunctionHint<dim>* /*hint*/) const {
-  deriv.Dsp = radius_ * (Matr<dim, dim>::Identity() - n * n.transpose());
+  deriv.d_sp_n = radius_ * (Matr<dim, dim>::Identity() - n * n.transpose());
   deriv.sp = radius_ * n;
   deriv.differentiable = true;
   return radius_;

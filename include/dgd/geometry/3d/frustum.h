@@ -145,8 +145,8 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
     if (std::min(Real(2.0) * rt_ * k, diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.Dsp.block<2, 2>(0, 0) +=
+      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.d_sp_n.block<2, 2>(0, 0) +=
           rt_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
       deriv.differentiable = true;
     }
@@ -157,8 +157,8 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
     if (std::min(Real(2.0) * rb_ * k, -diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.Dsp.block<2, 2>(0, 0) +=
+      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.d_sp_n.block<2, 2>(0, 0) +=
           rb_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
       deriv.differentiable = true;
     }

@@ -330,7 +330,7 @@ Real BundleScheme(const C1* set1, const Transform2r& tf1, const C2* set2,
         UpdateNormalCuttingPlane(s, n_cp);
         Real hess;
         if (sfo.differentiable &&
-            ((hess = n(1) * sfo.Dsp(0, 0)) > SolverSettings::kHessMin2)) {
+            ((hess = n(1) * sfo.d_sp_n(0, 0)) > SolverSettings::kHessMin2)) {
           UpdateNormalTrustRegionNewton(s, n_cp, n, hess, idxn);
         } else {
           n = n_cp;

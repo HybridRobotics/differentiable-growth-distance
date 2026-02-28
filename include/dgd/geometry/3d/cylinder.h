@@ -98,9 +98,9 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
   if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-    deriv.Dsp.block<2, 2>(1, 1) += radius_ / (k2 * k) * Vec2r(n(2), -n(1)) *
-                                   Vec2r(n(2), -n(1)).transpose();
+    deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    deriv.d_sp_n.block<2, 2>(1, 1) += radius_ / (k2 * k) * Vec2r(n(2), -n(1)) *
+                                      Vec2r(n(2), -n(1)).transpose();
     deriv.differentiable = true;
   }
   deriv.sp = margin_ * n;

@@ -60,7 +60,7 @@ struct SupportFunctionDerivatives {
    *
    * @see differentiable
    */
-  Matr<dim, dim> Dsp;
+  Matr<dim, dim> d_sp_n;
 
   /// @brief Support point.
   Vecr<dim> sp;
@@ -210,7 +210,7 @@ class ConvexSet {
   virtual ~ConvexSet() {}
 
   /**
-   * @brief Computes the support function in the local frame.
+   * @brief Computes the support function.
    *
    * Implements the support function for the convex set \f$C\f$, which is given
    * by: \f{align*}{

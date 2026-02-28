@@ -97,9 +97,9 @@ inline Real Ellipsoid::SupportFunction(const Vec3r& n,
   const Real k_inv = Real(1.0) / k;
   const Vec3r g = Vec3r(hlx2_, hly2_, hlz2_) * k_inv;
   const Vec3r gn = g.cwiseProduct(n);
-  deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose()) -
-              gn * gn.transpose() * k_inv;
-  deriv.Dsp += g.asDiagonal();
+  deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose()) -
+                 gn * gn.transpose() * k_inv;
+  deriv.d_sp_n += g.asDiagonal();
   deriv.sp = gn + margin_ * n;
   deriv.differentiable = true;
   return k + margin_;

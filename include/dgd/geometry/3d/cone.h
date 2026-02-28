@@ -125,7 +125,7 @@ inline Real Cone::SupportFunction(const Vec3r& n,
     if (diff < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
       deriv.differentiable = true;
     }
     deriv.sp(2) += (h_ - rho_);
@@ -135,8 +135,8 @@ inline Real Cone::SupportFunction(const Vec3r& n,
     if (std::min(Real(2.0) * r_ * k, -diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.Dsp.block<2, 2>(0, 0) +=
+      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.d_sp_n.block<2, 2>(0, 0) +=
           r_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
       deriv.differentiable = true;
     }

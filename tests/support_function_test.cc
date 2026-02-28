@@ -52,12 +52,13 @@ void UniformSpherePoints(MatXr<3>& pts, int size_xy, int size_z,
 // Computes the actual and numerical Jacobians of the support point function.
 template <int dim>
 bool ComputeSupportPointJacobian(const ConvexSet<dim>* set, const Vecr<dim>& n,
-                                 Matr<dim, dim>& Dsp, Matr<dim, dim>& Dsp_num) {
+                                 Matr<dim, dim>& d_sp_n,
+                                 Matr<dim, dim>& d_sp_n_num) {
   // Compute the actual Jacobian.
   SupportFunctionDerivatives<dim> deriv;
   set->SupportFunction(n.normalized(), deriv);
   if (!deriv.differentiable) return false;
-  Dsp = deriv.Dsp;
+  d_sp_n = deriv.d_sp_n;
 
   // Compute the numerical Jacobian.
   NumericalDifferentiator nd{};
@@ -67,7 +68,7 @@ bool ComputeSupportPointJacobian(const ConvexSet<dim>* set, const Vecr<dim>& n,
         set->SupportFunction(n, sp);
         y = sp;
       },
-      n.normalized(), Dsp_num);
+      n.normalized(), d_sp_n_num);
   return true;
 }
 
@@ -97,7 +98,7 @@ TEST(EllipseTest, SupportFunction) {
 
   Real sv;
   Vec2r sp, spt, n;
-  Matr<2, 2> Dsp, Dsp_num;
+  Matr<2, 2> d_sp_n, d_sp_n_num;
   MatXr<2> pts;
   UniformCirclePoints(pts, 16);
   const Vec2r len(hlx, hly);
@@ -108,8 +109,8 @@ TEST(EllipseTest, SupportFunction) {
     sv = set.SupportFunction(n, sp);
     EXPECT_NEAR(sv, n.dot(spt), kTol);
     ASSERT_PRED3(AssertVectorEQ<2>, sp, spt, kTol);
-    if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-      EXPECT_PRED3(AssertMatrixEQ<2>, Dsp, Dsp_num, kTolJac);
+    if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+      EXPECT_PRED3(AssertMatrixEQ<2>, d_sp_n, d_sp_n_num, kTolJac);
     }
   }
 }
@@ -174,7 +175,7 @@ TEST(ConeTest, SupportFunction) {
 
   Real sv;
   Vec3r sp, spt, n;
-  Matr<3, 3> Dsp, Dsp_num;
+  Matr<3, 3> d_sp_n, d_sp_n_num;
   MatXr<3> pts;
   // Using size_z = 9 ensures that normal is not orthogonal
   // to the cone surface (for ha = 30 deg).
@@ -192,8 +193,8 @@ TEST(ConeTest, SupportFunction) {
     sv = set.SupportFunction(n, sp);
     EXPECT_NEAR(sv, n.dot(spt), kTol);
     ASSERT_PRED3(AssertVectorEQ<3>, sp, spt, kTol);
-    if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-      EXPECT_PRED3(AssertMatrixEQ<3>, Dsp, Dsp_num, kTolJac);
+    if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+      EXPECT_PRED3(AssertMatrixEQ<3>, d_sp_n, d_sp_n_num, kTolJac);
     }
   }
 }
@@ -229,7 +230,7 @@ TEST(CylinderTest, SupportFunction) {
 
   Real sv;
   Vec3r sp, spt, n;
-  Matr<3, 3> Dsp, Dsp_num;
+  Matr<3, 3> d_sp_n, d_sp_n_num;
   MatXr<2> pts;
   UniformCirclePoints(pts, 16);
   for (int i = 0; i < 2; ++i)
@@ -242,8 +243,8 @@ TEST(CylinderTest, SupportFunction) {
       sv = set.SupportFunction(n, sp);
       EXPECT_NEAR(sv, n.dot(spt), kTol);
       ASSERT_PRED3(AssertVectorEQ<3>, sp, spt, kTol);
-      if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-        EXPECT_PRED3(AssertMatrixEQ<3>, Dsp, Dsp_num, kTolJac);
+      if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+        EXPECT_PRED3(AssertMatrixEQ<3>, d_sp_n, d_sp_n_num, kTolJac);
       }
     }
 }
@@ -258,7 +259,7 @@ TEST(EllipsoidTest, SupportFunction) {
 
   Real sv;
   Vec3r sp, spt, n;
-  Matr<3, 3> Dsp, Dsp_num;
+  Matr<3, 3> d_sp_n, d_sp_n_num;
   MatXr<3> pts;
   UniformSpherePoints(pts, 16, 9);
   const Vec3r len(hlx, hly, hlz);
@@ -269,8 +270,8 @@ TEST(EllipsoidTest, SupportFunction) {
     sv = set.SupportFunction(n, sp);
     EXPECT_NEAR(sv, n.dot(spt), kTol);
     EXPECT_PRED3(AssertVectorEQ<3>, sp, spt, kTol);
-    if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-      EXPECT_PRED3(AssertMatrixEQ<3>, Dsp, Dsp_num, kTolJac);
+    if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+      EXPECT_PRED3(AssertMatrixEQ<3>, d_sp_n, d_sp_n_num, kTolJac);
     }
   }
 }
@@ -286,7 +287,7 @@ TEST(FrustumTest, SupportFunction) {
   rb[0] = radius;
   rt[0] = radius;
   h[0] = height;
-  sets.push_back(Frustum(radius, radius, height, margin));
+  sets.emplace_back(radius, radius, height, margin);
   EXPECT_NEAR(sets[0].inradius(), radius + margin, kTol);
   EXPECT_NEAR(sets[0].offset(), radius, kTol);
   // Short cylinder.
@@ -294,7 +295,7 @@ TEST(FrustumTest, SupportFunction) {
   rb[1] = radius;
   rt[1] = radius;
   h[1] = height;
-  sets.push_back(Frustum(radius, radius, height, margin));
+  sets.emplace_back(radius, radius, height, margin);
   EXPECT_NEAR(sets[1].inradius(), height / Real(2.0) + margin, kTol);
   EXPECT_NEAR(sets[1].offset(), height / Real(2.0), kTol);
 
@@ -305,14 +306,14 @@ TEST(FrustumTest, SupportFunction) {
   rb[2] = radius;
   rt[2] = Real(0.0);
   h[2] = height;
-  sets.push_back(Frustum(radius, 0.0, height, margin));
+  sets.emplace_back(radius, 0.0, height, margin);
   EXPECT_NEAR(sets[2].inradius(), rho + margin, kTol);
   EXPECT_NEAR(sets[2].offset(), rho, kTol);
   // Inverted cone.
   rb[3] = Real(0.0);
   rt[3] = radius;
   h[3] = height;
-  sets.push_back(Frustum(Real(0.0), radius, height, margin));
+  sets.emplace_back(Real(0.0), radius, height, margin);
   EXPECT_NEAR(sets[3].inradius(), rho + margin, kTol);
   EXPECT_NEAR(sets[3].offset(), height - rho, kTol);
 
@@ -323,14 +324,14 @@ TEST(FrustumTest, SupportFunction) {
   rb[4] = radius;
   rt[4] = small_radius;
   h[4] = height;
-  sets.push_back(Frustum(radius, small_radius, height, margin));
+  sets.emplace_back(radius, small_radius, height, margin);
   EXPECT_NEAR(sets[4].inradius(), rho + margin, kTol);
   EXPECT_NEAR(sets[4].offset(), rho, kTol);
   // Tall frustum with small base.
   rb[5] = small_radius;
   rt[5] = radius;
   h[5] = height;
-  sets.push_back(Frustum(small_radius, radius, height, margin));
+  sets.emplace_back(small_radius, radius, height, margin);
   EXPECT_NEAR(sets[5].inradius(), rho + margin, kTol);
   EXPECT_NEAR(sets[5].offset(), height - rho, kTol);
   // Short frustum with large base.
@@ -339,20 +340,20 @@ TEST(FrustumTest, SupportFunction) {
   rb[6] = radius;
   rt[6] = small_radius;
   h[6] = height;
-  sets.push_back(Frustum(radius, small_radius, height, margin));
+  sets.emplace_back(radius, small_radius, height, margin);
   EXPECT_NEAR(sets[6].inradius(), height / Real(2.0) + margin, kTol);
   EXPECT_NEAR(sets[6].offset(), height / Real(2.0), kTol);
   // Short frustum with small base.
   rb[7] = small_radius;
   rt[7] = radius;
   h[7] = height;
-  sets.push_back(Frustum(small_radius, radius, height, margin));
+  sets.emplace_back(small_radius, radius, height, margin);
   EXPECT_NEAR(sets[7].inradius(), height / Real(2.0) + margin, kTol);
   EXPECT_NEAR(sets[7].offset(), height / Real(2.0), kTol);
 
   Real sv, tha, offset;
   Vec3r sp, spt, n;
-  Matr<3, 3> Dsp, Dsp_num;
+  Matr<3, 3> d_sp_n, d_sp_n_num;
   MatXr<3> pts;
   UniformSpherePoints(pts, 16, 10, Real(1e-1));
   for (int k = 0; k < static_cast<int>(sets.size()); ++k) {
@@ -373,8 +374,8 @@ TEST(FrustumTest, SupportFunction) {
       sv = set.SupportFunction(n, sp);
       EXPECT_NEAR(sv, n.dot(spt), kTol);
       ASSERT_PRED3(AssertVectorEQ<3>, sp, spt, kTol);
-      if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-        EXPECT_PRED3(AssertMatrixEQ<3>, Dsp, Dsp_num, kTolJac);
+      if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+        EXPECT_PRED3(AssertMatrixEQ<3>, d_sp_n, d_sp_n_num, kTolJac);
       }
     }
   }
@@ -505,7 +506,7 @@ TYPED_TEST(CapsuleSupportFunctionTest, SupportFunction) {
 
   Real sv;
   Vecr<dim> sp, spt, n;
-  Matr<dim, dim> Dsp, Dsp_num;
+  Matr<dim, dim> d_sp_n, d_sp_n_num;
   for (int i = 0; i < size; ++i) {
     n = pts.col(i).topRows<dim>().normalized();
     spt = (radius + margin) * n;
@@ -513,8 +514,8 @@ TYPED_TEST(CapsuleSupportFunctionTest, SupportFunction) {
     sv = set.SupportFunction(n, sp);
     EXPECT_NEAR(sv, n.dot(spt), kTol);
     ASSERT_PRED3(AssertVectorEQ<dim>, sp, spt, kTol);
-    if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-      EXPECT_PRED3(AssertMatrixEQ<dim>, Dsp, Dsp_num, kTolJac);
+    if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+      EXPECT_PRED3(AssertMatrixEQ<dim>, d_sp_n, d_sp_n_num, kTolJac);
     }
   }
 }
@@ -528,13 +529,13 @@ TYPED_TEST(SphereSupportFunctionTest, SupportFunction) {
   EXPECT_EQ(set.inradius(), radius);
 
   Vecr<dim> sp;
-  Matr<dim, dim> Dsp, Dsp_num;
+  Matr<dim, dim> d_sp_n, d_sp_n_num;
   Vecr<dim> n = Vecr<dim>::UnitX();
   Real sv = set.SupportFunction(n, sp);
   EXPECT_NEAR(sv, radius, kTol);
   EXPECT_PRED3(AssertVectorEQ<dim>, sp, radius * Vecr<dim>::UnitX(), kTol);
-  if (ComputeSupportPointJacobian(&set, n, Dsp, Dsp_num)) {
-    EXPECT_PRED3(AssertMatrixEQ<dim>, Dsp, Dsp_num, kTolJac);
+  if (ComputeSupportPointJacobian(&set, n, d_sp_n, d_sp_n_num)) {
+    EXPECT_PRED3(AssertMatrixEQ<dim>, d_sp_n, d_sp_n_num, kTolJac);
   }
 }
 

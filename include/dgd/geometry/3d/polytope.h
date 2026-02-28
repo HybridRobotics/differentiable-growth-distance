@@ -129,7 +129,7 @@ inline Real Polytope::SupportFunction(const Vec3r& n,
     }
   }
   if (deriv.differentiable) {
-    deriv.Dsp = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
   }
 
   if (hint) {

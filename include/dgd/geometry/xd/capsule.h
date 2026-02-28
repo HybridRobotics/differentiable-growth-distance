@@ -104,8 +104,8 @@ inline Real CapsuleImpl<dim>::SupportFunction(
   if (std::abs(hlx_ * n(0)) < Real(0.5) * CapsuleImpl<dim>::eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.Dsp = CapsuleImpl<dim>::inradius_ *
-                (Matr<dim, dim>::Identity() - n * n.transpose());
+    deriv.d_sp_n = CapsuleImpl<dim>::inradius_ *
+                   (Matr<dim, dim>::Identity() - n * n.transpose());
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);
