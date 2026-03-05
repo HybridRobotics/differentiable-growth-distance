@@ -8,26 +8,20 @@
 #include "dgd/geometry/geometry_2d.h"
 #include "dgd/geometry/geometry_3d.h"
 #include "dgd/geometry/halfspace.h"
+#include "dgd/output.h"
+#include "dgd/settings.h"
 #include "dgd/utils/transformations.h"
+#include "test_utils.h"
 
 namespace {
 
 using namespace dgd;
+using dgd::test::IsOrthonormalBasis;
+using dgd::test::kTol;
 
-// Checks orthonormality of a basis.
-template <int row, int col>
-bool IsOrthonormalBasis(const Matr<row, col>& basis, int dim, Real tol) {
-  for (int i = 0; i < dim; ++i) {
-    if (std::abs(basis.col(i).norm() - Real(1.0)) > tol) return false;
-    for (int j = i + 1; j < dim; ++j) {
-      if (std::abs(basis.col(i).dot(basis.col(j))) > tol) return false;
-    }
-  }
-  return true;
-}
-
-// Assertion functions
-const Real kTol = kSqrtEps;
+// ---------------------------------------------------------------------------
+// Assertion predicates for KKT nullspace analysis
+// ---------------------------------------------------------------------------
 
 template <int dim>
 bool AssertPrimalBasis(const Matr<dim, dim - 1>& basis, const Vecr<dim>& normal,
@@ -47,9 +41,10 @@ bool AssertDualBasis(const Matr<dim, dim>& basis, const Vecr<dim>& normal,
   return true;
 }
 
-// KKT nullspace tests
-// 2D convex set tests
-//  Vertex-vertex test
+// ---------------------------------------------------------------------------
+// 2D KKT nullspace tests
+// ---------------------------------------------------------------------------
+
 TEST(KktNullspaceTest, VertexVertex2D) {
   Rectangle rect1(0.5, 0.5);
   Rectangle rect2(0.5, 0.5);
@@ -80,7 +75,6 @@ TEST(KktNullspaceTest, VertexVertex2D) {
                kTol);
 }
 
-//  Edge-edge test
 TEST(KktNullspaceTest, EdgeEdge2D) {
   Rectangle rect1(1.0, 0.5);
   Rectangle rect2(1.0, 0.5);
@@ -111,7 +105,6 @@ TEST(KktNullspaceTest, EdgeEdge2D) {
                kTol);
 }
 
-//  Circle-circle test
 TEST(KktNullspaceTest, CircleCircle2D) {
   Ellipse circ1(1.0, 1.0);
   Ellipse circ2(1.0, 1.0);
@@ -142,7 +135,6 @@ TEST(KktNullspaceTest, CircleCircle2D) {
                kTol);
 }
 
-//  Vertex-halfspace test
 TEST(KktNullspaceTest, VertexHalfspace2D) {
   Ellipse circ(1.0, 1.0);
   Halfspace<2> hs;
@@ -172,7 +164,6 @@ TEST(KktNullspaceTest, VertexHalfspace2D) {
                kTol);
 }
 
-//  Edge-halfspace test
 TEST(KktNullspaceTest, EdgeHalfspace2D) {
   Rectangle rect(1.0, 0.5);
   Halfspace<2> hs;
@@ -202,8 +193,10 @@ TEST(KktNullspaceTest, EdgeHalfspace2D) {
                kTol);
 }
 
-// 3D convex set tests
-//  Vertex-vertex test
+// ---------------------------------------------------------------------------
+// 3D KKT nullspace tests
+// ---------------------------------------------------------------------------
+
 TEST(KktNullspaceTest, VertexVertex3D) {
   Cuboid cube1(0.5, 0.5, 0.5);
   Cuboid cube2(0.5, 0.5, 0.5);
@@ -234,7 +227,6 @@ TEST(KktNullspaceTest, VertexVertex3D) {
                kTol);
 }
 
-//  Face-face test
 TEST(KktNullspaceTest, FaceFace3D) {
   Cuboid cube1(1.0, 1.0, 1.0);
   Cuboid cube2(1.0, 0.25, 0.25);
@@ -265,7 +257,6 @@ TEST(KktNullspaceTest, FaceFace3D) {
                kTol);
 }
 
-//  Face-edge test
 TEST(KktNullspaceTest, FaceEdge3D) {
   Cuboid cube(1.0, 1.0, 1.0);
   Cylinder cyl(0.5, 2.0);
@@ -296,7 +287,6 @@ TEST(KktNullspaceTest, FaceEdge3D) {
                kTol);
 }
 
-//  Edge-edge (parallel) test
 TEST(KktNullspaceTest, EdgeEdgeParallel3D) {
   Cuboid cube1(1.0, 0.5, 0.5);
   Cuboid cube2(1.0, 0.5, 0.5);
@@ -326,7 +316,6 @@ TEST(KktNullspaceTest, EdgeEdgeParallel3D) {
                kTol);
 }
 
-//  Edge-edge (non-parallel) test
 TEST(KktNullspaceTest, EdgeEdgeNonParallel3D) {
   Cuboid cube1(1.0, 0.5, 0.5);
   Cuboid cube2(0.5, 1.0, 0.5);
@@ -359,7 +348,6 @@ TEST(KktNullspaceTest, EdgeEdgeNonParallel3D) {
                kTol);
 }
 
-//  Sphere-sphere test
 TEST(KktNullspaceTest, SphereSphere3D) {
   Sphere sph1(1.0);
   Sphere sph2(1.0);
@@ -390,7 +378,6 @@ TEST(KktNullspaceTest, SphereSphere3D) {
                kTol);
 }
 
-//  Vertex-Face test
 TEST(KktNullspaceTest, VertexFace3D) {
   Sphere sph(1.0);
   Cuboid cube(1.0, 1.0, 1.0);
@@ -421,7 +408,6 @@ TEST(KktNullspaceTest, VertexFace3D) {
                kTol);
 }
 
-// Vertex-halfspace test
 TEST(KktNullspaceTest, VertexHalfspace3D) {
   Sphere sph(1.0);
   Halfspace<3> hs;
@@ -451,8 +437,7 @@ TEST(KktNullspaceTest, VertexHalfspace3D) {
                kTol);
 }
 
-// Edge-halfspace test
-TEST(KktNullspaceTest, EdgeHalfspaceTest) {
+TEST(KktNullspaceTest, EdgeHalfspace3D) {
   Cylinder cyl(1.0, 2.0);
   Halfspace<3> hs;
 
@@ -481,8 +466,7 @@ TEST(KktNullspaceTest, EdgeHalfspaceTest) {
                kTol);
 }
 
-// Face-halfspace test
-TEST(KktNullspaceTest, FaceHalfspaceTest) {
+TEST(KktNullspaceTest, FaceHalfspace3D) {
   Cuboid cube(1.0, 1.0, 1.0);
   Halfspace<3> hs;
 
@@ -511,7 +495,6 @@ TEST(KktNullspaceTest, FaceHalfspaceTest) {
                kTol);
 }
 
-// Non-optimal status tests
 TEST(KktNullspaceTest, NonOptimalStatus3D) {
   Cuboid cube1(1.0, 1.0, 1.0);
   Cuboid cube2(1.0, 1.0, 1.0);

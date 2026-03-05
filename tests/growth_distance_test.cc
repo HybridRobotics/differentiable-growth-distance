@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <memory>
+#include <string>
 #include <typeinfo>
 
 #include "dgd/data_types.h"
@@ -9,85 +10,27 @@
 #include "dgd/error_metrics.h"
 #include "dgd/geometry/geometry_2d.h"
 #include "dgd/geometry/geometry_3d.h"
+#include "dgd/geometry/halfspace.h"
 #include "dgd/graham_scan.h"
 #include "dgd/mesh_loader.h"
+#include "dgd/output.h"
+#include "dgd/settings.h"
 #include "dgd/utils/random.h"
 #include "dgd/utils/transformations.h"
+#include "test_utils.h"
 
 namespace {
 
 using namespace dgd;
-
-template <int dim>
-using C = ConvexSet<dim>;
-template <int dim>
-using ConvexSetPtr = std::unique_ptr<C<dim>>;
-
-template <int dim>
-void SetConvexSets(ConvexSetPtr<dim>& set1, ConvexSetPtr<dim>& set2,
-                   const Real margin1, const Real margin2);
-
-// Ellipse-Polygon
-template <>
-void SetConvexSets<2>(ConvexSetPtr<2>& set1, ConvexSetPtr<2>& set2,
-                      const Real margin1, const Real margin2) {
-  // Set 1: ellipse.
-  const Real hlx = Real(3.0), hly = Real(2.0);
-  set1 = std::make_unique<Ellipse>(hlx, hly, margin1);
-
-  // Set 2: polygon.
-  Rng rng;
-  rng.SetSeed();
-  const int npts = 100;
-  const Real len = Real(2.0);
-  std::vector<Vec2r> pts, vert;
-  Vec2r vec;
-  const int pnorm = 6;
-  for (int i = 0; i < npts; ++i) {
-    vec << rng.Random(), rng.Random();
-    vec = vec * len / (vec.lpNorm<pnorm>() + kEps);
-    pts.push_back(vec);
-  }
-  GrahamScan(pts, vert);
-  Real inradius = ComputePolygonInradius(vert, Vec2r::Zero());
-  set2 = std::make_unique<Polygon>(vert, inradius, margin2);
-}
-
-// Cone-Mesh
-template <>
-void SetConvexSets<3>(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
-                      const Real margin1, const Real margin2) {
-  // Set 1: cone.
-  const Real ha = kPi / Real(6.0), radius = Real(1.0);
-  const Real height = radius / std::tan(ha);
-  set1 = std::make_unique<Cone>(radius, height, margin1);
-
-  // Set 2: mesh.
-  Rng rng;
-  rng.SetSeed();
-  const int npts = 500;
-  const Real len = Real(2.0);
-  MeshLoader ml{};
-  std::vector<Vec3r> pts, vert;
-  std::vector<int> graph;
-  Vec3r vec;
-  constexpr int pnorm = 4;
-  for (int i = 0; i < npts; ++i) {
-    vec << rng.Random(), rng.Random(), rng.Random();
-    vec = vec * len / (vec.lpNorm<pnorm>() + kEps);
-    pts.push_back(vec);
-  }
-  ml.ProcessPoints(pts);
-  bool valid = ml.MakeVertexGraph(vert, graph);
-  ASSERT_TRUE(valid);
-  const Real inradius = ml.ComputeInradius(vec);
-  for (auto& v : vert) v -= vec;
-  set2 = std::make_unique<Mesh>(vert, graph, inradius, margin2);
-}
+using dgd::test::ConvexSetPtr;
+using dgd::test::MakeConvexSetPair;
 
 const Real kTol = std::pow(kEps, Real(0.49));
 
+// ---------------------------------------------------------------------------
 // Growth distance tests
+// ---------------------------------------------------------------------------
+
 template <int dim>
 using GrowthDistanceType = Real (*)(const ConvexSet<dim>*,
                                     const Transformr<dim>&,
@@ -95,52 +38,14 @@ using GrowthDistanceType = Real (*)(const ConvexSet<dim>*,
                                     const Transformr<dim>&, const Settings&,
                                     Output<dim>&, bool);
 
-template <int d, GrowthDistanceType<d> GD>
-struct GrowthDistanceConfig {
-  static constexpr int dim = d;
-  static constexpr GrowthDistanceType<dim> growth_distance = GD;
-  static inline const bool warm_start =
-      (GD == static_cast<GrowthDistanceType<dim>>(GrowthDistanceCp<dim>));
-};
+template <int dim, GrowthDistanceType<dim> gd>
+bool WarmStartFunctionality() {
+  return (gd == static_cast<GrowthDistanceType<dim>>(GrowthDistanceCp<dim>));
+}
 
-struct GrowthDistanceCp_2D : GrowthDistanceConfig<2, GrowthDistanceCp<2>> {};
-struct GrowthDistanceTrn_2D : GrowthDistanceConfig<2, GrowthDistanceTrn<2>> {};
-struct GrowthDistanceCp_3D : GrowthDistanceConfig<3, GrowthDistanceCp<3>> {};
-struct GrowthDistanceTrn_3D : GrowthDistanceConfig<3, GrowthDistanceTrn<3>> {};
-
-struct GrowthDistanceNameGenerator {
-  template <typename T>
-  static std::string GetName(int) {
-    if (T::growth_distance ==
-        static_cast<GrowthDistanceType<T::dim>>(GrowthDistanceCp<T::dim>)) {
-      return "CuttingPlane" + std::to_string(T::dim) + "D";
-    } else if (T::growth_distance == static_cast<GrowthDistanceType<T::dim>>(
-                                         GrowthDistanceTrn<T::dim>)) {
-      return "TrustRegionNewton" + std::to_string(T::dim) + "D";
-    } else {
-      return "Unknown" + std::to_string(T::dim) + "D";
-    }
-  }
-};
-
-template <typename T>
-class GrowthDistanceTest : public testing::Test {
- protected:
-  GrowthDistanceTest() {}
-
-  ~GrowthDistanceTest() {}
-};
-
-using GrowthDistanceTypes =
-    testing::Types<GrowthDistanceCp_2D, GrowthDistanceCp_3D,
-                   GrowthDistanceTrn_2D, GrowthDistanceTrn_3D>;
-TYPED_TEST_SUITE(GrowthDistanceTest, GrowthDistanceTypes,
-                 GrowthDistanceNameGenerator);
-
-TYPED_TEST(GrowthDistanceTest, SolutionConvergence) {
-  constexpr int dim = TypeParam::dim;
-  auto growth_distance = TypeParam::growth_distance;
-  const bool warm_start = TypeParam::warm_start;
+template <int dim, GrowthDistanceType<dim> gd>
+void BundleSchemeGrowthDistanceTest() {
+  const bool warm_start = WarmStartFunctionality<dim, gd>();
 
   // Qhull computations can be unstable with float.
   if ((dim == 3) && (typeid(Real) == typeid(float))) GTEST_SKIP();
@@ -151,7 +56,7 @@ TYPED_TEST(GrowthDistanceTest, SolutionConvergence) {
   const int nsamples_warm = 200;
 
   ConvexSetPtr<dim> set1, set2;
-  SetConvexSets<dim>(set1, set2, Real(0.1), Real(0.1));
+  MakeConvexSetPair<dim>(set1, set2, Real(0.1), Real(0.1));
 
   // Compute growth distance for random transformations.
   Settings settings;
@@ -167,7 +72,7 @@ TYPED_TEST(GrowthDistanceTest, SolutionConvergence) {
     for (int j = 0; j < nsamples_warm; ++j) {
       const bool ws = (j > 0) && warm_start;
       if (2 * j > nsamples_warm) settings.ws_type = WarmStartType::Dual;
-      growth_distance(set1.get(), tf1, set2.get(), tf2, settings, out, ws);
+      gd(set1.get(), tf1, set2.get(), tf2, settings, out, ws);
       ASSERT_TRUE(out.status == SolutionStatus::Optimal ||
                   out.status == SolutionStatus::CoincidentCenters);
       const SolutionError err =
@@ -181,37 +86,52 @@ TYPED_TEST(GrowthDistanceTest, SolutionConvergence) {
   }
 }
 
+TEST(GrowthDistanceTest, CuttingPlane_EllipsePolygon) {
+  BundleSchemeGrowthDistanceTest<2, GrowthDistanceCp<2>>();
+}
+
+TEST(GrowthDistanceTest, CuttingPlane_ConeMesh) {
+  BundleSchemeGrowthDistanceTest<3, GrowthDistanceCp<3>>();
+}
+
+TEST(GrowthDistanceTest, TrustRegionNewton_EllipsePolygon) {
+  BundleSchemeGrowthDistanceTest<2, GrowthDistanceTrn<2>>();
+}
+
+TEST(GrowthDistanceTest, TrustRegionNewton_ConeMesh) {
+  BundleSchemeGrowthDistanceTest<3, GrowthDistanceTrn<3>>();
+}
+
+TEST(GrowthDistanceTest, CuboidHalfspace) {
+  // Set 1: Cuboid.
+  const ConvexSetPtr<3> setc =
+      std::make_unique<Cuboid>(Real(1.0), Real(2.0), Real(3.0), Real(0.1));
+  // Set 2: Half-space.
+  const auto seth = std::make_unique<Halfspace<3>>(Real(0.4));
+
+  // Compute growth distance for random transformations.
+  Transform3r tfc = Transform3r::Identity();
+  const Transform3r tfh = Transform3r::Identity();
+  Settings settings{};
+  Output<3> out;
+
+  Affine(tfc) = Vec3r(Real(8.0), Real(-7.0), Real(0.7));
+  const Real gd =
+      GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
+  ASSERT_TRUE(out.status == SolutionStatus::Optimal);
+  ASSERT_NEAR(gd, Real(0.2), kTol);
+
+  Affine(tfc) = Vec3r(Real(8.0), Real(-7.0), Real(-0.1));
+  GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
+  ASSERT_TRUE(out.status == SolutionStatus::CoincidentCenters);
+}
+
+// ---------------------------------------------------------------------------
 // Collision detection tests
-struct DetectCollision_2D {
-  static constexpr int dim = 2;
-};
-struct DetectCollision_3D {
-  static constexpr int dim = 3;
-};
+// ---------------------------------------------------------------------------
 
-struct DetectCollisionNameGenerator {
-  template <typename T>
-  static std::string GetName(int) {
-    return std::to_string(T::dim) + "D";
-  }
-};
-
-template <typename T>
-class DetectCollisionTest : public testing::Test {
- protected:
-  DetectCollisionTest() {}
-
-  ~DetectCollisionTest() {}
-};
-
-using DetectCollisionTypes =
-    testing::Types<DetectCollision_2D, DetectCollision_3D>;
-TYPED_TEST_SUITE(DetectCollisionTest, DetectCollisionTypes,
-                 DetectCollisionNameGenerator);
-
-TYPED_TEST(DetectCollisionTest, CollisionAssertion) {
-  constexpr int dim = TypeParam::dim;
-
+template <int dim>
+void CuttingPlaneDetectCollisionTest() {
   // Qhull computations can be unstable with float.
   if ((dim == 3) && (typeid(Real) == typeid(float))) GTEST_SKIP();
 
@@ -221,7 +141,7 @@ TYPED_TEST(DetectCollisionTest, CollisionAssertion) {
   const int nsamples_warm = 200;
 
   ConvexSetPtr<dim> set1, set2;
-  SetConvexSets<dim>(set1, set2, Real(0.1), Real(0.1));
+  MakeConvexSetPair<dim>(set1, set2, Real(0.1), Real(0.1));
 
   // Check collisions for random transformations.
   Settings settings;
@@ -250,28 +170,12 @@ TYPED_TEST(DetectCollisionTest, CollisionAssertion) {
   }
 }
 
-TEST(GrowthDistanceTest, CuboidHalfspace) {
-  // Set 1: Cuboid.
-  const ConvexSetPtr<3> setc =
-      std::make_unique<Cuboid>(Real(1.0), Real(2.0), Real(3.0), Real(0.1));
-  // Set 2: Half-space.
-  const auto seth = std::make_unique<Halfspace<3>>(Real(0.4));
+TEST(DetectCollisionTest, CuttingPlane_EllipsePolygon) {
+  CuttingPlaneDetectCollisionTest<2>();
+}
 
-  // Compute growth distance for random transformations.
-  Transform3r tfc = Transform3r::Identity();
-  const Transform3r tfh = Transform3r::Identity();
-  Settings settings{};
-  Output<3> out;
-
-  Affine(tfc) = Vec3r(Real(8.0), Real(-7.0), Real(0.7));
-  const Real gd =
-      GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
-  ASSERT_TRUE(out.status == SolutionStatus::Optimal);
-  ASSERT_NEAR(gd, Real(0.2), kTol);
-
-  Affine(tfc) = Vec3r(Real(8.0), Real(-7.0), Real(-0.1));
-  GrowthDistance(setc.get(), tfc, seth.get(), tfh, settings, out, false);
-  ASSERT_TRUE(out.status == SolutionStatus::CoincidentCenters);
+TEST(DetectCollisionTest, CuttingPlane_ConeMesh) {
+  CuttingPlaneDetectCollisionTest<3>();
 }
 
 }  // namespace
