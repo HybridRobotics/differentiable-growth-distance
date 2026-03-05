@@ -11,8 +11,13 @@
 #include "dgd/geometry/geometry_3d.h"
 #include "dgd/graham_scan.h"
 #include "dgd/utils/random.h"
+#include "test_utils.h"
 
 namespace dgd {
+
+// ---------------------------------------------------------------------------
+// Printing utilities
+// ---------------------------------------------------------------------------
 
 template <int dim>
 void PrintTo(const SupportPatchHull<dim>& sph, std::ostream* os) {
@@ -47,27 +52,16 @@ void PrintTo(const NormalPair<dim>& zn, std::ostream* os) {
 namespace {
 
 using namespace dgd;
+using dgd::test::kTol;
 
-// Assertion functions
-const Real kTol = kSqrtEps;
-const Real kTolBasis = kSqrtEps;
-
-template <int dim>
-bool AssertVectorEQ(const Vecr<dim>& v1, const Vecr<dim>& v2, Real tol) {
-  return (v1 - v2).template lpNorm<Eigen::Infinity>() < tol;
-}
-
-template <int dim>
-bool AssertMatrixEQ(const Matr<dim, dim>& m1, const Matr<dim, dim>& m2,
-                    Real tol) {
-  return (m1 - m2).template lpNorm<Eigen::Infinity>() < tol;
-}
+// ---------------------------------------------------------------------------
+// Assertion predicates (for use with EXPECT_PRED4)
+// ---------------------------------------------------------------------------
 
 template <int dim>
 bool AssertSupportPatchHullEQ(const SupportPatchHull<dim>& sph1,
                               const SupportPatchHull<dim>& sph2,
-                              const NormalPair<dim>& /*zn*/,
-                              Real tol = kTolBasis) {
+                              const NormalPair<dim>& /*zn*/, Real tol = kTol) {
   // zn is for printing context, not used in comparison.
   if (sph1.aff_dim != sph2.aff_dim) return false;
 
@@ -85,8 +79,7 @@ bool AssertSupportPatchHullEQ(const SupportPatchHull<dim>& sph1,
 template <int dim>
 bool AssertNormalConeSpanEQ(const NormalConeSpan<dim>& ncs1,
                             const NormalConeSpan<dim>& ncs2,
-                            const NormalPair<dim>& /*zn*/,
-                            Real tol = kTolBasis) {
+                            const NormalPair<dim>& /*zn*/, Real tol = kTol) {
   // zn is for printing context, not used in comparison.
   if (ncs1.span_dim != ncs2.span_dim) return false;
 
@@ -101,7 +94,10 @@ bool AssertNormalConeSpanEQ(const NormalConeSpan<dim>& ncs1,
   return true;
 }
 
-// Test case struct.
+// ---------------------------------------------------------------------------
+// Test case generation utilities
+// ---------------------------------------------------------------------------
+
 template <int dim>
 struct LocalGeometryTestCase {
   Vecr<dim> normal;
@@ -110,7 +106,6 @@ struct LocalGeometryTestCase {
   NormalConeSpan<dim> ncs_true;
 };
 
-// Utility functions.
 template <int dim>
 inline Vecr<dim> SupportPointFunction(const ConvexSet<dim>* set,
                                       const Vecr<dim>& n) {
@@ -133,7 +128,6 @@ struct PolytopeTestData {
   Real inradius;
 };
 
-// Creates polytope test cases for a hexagonal frustum.
 PolytopeTestData CreatePolytopeTestData() {
   PolytopeTestData data;
 
@@ -467,10 +461,11 @@ PolytopeTestData CreatePolytopeTestData() {
   return data;
 }
 
-// Local geometry tests
-// 2D convex set tests
-//  Ellipse test
-TEST(EllipseTest, LocalGeometry) {
+// ---------------------------------------------------------------------------
+// 2D local geometry tests
+// ---------------------------------------------------------------------------
+
+TEST(LocalGeometryTest, Ellipse) {
   const Real hlx = Real(3.0), hly = Real(2.0), margin = Real(0.0);
   auto set = Ellipse(hlx, hly, margin);
 
@@ -501,13 +496,12 @@ TEST(EllipseTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Polygon test
-TEST(PolygonTest, LocalGeometry) {
+TEST(LocalGeometryTest, Polygon) {
   Rng rng;
   rng.SetSeed();
   const int npts_max = 100;
@@ -601,9 +595,8 @@ TEST(PolygonTest, LocalGeometry) {
 
       set.ComputeLocalGeometry(zn, sph, ncs);
 
-      EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn,
-                   kTolBasis);
-      EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTolBasis);
+      EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTol);
+      EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
     }
 
     // Case 4: Positive margin.
@@ -624,15 +617,13 @@ TEST(PolygonTest, LocalGeometry) {
 
       set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-      EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn,
-                   kTolBasis);
-      EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTolBasis);
+      EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTol);
+      EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
     }
   }
 }
 
-//  Rectangle test
-TEST(RectangleTest, LocalGeometry) {
+TEST(LocalGeometryTest, Rectangle) {
   Real hlx = Real(3.0), hly = Real(2.0), margin = Real(0.0);
   auto set = Rectangle(hlx, hly, margin);
 
@@ -702,8 +693,8 @@ TEST(RectangleTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 4: Positive margin.
@@ -724,14 +715,16 @@ TEST(RectangleTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-// 3D convex set tests
-//  Cone test
-TEST(ConeTest, LocalGeometry) {
+// ---------------------------------------------------------------------------
+// 3D local geometry tests
+// ---------------------------------------------------------------------------
+
+TEST(LocalGeometryTest, Cone) {
   Real ha = kPi / Real(6.0), radius = Real(1.0), margin = Real(0.0);
   Real tha = std::tan(ha);
   Real height = radius / tha;
@@ -871,8 +864,8 @@ TEST(ConeTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 8: Positive margin.
@@ -893,13 +886,12 @@ TEST(ConeTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Cuboid test
-TEST(CuboidTest, LocalGeometry) {
+TEST(LocalGeometryTest, Cuboid) {
   Real hlx = Real(3.0), hly = Real(2.0), hlz = Real(1.5), margin = Real(0.0);
   auto set = Cuboid(hlx, hly, hlz, margin);
 
@@ -1040,8 +1032,8 @@ TEST(CuboidTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 6: Positive margin.
@@ -1062,13 +1054,12 @@ TEST(CuboidTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Cylinder test
-TEST(CylinderTest, LocalGeometry) {
+TEST(LocalGeometryTest, Cylinder) {
   Real hlx = Real(2.0), radius = Real(2.5), margin = Real(0.0);
   auto set = Cylinder(hlx, radius, margin);
 
@@ -1186,8 +1177,8 @@ TEST(CylinderTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 6: Positive margin.
@@ -1208,13 +1199,12 @@ TEST(CylinderTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Ellipsoid test
-TEST(EllipsoidTest, LocalGeometry) {
+TEST(LocalGeometryTest, Ellipsoid) {
   Real hlx = Real(3.0), hly = Real(2.0), hlz = Real(1.5), margin = Real(0.1);
   auto set = Ellipsoid(hlx, hly, hlz, margin);
 
@@ -1246,13 +1236,12 @@ TEST(EllipsoidTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Frustum test
-TEST(FrustumTest, LocalGeometry) {
+TEST(LocalGeometryTest, Frustum) {
   // Frustum types:
   //  t = 0: rb > 0, rt > 0,
   //  t = 1: rb > 0, rt = 0,
@@ -1405,9 +1394,8 @@ TEST(FrustumTest, LocalGeometry) {
 
       set.ComputeLocalGeometry(zn, sph, ncs);
 
-      EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn,
-                   kTolBasis);
-      EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+      EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+      EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
     }
 
     // Case 6: Positive margin.
@@ -1428,15 +1416,13 @@ TEST(FrustumTest, LocalGeometry) {
 
       set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-      EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn,
-                   kTolBasis);
-      EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+      EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+      EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
     }
   }
 }
 
-//  Mesh test
-TEST(MeshTest, LocalGeometry) {
+TEST(LocalGeometryTest, Mesh) {
   auto data = CreatePolytopeTestData();
 
   ASSERT_EQ(data.vertices.size(), 12);
@@ -1466,8 +1452,8 @@ TEST(MeshTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 2: Test cases without hints.
@@ -1478,8 +1464,8 @@ TEST(MeshTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, ncs_true, zn, kTol);
   }
 
   // Case 3: Positive margin, with hints.
@@ -1506,8 +1492,8 @@ TEST(MeshTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 4: Positive margin, without hints.
@@ -1517,13 +1503,12 @@ TEST(MeshTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Polytope test
-TEST(PolytopeTest, LocalGeometry) {
+TEST(LocalGeometryTest, Polytope) {
   auto data = CreatePolytopeTestData();
 
   Real margin = Real(0.0);
@@ -1548,8 +1533,8 @@ TEST(PolytopeTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 2: Test cases without hints.
@@ -1560,8 +1545,8 @@ TEST(PolytopeTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, ncs_true, zn, kTol);
   }
 
   // Case 3: Positive margin, with hints.
@@ -1587,8 +1572,8 @@ TEST(PolytopeTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 4: Positive margin, without hints.
@@ -1598,47 +1583,17 @@ TEST(PolytopeTest, LocalGeometry) {
 
     set_m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<3>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<3>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-// XD convex set tests
-struct SetNameGenerator {
-  template <typename T>
-  static std::string GetName(int) {
-    if constexpr (std::is_same_v<T, Stadium>) return "Stadium";
-    if constexpr (std::is_same_v<T, Capsule>) return "Capsule";
-    if constexpr (std::is_same_v<T, Circle>) return "Circle";
-    if constexpr (std::is_same_v<T, Sphere>) return "Sphere";
-    return "Unknown";
-  }
-};
+// ---------------------------------------------------------------------------
+// Typed tests for CapsuleImpl and SphereImpl local geometry functions
+// ---------------------------------------------------------------------------
 
-template <class C>
-class CapsuleLocalGeometryTest : public testing::Test {
- protected:
-  CapsuleLocalGeometryTest() {}
-  ~CapsuleLocalGeometryTest() {}
-};
-
-using CapsuleTypes = testing::Types<Stadium, Capsule>;
-TYPED_TEST_SUITE(CapsuleLocalGeometryTest, CapsuleTypes, SetNameGenerator);
-
-template <class C>
-class SphereLocalGeometryTest : public testing::Test {
- protected:
-  SphereLocalGeometryTest() {}
-  ~SphereLocalGeometryTest() {}
-};
-
-using SphereTypes = testing::Types<Circle, Sphere>;
-TYPED_TEST_SUITE(SphereLocalGeometryTest, SphereTypes, SetNameGenerator);
-
-//  Capsule test
-TYPED_TEST(CapsuleLocalGeometryTest, LocalGeometry) {
-  constexpr int dim = TypeParam::dimension();
-
+template <int dim>
+void CapsuleImplLocalGeometryTest() {
   Vecr<dim> e2 = Vecr<dim>::UnitY();
   if constexpr (dim == 3) e2 = Vecr<dim>::UnitZ();
 
@@ -1653,7 +1608,7 @@ TYPED_TEST(CapsuleLocalGeometryTest, LocalGeometry) {
   NormalPair<dim> zn;
 
   Real hlx = Real(2.0), radius = Real(2.0), margin = Real(0.5);
-  auto set = TypeParam(hlx, radius, margin);
+  auto set = CapsuleImpl<dim>(hlx, radius, margin);
 
   EXPECT_FALSE(set.IsPolytopic());
 
@@ -1701,15 +1656,14 @@ TYPED_TEST(CapsuleLocalGeometryTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn,
-                 kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 2: Zero margin.
   radius = Real(0.0);
   margin = Real(0.0);
-  auto set_0m = TypeParam(hlx, radius, margin);
+  auto set_0m = CapsuleImpl<dim>(hlx, radius, margin);
 
   EXPECT_TRUE(set_0m.IsPolytopic());
 
@@ -1730,16 +1684,17 @@ TYPED_TEST(CapsuleLocalGeometryTest, LocalGeometry) {
 
     set_0m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn,
-                 kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTol);
   }
 }
 
-//  Sphere test
-TYPED_TEST(SphereLocalGeometryTest, LocalGeometry) {
-  constexpr int dim = TypeParam::dimension();
+TEST(LocalGeometryTest, Stadium) { CapsuleImplLocalGeometryTest<2>(); }
 
+TEST(LocalGeometryTest, Capsule) { CapsuleImplLocalGeometryTest<3>(); }
+
+template <int dim>
+void SphereImplLocalGeometryTest() {
   Vecr<dim> e2 = Vecr<dim>::UnitY();
   if constexpr (dim == 3) e2 = Vecr<dim>::UnitZ();
 
@@ -1763,7 +1718,7 @@ TYPED_TEST(SphereLocalGeometryTest, LocalGeometry) {
 
   // Case 1: Non-polytopic sphere.
   Real radius = Real(1.5);
-  auto set = TypeParam(radius);
+  auto set = SphereImpl<dim>(radius);
 
   EXPECT_FALSE(set.IsPolytopic());
 
@@ -1783,14 +1738,13 @@ TYPED_TEST(SphereLocalGeometryTest, LocalGeometry) {
 
     set.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn,
-                 kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTol);
   }
 
   // Case 2: Zero radius.
   radius = Real(0.0);
-  auto set_0m = TypeParam(radius);
+  auto set_0m = SphereImpl<dim>(radius);
 
   EXPECT_TRUE(set_0m.IsPolytopic());
 
@@ -1808,10 +1762,13 @@ TYPED_TEST(SphereLocalGeometryTest, LocalGeometry) {
 
     set_0m.ComputeLocalGeometry(zn, sph, ncs);
 
-    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn,
-                 kTolBasis);
-    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTolBasis);
+    EXPECT_PRED4(AssertSupportPatchHullEQ<dim>, sph, tc.sph_true, zn, kTol);
+    EXPECT_PRED4(AssertNormalConeSpanEQ<dim>, ncs, tc.ncs_true, zn, kTol);
   }
 }
+
+TEST(LocalGeometryTest, Circle) { SphereImplLocalGeometryTest<2>(); }
+
+TEST(LocalGeometryTest, Sphere) { SphereImplLocalGeometryTest<3>(); }
 
 }  // namespace
