@@ -64,6 +64,10 @@ class CapsuleImpl : public ConvexSet<dim> {
       NormalConeSpan<dim>& ncs,
       const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vecr<dim>& p, const Vecr<dim>& /*pi*/, Matr<dim, dim>& d_pi_p,
+      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vecr<dim>* min = nullptr,
               Vecr<dim>* max = nullptr) const final override;
 
@@ -104,8 +108,8 @@ inline Real CapsuleImpl<dim>::SupportFunction(
   if (std::abs(hlx_ * n(0)) < Real(0.5) * CapsuleImpl<dim>::eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.d_sp_n = CapsuleImpl<dim>::inradius_ *
-                   (Matr<dim, dim>::Identity() - n * n.transpose());
+    deriv.d_sp_n.noalias() = -CapsuleImpl<dim>::inradius_ * (n * n.transpose());
+    deriv.d_sp_n.diagonal().array() += CapsuleImpl<dim>::inradius_;
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);
@@ -141,6 +145,37 @@ inline void CapsuleImpl<dim>::ComputeLocalGeometry(
     // Normal cone is a halfspace.
     ncs.span_dim = dim;
   }
+}
+
+template <int dim>
+inline bool CapsuleImpl<dim>::ProjectionDerivative(
+    const Vecr<dim>& p, const Vecr<dim>& /*pi*/, Matr<dim, dim>& d_pi_p,
+    const BasePointHint<dim>* /*hint*/) const {
+  const Real dx = std::abs(p(0)) - hlx_;
+  if (dx > CapsuleImpl<dim>::eps_p_) {
+    // Projection lies on the left/right hemispherical cap.
+    Vecr<dim> v = p;
+    v(0) = std::copysign(dx, p(0));
+    const Real v2 = v.squaredNorm();
+    const Real s = CapsuleImpl<dim>::inradius_ / std::sqrt(v2);
+    d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+    d_pi_p.diagonal().array() += s;
+    return true;
+  } else if (dx < -CapsuleImpl<dim>::eps_p_) {
+    // Projection lies on the cylindrical surface.
+    d_pi_p.setZero();
+    if constexpr (dim == 3) {
+      const Real v2 = p(1) * p(1) + p(2) * p(2);
+      const Real s = CapsuleImpl<dim>::inradius_ / std::sqrt(v2);
+      d_pi_p.template bottomRightCorner<2, 2>().noalias() =
+          -(s / v2) * (p.template tail<2>() * p.template tail<2>().transpose());
+      d_pi_p.template bottomRightCorner<2, 2>().diagonal().array() += s;
+    }
+    d_pi_p(0, 0) = Real(1.0);
+    return true;
+  }
+
+  return false;
 }
 
 template <int dim>

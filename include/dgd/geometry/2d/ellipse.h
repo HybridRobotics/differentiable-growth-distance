@@ -55,6 +55,10 @@ class Ellipse : public ConvexSet<2> {
       NormalConeSpan<2>& ncs,
       const BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec2r& p, const Vec2r& pi, Matr<2, 2>& d_pi_p,
+      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec2r* min = nullptr, Vec2r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -88,8 +92,9 @@ inline Real Ellipse::SupportFunction(const Vec2r& n,
   const Real k = std::sqrt(hlx2_ * n(0) * n(0) + hly2_ * n(1) * n(1));
   const Real k_inv = Real(1.0) / k;
   const Vec2r g = Vec2r(hlx2_, hly2_) * k_inv;
-  deriv.d_sp_n = (margin_ + g(0) * g(1) * k_inv) * Vec2r(n(1), -n(0)) *
-                 Vec2r(n(1), -n(0)).transpose();
+  const Vec2r t(n(1), -n(0));
+  deriv.d_sp_n.noalias() =
+      (margin_ + g(0) * g(1) * k_inv) * (t * t.transpose());
   deriv.sp.array() = n.array() * (margin_ + g.array());
   deriv.differentiable = true;
   return k + margin_;
@@ -102,6 +107,28 @@ inline void Ellipse::ComputeLocalGeometry(
     NormalConeSpan<2>& ncs, const BasePointHint<2>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = 1;
+}
+
+inline bool Ellipse::ProjectionDerivative(
+    const Vec2r& p, const Vec2r& pi, Matr<2, 2>& d_pi_p,
+    const BasePointHint<2>* /*hint*/) const {
+  const Vec2r v = p - pi;
+  const Real dist = v.norm();
+  const Vec2r n = v / dist;
+
+  // Retrieve the dual variable for the minimum distance problem.
+  const Vec2r g((pi(0) - margin_ * n(0)) / hlx2_,
+                (pi(1) - margin_ * n(1)) / hly2_);
+  const Real lmbd = (dist + margin_) / g.norm();
+  const Vec2r h_inv(hlx2_ / (hlx2_ + lmbd), hly2_ / (hly2_ + lmbd));
+  const Vec2r w = h_inv.cwiseProduct(g);
+
+  const Real rd = dist / (dist + margin_);
+  const Real rd_1 = Real(1.0) - rd;
+  d_pi_p.noalias() = -rd_1 * (n * n.transpose());
+  d_pi_p.noalias() -= (rd / g.dot(w)) * (w * w.transpose());
+  d_pi_p.diagonal().array() += rd * h_inv.array() + rd_1;
+  return true;
 }
 
 inline Real Ellipse::Bounds(Vec2r* min, Vec2r* max) const {

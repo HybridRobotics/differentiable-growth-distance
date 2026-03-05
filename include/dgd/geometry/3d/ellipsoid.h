@@ -55,6 +55,10 @@ class Ellipsoid : public ConvexSet<3> {
       NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -97,9 +101,9 @@ inline Real Ellipsoid::SupportFunction(const Vec3r& n,
   const Real k_inv = Real(1.0) / k;
   const Vec3r g = Vec3r(hlx2_, hly2_, hlz2_) * k_inv;
   const Vec3r gn = g.cwiseProduct(n);
-  deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose()) -
-                 gn * gn.transpose() * k_inv;
-  deriv.d_sp_n += g.asDiagonal();
+  deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+  deriv.d_sp_n.noalias() -= k_inv * (gn * gn.transpose());
+  deriv.d_sp_n.diagonal().array() += margin_ + g.array();
   deriv.sp = gn + margin_ * n;
   deriv.differentiable = true;
   return k + margin_;
@@ -114,6 +118,30 @@ inline void Ellipsoid::ComputeLocalGeometry(
     NormalConeSpan<3>& ncs, const BasePointHint<3>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = 1;
+}
+
+inline bool Ellipsoid::ProjectionDerivative(
+    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+    const BasePointHint<3>* /*hint*/) const {
+  const Vec3r v = p - pi;
+  const Real dist = v.norm();
+  const Vec3r n = v / dist;
+
+  // Retrieve the dual variable for the minimum distance problem.
+  const Vec3r g((pi(0) - margin_ * n(0)) / hlx2_,
+                (pi(1) - margin_ * n(1)) / hly2_,
+                (pi(2) - margin_ * n(2)) / hlz2_);
+  const Real lmbd = (dist + margin_) / g.norm();
+  const Vec3r h_inv(hlx2_ / (hlx2_ + lmbd), hly2_ / (hly2_ + lmbd),
+                    hlz2_ / (hlz2_ + lmbd));
+  const Vec3r w = h_inv.cwiseProduct(g);
+
+  const Real rd = dist / (dist + margin_);
+  const Real rd_1 = Real(1.0) - rd;
+  d_pi_p.noalias() = -rd_1 * (n * n.transpose());
+  d_pi_p.noalias() -= (rd / g.dot(w)) * (w * w.transpose());
+  d_pi_p.diagonal().array() += rd * h_inv.array() + rd_1;
+  return true;
 }
 
 inline Real Ellipsoid::Bounds(Vec3r* min, Vec3r* max) const {

@@ -54,6 +54,10 @@ class Cuboid : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec3r& p, const Vec3r& /*pi*/, Matr<3, 3>& d_pi_p,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -93,7 +97,8 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
   if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+    deriv.d_sp_n.diagonal().array() += margin_;
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);
@@ -141,6 +146,29 @@ inline void Cuboid::ComputeLocalGeometry(
     }
     ncs.span_dim = 2;
   }
+}
+
+inline bool Cuboid::ProjectionDerivative(
+    const Vec3r& p, const Vec3r& /*pi*/, Matr<3, 3>& d_pi_p,
+    const BasePointHint<3>* /*hint*/) const {
+  const Vec3r d(std::abs(p(0)) - hlx_, std::abs(p(1)) - hly_,
+                std::abs(p(2)) - hlz_);
+
+  if ((std::abs(d(0)) <= eps_p_) || (std::abs(d(1)) <= eps_p_) ||
+      (std::abs(d(2)) <= eps_p_)) {
+    return false;
+  }
+
+  // mask(i) = 1, if the i-th projection component is clamped.
+  const Vec3r mask = (d.array() > Real(0.0)).cast<Real>();
+  const Vec3r v = mask.cwiseProduct(Vec3r(std::copysign(d(0), p(0)),
+                                          std::copysign(d(1), p(1)),
+                                          std::copysign(d(2), p(2))));
+  const Real v2 = v.squaredNorm();
+  const Real s = margin_ / std::sqrt(v2);
+  d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+  d_pi_p.diagonal() += (Vec3r::Ones() - mask) + s * mask;
+  return true;
 }
 
 inline Real Cuboid::Bounds(Vec3r* min, Vec3r* max) const {

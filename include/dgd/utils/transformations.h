@@ -72,11 +72,12 @@ inline Rotation3r EulerToRotation(const Vec3r& euler) {
  */
 inline Rotation3r AngleAxisToRotation(const Vec3r& ax, Real ang) {
   const Real c = std::cos(ang);
+  const Real s = std::sin(ang);
 
   // R = c*I + (1-c)*ax*ax' + s*hat(ax).
-  Rotation3r rot;
-  rot = c * Rotation3r::Identity() + (Real(1.0) - c) * (ax * ax.transpose()) +
-        std::sin(ang) * Hat(ax);
+  Rotation3r rot = s * Hat(ax);
+  rot.noalias() += (Real(1.0) - c) * (ax * ax.transpose());
+  rot.diagonal().array() += c;
   return rot;
 }
 
