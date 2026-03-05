@@ -87,7 +87,7 @@ inline Rotation3r RotationToZAxis(const Vec3r& n) {
   if (norm2 > kEps * kEps) {
     Rotation3r m;
     m.noalias() = (Real(2.0) / norm2) * axis * axis.transpose();
-    m.diagonal() -= Vec3r::Ones();
+    m.diagonal().array() -= Real(1.0);
     return m;
   } else {
     return Vec3r(Real(1.0), Real(-1.0), Real(-1.0)).asDiagonal();
@@ -237,8 +237,8 @@ struct SupportFunctionOutput<dim, 2> {
     sp.noalias() = mdp.rot1 * deriv1.sp - mdp.rot2 * deriv2.sp;
     differentiable = deriv1.differentiable & deriv2.differentiable;
     if (differentiable) {
-      d_sp_n.noalias() = mdp.rot1 * deriv1.d_sp_n * mdp.rot1.transpose() +
-                         mdp.rot2 * deriv2.d_sp_n * mdp.rot2.transpose();
+      d_sp_n.noalias() = mdp.rot1 * deriv1.d_sp_n * mdp.rot1.transpose();
+      d_sp_n.noalias() += mdp.rot2 * deriv2.d_sp_n * mdp.rot2.transpose();
     }
   }
 

@@ -60,6 +60,10 @@ class Polytope : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* hint = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+      const BasePointHint<3>* hint = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -129,7 +133,8 @@ inline Real Polytope::SupportFunction(const Vec3r& n,
     }
   }
   if (deriv.differentiable) {
-    deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+    deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+    deriv.d_sp_n.diagonal().array() += margin_;
   }
 
   if (hint) {
@@ -260,6 +265,37 @@ inline void Polytope::ComputeLocalGeometry(const NormalPair<3>& zn,
       ncs.basis.col(0) = e_perp;
     }
   }
+}
+
+inline bool Polytope::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
+                                           Matr<3, 3>& d_pi_p,
+                                           const BasePointHint<3>* hint) const {
+  NormalPair<3> zn;
+  zn.z = pi;
+  const Real dist = (p - pi).norm();
+  zn.n = (p - pi) / dist;
+
+  SupportPatchHull<3> sph;
+  NormalConeSpan<3> ncs;
+  ComputeLocalGeometry(zn, sph, ncs, hint);
+
+  if (sph.aff_dim + ncs.span_dim > 3) return false;
+
+  if (sph.aff_dim == 2) {
+    // Projection lies on a face.
+    d_pi_p.noalias() = -(zn.n * zn.n.transpose());
+    d_pi_p.diagonal().array() += Real(1.0);
+  } else {
+    // Projection lies on a vertex/edge.
+    const Real s = margin_ / dist;
+    d_pi_p.noalias() = -s * (zn.n * zn.n.transpose());
+    d_pi_p.diagonal().array() += s;
+    if (sph.aff_dim == 1) {
+      d_pi_p.noalias() += (Real(1.0) - s) * (sph.basis * sph.basis.transpose());
+    }
+  }
+
+  return true;
 }
 
 inline bool Polytope::IsPolytopic() const { return (margin_ == Real(0.0)); }

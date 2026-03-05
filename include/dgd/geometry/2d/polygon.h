@@ -62,6 +62,10 @@ class Polygon : public ConvexSet<2> {
       const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
       const BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec2r& p, const Vec2r& pi, Matr<2, 2>& d_pi_p,
+      const BasePointHint<2>* hint = nullptr) const final override;
+
   bool IsPolytopic() const final override;
 
   void PrintInfo() const final override;
@@ -118,8 +122,8 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
       sv - margin_ - eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.d_sp_n =
-        margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+    const Vec2r t(n(1), -n(0));
+    deriv.d_sp_n.noalias() = margin_ * (t * t.transpose());
     deriv.differentiable = true;
   }
   return sv;
@@ -150,6 +154,33 @@ inline void Polygon::ComputeLocalGeometry(
   ncs.span_dim = 1 + (((zn.z - vert_[idx]).squaredNorm() < eps_p2) ||
                       ((zn.z - vert_[prev]).squaredNorm() < eps_p2) ||
                       ((zn.z - vert_[next]).squaredNorm() < eps_p2));
+}
+
+inline bool Polygon::ProjectionDerivative(const Vec2r& p, const Vec2r& pi,
+                                          Matr<2, 2>& d_pi_p,
+                                          const BasePointHint<2>* hint) const {
+  NormalPair<2> zn;
+  zn.z = pi;
+  const Real dist = (p - pi).norm();
+  zn.n = (p - pi) / dist;
+
+  SupportPatchHull<2> sph;
+  NormalConeSpan<2> ncs;
+  ComputeLocalGeometry(zn, sph, ncs, hint);
+
+  if (sph.aff_dim == 0) {
+    // Projection lies on a vertex.
+    const Real s = margin_ / dist;
+    d_pi_p.noalias() = -s * (zn.n * zn.n.transpose());
+    d_pi_p.diagonal().array() += s;
+  } else {
+    if (ncs.span_dim == 2) return false;
+    // Projection lies on an edge.
+    d_pi_p.noalias() = -(zn.n * zn.n.transpose());
+    d_pi_p.diagonal().array() += Real(1.0);
+  }
+
+  return true;
 }
 
 inline bool Polygon::IsPolytopic() const { return (margin_ == Real(0.0)); }

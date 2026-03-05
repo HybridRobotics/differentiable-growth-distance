@@ -286,6 +286,20 @@ class ConvexSet {
       NormalConeSpan<dim>& ncs, const BasePointHint<dim>* hint = nullptr) const;
 
   /**
+   * @brief Computes the derivative of the projection map at a point in the set
+   * exterior.
+   *
+   * @param[in]  p      Point in the convex set exterior.
+   * @param[in]  pi     Projection of the point onto the convex set.
+   * @param[out] d_pi_p Derivative of the projection map at the point.
+   * @param[in]  hint   Additional hints for the base point.
+   * @return     Differentiability of the projection map at the point.
+   */
+  virtual bool ProjectionDerivative(
+      const Vecr<dim>& p, const Vecr<dim>& pi, Matr<dim, dim>& d_pi_p,
+      const BasePointHint<dim>* hint = nullptr) const;
+
+  /**
    * @brief Computes the axis-aligned bounding box (AABB) of the convex set.
    *
    * @param[out] min Minimum corner of the bounding box.
@@ -388,6 +402,13 @@ inline void ConvexSet<dim>::ComputeLocalGeometry(
     NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
   sph.aff_dim = dim - 1;
   ncs.span_dim = dim;
+}
+
+template <int dim>
+inline bool ConvexSet<dim>::ProjectionDerivative(
+    const Vecr<dim>& /*p*/, const Vecr<dim>& /*pi*/, Matr<dim, dim>& /*d_pi_p*/,
+    const BasePointHint<dim>* /*hint*/) const {
+  return false;
 }
 
 template <int dim>

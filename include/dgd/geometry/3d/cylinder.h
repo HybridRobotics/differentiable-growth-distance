@@ -60,6 +60,10 @@ class Cylinder : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -82,7 +86,7 @@ inline Cylinder::Cylinder(Real hlx, Real radius, Real margin)
 
 inline Real Cylinder::SupportFunction(const Vec3r& n, Vec3r& sp,
                                       SupportFunctionHint<3>* /*hint*/) const {
-  const Real k = std::sqrt(n(1) * n(1) + n(2) * n(2));
+  const Real k = n.tail<2>().norm();
   sp = margin_ * n;
   if (k >= kEps) sp.tail<2>() += radius_ * n.tail<2>() / k;
   sp(0) += std::copysign(hlx_, n(0));
@@ -98,9 +102,11 @@ inline Real Cylinder::SupportFunction(const Vec3r& n,
   if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-    deriv.d_sp_n.block<2, 2>(1, 1) += radius_ / (k2 * k) * Vec2r(n(2), -n(1)) *
-                                      Vec2r(n(2), -n(1)).transpose();
+    deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+    deriv.d_sp_n.diagonal().array() += margin_;
+    const Vec2r t(n(2), -n(1));
+    deriv.d_sp_n.block<2, 2>(1, 1).noalias() +=
+        (radius_ / (k2 * k)) * (t * t.transpose());
     deriv.differentiable = true;
   }
   deriv.sp = margin_ * n;
@@ -140,6 +146,41 @@ inline void Cylinder::ComputeLocalGeometry(
     ncs.basis.col(0) =
         Vec3r(Real(0.0), zn.z(2), -zn.z(1)).cross(zn.n) / std::sqrt(r2);
   }
+}
+
+inline bool Cylinder::ProjectionDerivative(
+    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+    const BasePointHint<3>* /*hint*/) const {
+  const Real dx = std::abs(p(0)) - hlx_;
+  const Real r = p.tail<2>().norm();
+
+  if ((std::abs(dx) <= eps_p_) || std::abs(r - radius_) <= eps_p_) return false;
+
+  if (r < radius_) {
+    // Projection lies on the left/right disk.
+    d_pi_p.setIdentity();
+    d_pi_p(0, 0) = Real(0.0);
+  } else if (dx < Real(0.0)) {
+    // Projection lies on the cylindrical surface.
+    d_pi_p.setZero();
+    const Real s = (radius_ + margin_) / r;
+    d_pi_p.bottomRightCorner<2, 2>().noalias() =
+        -(s / (r * r)) * (p.tail<2>() * p.tail<2>().transpose());
+    d_pi_p.bottomRightCorner<2, 2>().diagonal().array() += s;
+    d_pi_p(0, 0) = Real(1.0);
+  } else {
+    // Projection lies on the left/right circular edge.
+    const Vec3r w = Vec3r(Real(0.0), -p(2), p(1)) / r;
+    const Vec3r v(std::copysign(dx, p(0)), p(1) - radius_ * w(2),
+                  p(2) + radius_ * w(1));
+    const Real v2 = v.squaredNorm();
+    const Real s = margin_ / std::sqrt(v2);
+    d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+    d_pi_p.noalias() += (pi.tail<2>().norm() / r - s) * (w * w.transpose());
+    d_pi_p.diagonal().array() += s;
+  }
+
+  return true;
 }
 
 inline Real Cylinder::Bounds(Vec3r* min, Vec3r* max) const {

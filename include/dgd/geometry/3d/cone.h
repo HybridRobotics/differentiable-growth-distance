@@ -65,6 +65,10 @@ class Cone : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -99,7 +103,7 @@ inline Cone::Cone(Real radius, Real height, Real margin)
 
 inline Real Cone::SupportFunction(const Vec3r& n, Vec3r& sp,
                                   SupportFunctionHint<3>* /*hint*/) const {
-  const Real k = std::sqrt(n(0) * n(0) + n(1) * n(1));
+  const Real k = n.head<2>().norm();
   sp = margin_ * n;
   if (n(2) >= tha_ * k) {
     // The cone vertex is the support point.
@@ -125,7 +129,8 @@ inline Real Cone::SupportFunction(const Vec3r& n,
     if (diff < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
+      deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+      deriv.d_sp_n.diagonal().array() += margin_;
       deriv.differentiable = true;
     }
     deriv.sp(2) += (h_ - rho_);
@@ -135,9 +140,11 @@ inline Real Cone::SupportFunction(const Vec3r& n,
     if (std::min(Real(2.0) * r_ * k, -diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.d_sp_n.block<2, 2>(0, 0) +=
-          r_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+      deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+      deriv.d_sp_n.diagonal().array() += margin_;
+      const Vec2r t(n(1), -n(0));
+      deriv.d_sp_n.block<2, 2>(0, 0).noalias() +=
+          (r_ / (k2 * k)) * (t * t.transpose());
       deriv.differentiable = true;
     }
     if (k >= kEps) deriv.sp.head<2>() += r_ * n.head<2>() / k;
@@ -152,7 +159,7 @@ inline void Cone::ComputeLocalGeometry(const NormalPair<3>& zn,
                                        SupportPatchHull<3>& sph,
                                        NormalConeSpan<3>& ncs,
                                        const BasePointHint<3>* /*hint*/) const {
-  const Real k = std::sqrt(zn.n(0) * zn.n(0) + zn.n(1) * zn.n(1));
+  const Real k = zn.n.head<2>().norm();
   if (zn.n(2) > (tha_ + eps_d_) * k) {
     // Support patch is a point.
     sph.aff_dim = 0;
@@ -189,6 +196,48 @@ inline void Cone::ComputeLocalGeometry(const NormalPair<3>& zn,
           Vec3r(zn.z(1), -zn.z(0), Real(0.0)).cross(zn.n) / std::sqrt(r2);
     }
   }
+}
+
+inline bool Cone::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
+                                       Matr<3, 3>& d_pi_p,
+                                       const BasePointHint<3>* /*hint*/) const {
+  const Real r = p.head<2>().norm();
+  const Real dt = p(2) - (h_ - rho_) - tha_ * r;
+  const Real db = p(2) + rho_ - tha_ * (r - r_);
+  if (dt >= -r * eps_d_) {
+    if (dt <= r * eps_d_) return false;
+    // Projection lies on the vertex.
+    const Vec3r v(p(0), p(1), p(2) - (h_ - rho_));
+    const Real v2 = v.squaredNorm();
+    const Real s = margin_ / std::sqrt(v2);
+    d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+    d_pi_p.diagonal().array() += s;
+  } else if ((p(2) > -rho_) && (db >= -(r - r_) * eps_d_)) {
+    if (db <= (r - r_) * eps_d_) return false;
+    // Projection lies on the cone surface.
+    const Vec3r w = Vec3r(-p(1), p(0), Real(0.0)) / r;
+    const Vec3r u = Vec3r(tha_ * p(0), tha_ * p(1), -r) /
+                    (r * std::sqrt(Real(1.0) + tha_ * tha_));
+    d_pi_p.noalias() = u * u.transpose();
+    d_pi_p.noalias() += (pi.head<2>().norm() / r) * (w * w.transpose());
+  } else if (r >= r_ - eps_p_) {
+    if (r <= r_ + eps_p_) return false;
+    // Projection lies on the base circular edge.
+    const Vec3r w = Vec3r(-p(1), p(0), Real(0.0)) / r;
+    const Real f = r_ / r;
+    const Vec3r v(p(0) - f * p(0), p(1) - f * p(1), p(2) + rho_);
+    const Real v2 = v.squaredNorm();
+    const Real s = margin_ / std::sqrt(v2);
+    d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+    d_pi_p.noalias() += (f * (Real(1.0) - s)) * (w * w.transpose());
+    d_pi_p.diagonal().array() += s;
+  } else {
+    // Projection lies on the base disk.
+    d_pi_p.setIdentity();
+    d_pi_p(2, 2) = Real(0.0);
+  }
+
+  return true;
 }
 
 inline Real Cone::Bounds(Vec3r* min, Vec3r* max) const {

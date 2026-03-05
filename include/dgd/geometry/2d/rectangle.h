@@ -54,6 +54,10 @@ class Rectangle : public ConvexSet<2> {
       const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
       const BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec2r& p, const Vec2r& /*pi*/, Matr<2, 2>& d_pi_p,
+      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec2r* min = nullptr, Vec2r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -89,8 +93,8 @@ inline Real Rectangle::SupportFunction(const Vec2r& n,
   if (diff < Real(0.5) * eps_sp_) {
     deriv.differentiable = false;
   } else {
-    deriv.d_sp_n =
-        margin_ * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+    const Vec2r t(n(1), -n(0));
+    deriv.d_sp_n.noalias() = margin_ * (t * t.transpose());
     deriv.differentiable = true;
   }
   return SupportFunction(n, deriv.sp);
@@ -119,6 +123,34 @@ inline void Rectangle::ComputeLocalGeometry(
     // Normal cone is a 2D cone.
     ncs.span_dim = 2;
   }
+}
+
+inline bool Rectangle::ProjectionDerivative(
+    const Vec2r& p, const Vec2r& /*pi*/, Matr<2, 2>& d_pi_p,
+    const BasePointHint<2>* /*hint*/) const {
+  const Real dx = std::abs(p(0)) - hlx_;
+  const Real dy = std::abs(p(1)) - hly_;
+  if ((dx > eps_p_) && (dy > eps_p_)) {
+    // Projection lies on a vertex.
+    const Vec2r v(std::copysign(dx, p(0)), std::copysign(dy, p(1)));
+    const Real v2 = v.squaredNorm();
+    const Real s = margin_ / std::sqrt(v2);
+    d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+    d_pi_p.diagonal().array() += s;
+    return true;
+  } else if (dx < -eps_p_) {
+    // Projection lies on the top/bottom edge.
+    d_pi_p.setZero();
+    d_pi_p(0, 0) = Real(1.0);
+    return true;
+  } else if (dy < -eps_p_) {
+    // Projection lies on the left/right edge.
+    d_pi_p.setZero();
+    d_pi_p(1, 1) = Real(1.0);
+    return true;
+  }
+
+  return false;
 }
 
 inline Real Rectangle::Bounds(Vec2r* min, Vec2r* max) const {

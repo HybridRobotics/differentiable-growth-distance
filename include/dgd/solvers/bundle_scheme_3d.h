@@ -206,9 +206,8 @@ inline void ProjectCoordinates(BundleScheme3Context<BcSolverType::LU>& bsc,
                                Vec3r& bc) {
   auto project_edge = [&bsc, &bc](const Eigen::Ref<const Vec2r>& eij, int i,
                                   int j, int k) -> void {
-    bc(i) = std::max(Real(0.0),
-                     std::min(Real(1.0), -eij.dot(bsc.s.col(j).head<2>()) /
-                                             eij.squaredNorm()));
+    bc(i) = std::clamp(-eij.dot(bsc.s.col(j).head<2>()) / eij.squaredNorm(),
+                       Real(0.0), Real(1.0));
     bc(j) = std::max(Real(0.0), Real(1.0) - bc(i));
     bc(k) = Real(0.0);
   };
@@ -367,8 +366,8 @@ inline Real UpdateOriginCoordinates<BcSolverType::LU>(
     // Solve for the barycentric coordinates.
     if (std::abs(bsc.lu(0, 0) * bsc.lu(1, 1)) < Real(2.0) * kEps) {
       bc(bsc.pci) = Real(0.0);
-      bc(bsc.pc) = std::max(
-          Real(0.0), std::min(Real(1.0), -bsc.s(bsc.pr, 2) * bsc.lu(0, 0)));
+      bc(bsc.pc) =
+          std::clamp(-bsc.s(bsc.pr, 2) * bsc.lu(0, 0), Real(0.0), Real(1.0));
       bc(2) = std::max(Real(0.0), Real(1.0) - bc(0) - bc(1));
     } else {
       bc(bsc.pci) =

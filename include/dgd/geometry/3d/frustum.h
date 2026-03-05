@@ -73,6 +73,10 @@ class Frustum : public ConvexSet<3> {
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
       const BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
+  bool ProjectionDerivative(
+      const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
   bool IsPolytopic() const final override;
@@ -119,7 +123,7 @@ inline Frustum::Frustum(Real base_radius, Real top_radius, Real height,
 
 inline Real Frustum::SupportFunction(const Vec3r& n, Vec3r& sp,
                                      SupportFunctionHint<3>* /*hint*/) const {
-  const Real k = std::sqrt(n(0) * n(0) + n(1) * n(1));
+  const Real k = n.head<2>().norm();
   sp = margin_ * n;
   if (n(2) >= tha_ * k) {
     // The support point lies in the frustum top.
@@ -145,9 +149,11 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
     if (std::min(Real(2.0) * rt_ * k, diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.d_sp_n.block<2, 2>(0, 0) +=
-          rt_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+      deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+      deriv.d_sp_n.diagonal().array() += margin_;
+      const Vec2r t(n(1), -n(0));
+      deriv.d_sp_n.block<2, 2>(0, 0).noalias() +=
+          (rt_ / (k2 * k)) * (t * t.transpose());
       deriv.differentiable = true;
     }
     if (k >= kEps) deriv.sp.head<2>() += rt_ * n.head<2>() / k;
@@ -157,9 +163,11 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
     if (std::min(Real(2.0) * rb_ * k, -diff) < eps_sp_) {
       deriv.differentiable = false;
     } else {
-      deriv.d_sp_n = margin_ * (Matr<3, 3>::Identity() - n * n.transpose());
-      deriv.d_sp_n.block<2, 2>(0, 0) +=
-          rb_ / (k2 * k) * Vec2r(n(1), -n(0)) * Vec2r(n(1), -n(0)).transpose();
+      deriv.d_sp_n.noalias() = -margin_ * (n * n.transpose());
+      deriv.d_sp_n.diagonal().array() += margin_;
+      const Vec2r t(n(1), -n(0));
+      deriv.d_sp_n.block<2, 2>(0, 0).noalias() +=
+          (rb_ / (k2 * k)) * (t * t.transpose());
       deriv.differentiable = true;
     }
     if (k >= kEps) deriv.sp.head<2>() += rb_ * n.head<2>() / k;
@@ -173,7 +181,7 @@ inline bool Frustum::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 inline void Frustum::ComputeLocalGeometry(
     const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
     const BasePointHint<3>* /*hint*/) const {
-  const Real k = std::sqrt(zn.n(0) * zn.n(0) + zn.n(1) * zn.n(1));
+  const Real k = zn.n.head<2>().norm();
   if (zn.n(2) > (tha_ + eps_d_) * k) {
     if ((rt_ > Real(0.0)) && (k <= eps_d_)) {
       // Support patch is a disk.
@@ -218,6 +226,75 @@ inline void Frustum::ComputeLocalGeometry(
       ncs.span_dim = 3;
     }
   }
+}
+
+inline bool Frustum::ProjectionDerivative(
+    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
+    const BasePointHint<3>* /*hint*/) const {
+  const Real r = p.head<2>().norm();
+  Real rs, rl, hs, hl, sgn;
+  Real ds = p(2) - (h_ - offset_) - tha_ * (r - rt_);
+  Real dl = tha_ * (r - rb_) - (p(2) + offset_);
+  if (tha_ < Real(0.0)) {
+    rs = rb_, rl = rt_, hs = -offset_, hl = h_ - offset_, sgn = Real(-1.0);
+    std::swap(ds, dl);
+  } else {
+    rs = rt_, rl = rb_, hs = h_ - offset_, hl = -offset_, sgn = Real(1.0);
+  }
+
+  auto set_edge = [&](Real rd, Real h) -> void {
+    const Vec3r w = Vec3r(-p(1), p(0), Real(0.0)) / r;
+    const Real f = rd / r;
+    const Vec3r v(p(0) - f * p(0), p(1) - f * p(1), p(2) - h);
+    const Real v2 = v.squaredNorm();
+    const Real s = margin_ / std::sqrt(v2);
+    d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+    d_pi_p.noalias() += (f * (Real(1.0) - s)) * (w * w.transpose());
+    d_pi_p.diagonal().array() += s;
+  };
+
+  if ((sgn * (p(2) - hs) > Real(0.0)) && (ds >= -(r - rs) * eps_d_)) {
+    if (ds <= (r - rs) * eps_d_) return false;
+    if (rs > Real(0.0)) {
+      if (r <= rs + eps_p_) {
+        if (r >= rs - eps_p_) return false;
+        // Projection lies on the smaller disk.
+        d_pi_p.setIdentity();
+        d_pi_p(2, 2) = Real(0.0);
+      } else {
+        // Projection lies on the smaller circular edge.
+        set_edge(rs, hs);
+      }
+    } else {
+      // Projection lies on the vertex.
+      const Vec3r v(p(0), p(1), p(2) - hs);
+      const Real v2 = v.squaredNorm();
+      const Real s = margin_ / std::sqrt(v2);
+      d_pi_p.noalias() = -(s / v2) * (v * v.transpose());
+      d_pi_p.diagonal().array() += s;
+    }
+  } else if ((sgn * (p(2) - hl) > Real(0.0)) && (dl <= (r - rl) * eps_d_)) {
+    if (dl >= -(r - rl) * eps_d_) return false;
+    // Projection lies on the frustum surface.
+    const Vec3r w = Vec3r(-p(1), p(0), Real(0.0)) / r;
+    const Vec3r u = Vec3r(tha_ * p(0), tha_ * p(1), -r) /
+                    (r * std::sqrt(Real(1.0) + tha_ * tha_));
+    d_pi_p.noalias() = u * u.transpose();
+    d_pi_p.noalias() += (pi.head<2>().norm() / r) * (w * w.transpose());
+  } else {
+    // rl is always positive.
+    if (r <= rl + eps_p_) {
+      if (r >= rl - eps_p_) return false;
+      // Projection lies on the larger disk.
+      d_pi_p.setIdentity();
+      d_pi_p(2, 2) = Real(0.0);
+    } else {
+      // Projection lies on the larger circular edge.
+      set_edge(rl, hl);
+    }
+  }
+
+  return true;
 }
 
 inline Real Frustum::Bounds(Vec3r* min, Vec3r* max) const {
