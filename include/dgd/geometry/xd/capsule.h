@@ -62,11 +62,11 @@ class CapsuleImpl : public ConvexSet<dim> {
   void ComputeLocalGeometry(
       const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
       NormalConeSpan<dim>& ncs,
-      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+      BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vecr<dim>& p, const Vecr<dim>& /*pi*/, Matr<dim, dim>& d_pi_p,
-      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+      BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vecr<dim>* min = nullptr,
               Vecr<dim>* max = nullptr) const final override;
@@ -123,7 +123,7 @@ inline bool CapsuleImpl<dim>::RequireUnitNormal() const {
 template <int dim>
 inline void CapsuleImpl<dim>::ComputeLocalGeometry(
     const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
-    NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
+    NormalConeSpan<dim>& ncs, BasePointHint<dim>* /*hint*/) const {
   if (std::abs(zn.n(0)) <= CapsuleImpl<dim>::eps_d_) {
     // Support patch is a line segment.
     sph.aff_dim = 1;
@@ -150,7 +150,7 @@ inline void CapsuleImpl<dim>::ComputeLocalGeometry(
 template <int dim>
 inline bool CapsuleImpl<dim>::ProjectionDerivative(
     const Vecr<dim>& p, const Vecr<dim>& /*pi*/, Matr<dim, dim>& d_pi_p,
-    const BasePointHint<dim>* /*hint*/) const {
+    BasePointHint<dim>* /*hint*/) const {
   const Real dx = std::abs(p(0)) - hlx_;
   if (dx > CapsuleImpl<dim>::eps_p_) {
     // Projection lies on the left/right hemispherical cap.

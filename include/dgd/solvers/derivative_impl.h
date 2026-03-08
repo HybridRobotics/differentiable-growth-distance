@@ -61,12 +61,10 @@ inline int ComputeKktNullspaceTpl(const C1* set1, const Transformr<dim>& tf1,
   zn2.n.noalias() = -Linear(tf2).transpose() * n;
 
   BasePointHint<dim> hint1, hint2;
-  hint1.s = &out->s1;
-  hint1.bc = &out->bc;
-  hint1.sfh = &out->hint1_;
-  hint2.s = &out->s2;
-  hint2.bc = &out->bc;
-  hint2.sfh = &out->hint2_;
+  hint1.bc = out->bc;
+  hint1.idx = out->idx_s1;
+  hint2.bc = out->bc;
+  hint2.idx = out->idx_s2;
 
   SupportPatchHull<dim> sph1, sph2;
   NormalConeSpan<dim> ncs1, ncs2;

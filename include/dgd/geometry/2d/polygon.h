@@ -20,12 +20,14 @@
 #ifndef DGD_GEOMETRY_2D_POLYGON_H_
 #define DGD_GEOMETRY_2D_POLYGON_H_
 
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <utility>
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
+#include "dgd/geometry/geometry_utils.h"
 
 namespace dgd {
 
@@ -58,13 +60,19 @@ class Polygon : public ConvexSet<2> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometryImpl(const NormalPair<2>& zn,
+                                SupportPatchHull<2>& sph,
+                                NormalConeSpan<2>& ncs,
+                                bool check_margin = true,
+                                BasePointHint<2>* hint = nullptr) const;
+
   void ComputeLocalGeometry(
       const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
-      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+      BasePointHint<2>* hint = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec2r& p, const Vec2r& pi, Matr<2, 2>& d_pi_p,
-      const BasePointHint<2>* hint = nullptr) const final override;
+      BasePointHint<2>* hint = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -131,46 +139,60 @@ inline Real Polygon::SupportFunction(const Vec2r& n,
 
 inline bool Polygon::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline void Polygon::ComputeLocalGeometry(
-    const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
-    const BasePointHint<2>* /*hint*/) const {
+inline void Polygon::ComputeLocalGeometryImpl(const NormalPair<2>& zn,
+                                              SupportPatchHull<2>& sph,
+                                              NormalConeSpan<2>& ncs,
+                                              bool check_margin,
+                                              BasePointHint<2>* hint) const {
+  // Compute the normal cone span.
+  if (check_margin && !IsPolytopic()) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else {
+    int ns = 0;
+    if ((!hint) || ((ns = detail::MergeIndices(*hint, eps_p_)) < 1)) {
+      ncs.span_dim = 2;  // Over-approximation.
+    } else {
+      ncs.span_dim = 3 - ns;
+    }
+  }
+
+  // Compute the support patch affine hull.
   sph.aff_dim = 0;
-  int idx = 0;
   Real s = Real(0.0), sv = zn.n.dot(vert_[0]);
   for (int i = 1; i < nvertices(); ++i) {
     s = zn.n.dot(vert_[i]);
     if (s > sv) {
       sph.aff_dim = (s <= sv + eps_d_);
-      idx = i;
       sv = s;
     } else {
       if (s >= sv - eps_d_) sph.aff_dim = 1;
     }
   }
+}
 
-  const Real eps_p2 = eps_p_ * eps_p_;
-  const int prev = (idx == 0) ? nvertices() - 1 : idx - 1;
-  const int next = (idx == nvertices() - 1) ? 0 : idx + 1;
-  ncs.span_dim = 1 + (((zn.z - vert_[idx]).squaredNorm() < eps_p2) ||
-                      ((zn.z - vert_[prev]).squaredNorm() < eps_p2) ||
-                      ((zn.z - vert_[next]).squaredNorm() < eps_p2));
+inline void Polygon::ComputeLocalGeometry(const NormalPair<2>& zn,
+                                          SupportPatchHull<2>& sph,
+                                          NormalConeSpan<2>& ncs,
+                                          BasePointHint<2>* hint) const {
+  ComputeLocalGeometryImpl(zn, sph, ncs, true, hint);
 }
 
 inline bool Polygon::ProjectionDerivative(const Vec2r& p, const Vec2r& pi,
                                           Matr<2, 2>& d_pi_p,
-                                          const BasePointHint<2>* hint) const {
+                                          BasePointHint<2>* hint) const {
   NormalPair<2> zn;
-  zn.z = pi;
   const Real dist = (p - pi).norm();
   zn.n = (p - pi) / dist;
+  zn.z = pi - margin_ * zn.n;  // Unused.
 
   SupportPatchHull<2> sph;
   NormalConeSpan<2> ncs;
-  ComputeLocalGeometry(zn, sph, ncs, hint);
+  ComputeLocalGeometryImpl(zn, sph, ncs, false, hint);
 
   if (sph.aff_dim == 0) {
     // Projection lies on a vertex.
-    const Real s = margin_ / dist;
+    const Real s = margin_ / (dist + margin_);
     d_pi_p.noalias() = -s * (zn.n * zn.n.transpose());
     d_pi_p.diagonal().array() += s;
   } else {

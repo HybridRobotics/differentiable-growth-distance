@@ -71,11 +71,11 @@ class Frustum : public ConvexSet<3> {
 
   void ComputeLocalGeometry(
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
@@ -178,9 +178,10 @@ inline Real Frustum::SupportFunction(const Vec3r& n,
 
 inline bool Frustum::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline void Frustum::ComputeLocalGeometry(
-    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-    const BasePointHint<3>* /*hint*/) const {
+inline void Frustum::ComputeLocalGeometry(const NormalPair<3>& zn,
+                                          SupportPatchHull<3>& sph,
+                                          NormalConeSpan<3>& ncs,
+                                          BasePointHint<3>* /*hint*/) const {
   const Real k = zn.n.head<2>().norm();
   if (zn.n(2) > (tha_ + eps_d_) * k) {
     if ((rt_ > Real(0.0)) && (k <= eps_d_)) {
@@ -228,9 +229,9 @@ inline void Frustum::ComputeLocalGeometry(
   }
 }
 
-inline bool Frustum::ProjectionDerivative(
-    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-    const BasePointHint<3>* /*hint*/) const {
+inline bool Frustum::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
+                                          Matr<3, 3>& d_pi_p,
+                                          BasePointHint<3>* /*hint*/) const {
   const Real r = p.head<2>().norm();
   Real rs, rl, hs, hl, sgn;
   Real ds = p(2) - (h_ - offset_) - tha_ * (r - rt_);

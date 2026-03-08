@@ -53,11 +53,11 @@ class Ellipse : public ConvexSet<2> {
   void ComputeLocalGeometry(
       const NormalPair<2>& /*zn*/, SupportPatchHull<2>& sph,
       NormalConeSpan<2>& ncs,
-      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+      BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec2r& p, const Vec2r& pi, Matr<2, 2>& d_pi_p,
-      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+      BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec2r* min = nullptr, Vec2r* max = nullptr) const final override;
 
@@ -102,16 +102,17 @@ inline Real Ellipse::SupportFunction(const Vec2r& n,
 
 inline bool Ellipse::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline void Ellipse::ComputeLocalGeometry(
-    const NormalPair<2>& /*zn*/, SupportPatchHull<2>& sph,
-    NormalConeSpan<2>& ncs, const BasePointHint<2>* /*hint*/) const {
+inline void Ellipse::ComputeLocalGeometry(const NormalPair<2>& /*zn*/,
+                                          SupportPatchHull<2>& sph,
+                                          NormalConeSpan<2>& ncs,
+                                          BasePointHint<2>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = 1;
 }
 
-inline bool Ellipse::ProjectionDerivative(
-    const Vec2r& p, const Vec2r& pi, Matr<2, 2>& d_pi_p,
-    const BasePointHint<2>* /*hint*/) const {
+inline bool Ellipse::ProjectionDerivative(const Vec2r& p, const Vec2r& pi,
+                                          Matr<2, 2>& d_pi_p,
+                                          BasePointHint<2>* /*hint*/) const {
   const Vec2r v = p - pi;
   const Real dist = v.norm();
   const Vec2r n = v / dist;

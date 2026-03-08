@@ -29,6 +29,7 @@
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
+#include "dgd/geometry/geometry_utils.h"
 
 namespace dgd {
 
@@ -56,13 +57,19 @@ class Polytope : public ConvexSet<3> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometryImpl(const NormalPair<3>& zn,
+                                SupportPatchHull<3>& sph,
+                                NormalConeSpan<3>& ncs,
+                                bool check_margin = true,
+                                BasePointHint<3>* hint = nullptr) const;
+
   void ComputeLocalGeometry(
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* hint = nullptr) const final override;
+      BasePointHint<3>* hint = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* hint = nullptr) const final override;
+      BasePointHint<3>* hint = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -81,7 +88,7 @@ class Polytope : public ConvexSet<3> {
 
 inline Polytope::Polytope(std::vector<Vec3r> vert, Real inradius, Real margin,
                           Real thresh)
-    : ConvexSet<3>(margin + Real(0.99) * inradius),
+    : ConvexSet<3>(margin + inradius),
       vert_(std::move(vert)),
       margin_(margin),
       thresh_(thresh) {
@@ -150,78 +157,36 @@ inline bool Polytope::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
 }
 
-inline void Polytope::ComputeLocalGeometry(const NormalPair<3>& zn,
-                                           SupportPatchHull<3>& sph,
-                                           NormalConeSpan<3>& ncs,
-                                           const BasePointHint<3>* hint) const {
-  Vec3r e_perp;
-  Real sv_e;
+inline void Polytope::ComputeLocalGeometryImpl(const NormalPair<3>& zn,
+                                               SupportPatchHull<3>& sph,
+                                               NormalConeSpan<3>& ncs,
+                                               bool check_margin,
+                                               BasePointHint<3>* hint) const {
+  const int ns = (hint) ? detail::MergeIndices(*hint, eps_p_) : -1;
+  Vec3r e_perp = Vec3r::Zero();
+  Real sv_e = Real(0.0);
   bool check_edge = false;
 
-  auto set_edge = [&](int i, int j) -> void {
-    const Matr<3, 3>& s = (*hint->s);
-    e_perp = (s.col(j) - s.col(i)).cross(zn.n).normalized();
-    sv_e = e_perp.dot(s.col(i));
-    check_edge = true;
-  };
-
   // Compute the normal cone span.
-  if (!IsPolytopic()) {
+  if (check_margin && !IsPolytopic()) {
     // Normal cone is a ray.
     ncs.span_dim = 1;
+  } else if (ns < 1) {
+    ncs.span_dim = 3;  // Over-approximation.
   } else {
-    Vec3i sidx;
-    int ns;
-    if ((!hint) || ((ns = hint->ComputeSimplexIndices(sidx)) < 0)) {
-      ncs.span_dim = 3;  // Over-approximation.
-    } else {
-      // A simplex point with a positive barycentric coordinate must be a vertex
-      // on the support patch.
-      // The growth distance algorithm output satisfies this because the stored
-      // inradius is positive and strictly less than the actual inradius.
-      const Vec3r& bc = (*hint->bc);
-      if (ns == 1) {  // Unique simplex point (base point must be a vertex).
-        // Normal cone is a 3D cone.
-        ncs.span_dim = 3;
-      } else if (ns == 2) {
-        // Two unique simplex points (base point can be on a face/edge/vertex).
-        const Real bc1 = bc.dot(sidx.cast<Real>());
-        if ((bc1 <= eps_p_) || (bc1 >= Real(1.0) - eps_p_)) {
-          // Base point is a vertex and the normal cone is a 3D cone.
-          ncs.span_dim = 3;
-        } else {
-          // Base point is on a face/edge and both simplex points must lie on
-          // the support patch.
-          set_edge(0, 2 - sidx(1));
-        }
-      } else {  // Three unique simplex points.
-        const Real eps = Real(0.5) * eps_p_;
-        // Check all face/edge/vertex combinations.
-        if (bc(0) <= eps) {
-          if ((bc(1) <= eps) || (bc(2) <= eps)) {
-            ncs.span_dim = 3;
-          } else {
-            set_edge(1, 2);
-          }
-        } else if (bc(1) <= eps) {
-          if (bc(2) <= eps) {
-            ncs.span_dim = 3;
-          } else {
-            set_edge(0, 2);
-          }
-        } else if (bc(2) <= eps) {
-          set_edge(0, 1);
-        } else {
-          ncs.span_dim = 1;
-        }
-      }
+    ncs.span_dim = 4 - ns;
+    if (ns == 2) {
+      const Vec3r& v1 = vert_[hint->idx(0)];
+      e_perp = (v1 - vert_[hint->idx(1)]).cross(zn.n).normalized();
+      sv_e = e_perp.dot(v1);
+      check_edge = true;
     }
   }
 
   // Compute the support function value.
   Real sv = Real(0.0);
-  if ((hint) && (hint->s) && (hint->bc)) {
-    sv = zn.n.dot((*hint->s) * (*hint->bc));
+  if (ns > 0) {
+    sv = zn.n.dot(vert_[hint->idx(0)]);
   } else {
     Real s;
     for (int i = 0; i < nvertices(); ++i) {
@@ -267,17 +232,24 @@ inline void Polytope::ComputeLocalGeometry(const NormalPair<3>& zn,
   }
 }
 
+inline void Polytope::ComputeLocalGeometry(const NormalPair<3>& zn,
+                                           SupportPatchHull<3>& sph,
+                                           NormalConeSpan<3>& ncs,
+                                           BasePointHint<3>* hint) const {
+  ComputeLocalGeometryImpl(zn, sph, ncs, true, hint);
+}
+
 inline bool Polytope::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
                                            Matr<3, 3>& d_pi_p,
-                                           const BasePointHint<3>* hint) const {
+                                           BasePointHint<3>* hint) const {
   NormalPair<3> zn;
-  zn.z = pi;
   const Real dist = (p - pi).norm();
   zn.n = (p - pi) / dist;
+  zn.z = pi - margin_ * zn.n;  // Unused.
 
   SupportPatchHull<3> sph;
   NormalConeSpan<3> ncs;
-  ComputeLocalGeometry(zn, sph, ncs, hint);
+  ComputeLocalGeometryImpl(zn, sph, ncs, false, hint);
 
   if (sph.aff_dim + ncs.span_dim > 3) return false;
 
@@ -287,7 +259,7 @@ inline bool Polytope::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
     d_pi_p.diagonal().array() += Real(1.0);
   } else {
     // Projection lies on a vertex/edge.
-    const Real s = margin_ / dist;
+    const Real s = margin_ / (dist + margin_);
     d_pi_p.noalias() = -s * (zn.n * zn.n.transpose());
     d_pi_p.diagonal().array() += s;
     if (sph.aff_dim == 1) {

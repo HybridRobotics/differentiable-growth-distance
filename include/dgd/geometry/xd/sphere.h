@@ -56,11 +56,11 @@ class SphereImpl : public ConvexSet<dim> {
   void ComputeLocalGeometry(
       const NormalPair<dim>& /*zn*/, SupportPatchHull<dim>& sph,
       NormalConeSpan<dim>& ncs,
-      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+      BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vecr<dim>& p, const Vecr<dim>& /*pi*/, Matr<dim, dim>& d_pi_p,
-      const BasePointHint<dim>* /*hint*/ = nullptr) const final override;
+      BasePointHint<dim>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vecr<dim>* min = nullptr,
               Vecr<dim>* max = nullptr) const final override;
@@ -106,7 +106,7 @@ inline bool SphereImpl<dim>::RequireUnitNormal() const {
 template <int dim>
 inline void SphereImpl<dim>::ComputeLocalGeometry(
     const NormalPair<dim>& /*zn*/, SupportPatchHull<dim>& sph,
-    NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
+    NormalConeSpan<dim>& ncs, BasePointHint<dim>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = IsPolytopic() ? dim : 1;
 }
@@ -114,7 +114,7 @@ inline void SphereImpl<dim>::ComputeLocalGeometry(
 template <int dim>
 inline bool SphereImpl<dim>::ProjectionDerivative(
     const Vecr<dim>& p, const Vecr<dim>& /*pi*/, Matr<dim, dim>& d_pi_p,
-    const BasePointHint<dim>* /*hint*/) const {
+    BasePointHint<dim>* /*hint*/) const {
   const Real p2 = p.squaredNorm();
   const Real s = radius_ / std::sqrt(p2);
   d_pi_p.noalias() = -(s / p2) * (p * p.transpose());

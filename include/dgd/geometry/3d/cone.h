@@ -63,11 +63,11 @@ class Cone : public ConvexSet<3> {
 
   void ComputeLocalGeometry(
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
@@ -158,7 +158,7 @@ inline bool Cone::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 inline void Cone::ComputeLocalGeometry(const NormalPair<3>& zn,
                                        SupportPatchHull<3>& sph,
                                        NormalConeSpan<3>& ncs,
-                                       const BasePointHint<3>* /*hint*/) const {
+                                       BasePointHint<3>* /*hint*/) const {
   const Real k = zn.n.head<2>().norm();
   if (zn.n(2) > (tha_ + eps_d_) * k) {
     // Support patch is a point.
@@ -200,7 +200,7 @@ inline void Cone::ComputeLocalGeometry(const NormalPair<3>& zn,
 
 inline bool Cone::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
                                        Matr<3, 3>& d_pi_p,
-                                       const BasePointHint<3>* /*hint*/) const {
+                                       BasePointHint<3>* /*hint*/) const {
   const Real r = p.head<2>().norm();
   const Real dt = p(2) - (h_ - rho_) - tha_ * r;
   const Real db = p(2) + rho_ - tha_ * (r - r_);

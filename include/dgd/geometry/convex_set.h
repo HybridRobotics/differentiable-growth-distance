@@ -153,45 +153,19 @@ struct NormalConeSpan<2> {
  */
 template <int dim>
 struct BasePointHint {
-  /// @brief Simplex representation of the base point.
-  const Matr<dim, dim>* s = nullptr;
-
   /**
    * @brief Barycentric coordinates for the base point corresponding to the
    * simplex.
    */
-  const Vecr<dim>* bc = nullptr;
-
-  /// @brief Support function hint.
-  const SupportFunctionHint<dim>* sfh = nullptr;
+  Vecr<dim> bc;
 
   /**
-   * @brief Computes indices for unique simplex points.
+   * @brief Index hints for the base point corresponding to the simplex.
    *
-   * @param[out] idx Simplex indices.
-   * @return     Number of unique simplex points; -1 if s or bc is null.
+   * @see SupportFunctionHint
    */
-  int ComputeSimplexIndices(Veci<dim>& idx) const;
+  Veci<dim> idx;
 };
-
-template <int dim>
-inline int BasePointHint<dim>::ComputeSimplexIndices(Veci<dim>& idx) const {
-  if ((!s) || (!bc)) return -1;
-  constexpr Real kEps2 = kEps * kEps;
-  int max_idx = 0;
-  idx(0) = 0;
-  idx(1) = ((s->col(1) - s->col(0)).squaredNorm() < kEps2) ? 0 : ++max_idx;
-  if constexpr (dim == 3) {
-    if ((s->col(2) - s->col(0)).squaredNorm() < kEps2) {
-      idx(2) = 0;
-    } else if ((idx(1) == 1) && (s->col(2) - s->col(1)).squaredNorm() < kEps2) {
-      idx(2) = 1;
-    } else {
-      idx(2) = ++max_idx;
-    }
-  }
-  return max_idx + 1;
-}
 
 /**
  * @brief Convex set abstract class implementing the support function.
@@ -281,9 +255,10 @@ class ConvexSet {
    * @param[out] ncs  Normal cone span.
    * @param[in]  hint Additional hints for the base point.
    */
-  virtual void ComputeLocalGeometry(
-      const NormalPair<dim>& zn, SupportPatchHull<dim>& sph,
-      NormalConeSpan<dim>& ncs, const BasePointHint<dim>* hint = nullptr) const;
+  virtual void ComputeLocalGeometry(const NormalPair<dim>& zn,
+                                    SupportPatchHull<dim>& sph,
+                                    NormalConeSpan<dim>& ncs,
+                                    BasePointHint<dim>* hint = nullptr) const;
 
   /**
    * @brief Computes the derivative of the projection map at a point in the set
@@ -295,9 +270,9 @@ class ConvexSet {
    * @param[in]  hint   Additional hints for the base point.
    * @return     Differentiability of the projection map at the point.
    */
-  virtual bool ProjectionDerivative(
-      const Vecr<dim>& p, const Vecr<dim>& pi, Matr<dim, dim>& d_pi_p,
-      const BasePointHint<dim>* hint = nullptr) const;
+  virtual bool ProjectionDerivative(const Vecr<dim>& p, const Vecr<dim>& pi,
+                                    Matr<dim, dim>& d_pi_p,
+                                    BasePointHint<dim>* hint = nullptr) const;
 
   /**
    * @brief Computes the axis-aligned bounding box (AABB) of the convex set.
@@ -399,7 +374,7 @@ inline bool ConvexSet<dim>::RequireUnitNormal() const {
 template <int dim>
 inline void ConvexSet<dim>::ComputeLocalGeometry(
     const NormalPair<dim>& /*zn*/, SupportPatchHull<dim>& sph,
-    NormalConeSpan<dim>& ncs, const BasePointHint<dim>* /*hint*/) const {
+    NormalConeSpan<dim>& ncs, BasePointHint<dim>* /*hint*/) const {
   sph.aff_dim = dim - 1;
   ncs.span_dim = dim;
 }
@@ -407,7 +382,7 @@ inline void ConvexSet<dim>::ComputeLocalGeometry(
 template <int dim>
 inline bool ConvexSet<dim>::ProjectionDerivative(
     const Vecr<dim>& /*p*/, const Vecr<dim>& /*pi*/, Matr<dim, dim>& /*d_pi_p*/,
-    const BasePointHint<dim>* /*hint*/) const {
+    BasePointHint<dim>* /*hint*/) const {
   return false;
 }
 

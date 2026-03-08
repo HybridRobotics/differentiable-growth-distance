@@ -52,11 +52,11 @@ class Rectangle : public ConvexSet<2> {
 
   void ComputeLocalGeometry(
       const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
-      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+      BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec2r& p, const Vec2r& /*pi*/, Matr<2, 2>& d_pi_p,
-      const BasePointHint<2>* /*hint*/ = nullptr) const final override;
+      BasePointHint<2>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec2r* min = nullptr, Vec2r* max = nullptr) const final override;
 
@@ -104,9 +104,10 @@ inline bool Rectangle::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
 }
 
-inline void Rectangle::ComputeLocalGeometry(
-    const NormalPair<2>& zn, SupportPatchHull<2>& sph, NormalConeSpan<2>& ncs,
-    const BasePointHint<2>* /*hint*/) const {
+inline void Rectangle::ComputeLocalGeometry(const NormalPair<2>& zn,
+                                            SupportPatchHull<2>& sph,
+                                            NormalConeSpan<2>& ncs,
+                                            BasePointHint<2>* /*hint*/) const {
   if ((std::abs(zn.n(0)) <= eps_d_) || (std::abs(zn.n(1)) <= eps_d_)) {
     // Support patch is a line segment.
     sph.aff_dim = 1;
@@ -125,9 +126,9 @@ inline void Rectangle::ComputeLocalGeometry(
   }
 }
 
-inline bool Rectangle::ProjectionDerivative(
-    const Vec2r& p, const Vec2r& /*pi*/, Matr<2, 2>& d_pi_p,
-    const BasePointHint<2>* /*hint*/) const {
+inline bool Rectangle::ProjectionDerivative(const Vec2r& p, const Vec2r& /*pi*/,
+                                            Matr<2, 2>& d_pi_p,
+                                            BasePointHint<2>* /*hint*/) const {
   const Real dx = std::abs(p(0)) - hlx_;
   const Real dy = std::abs(p(1)) - hly_;
   if ((dx > eps_p_) && (dy > eps_p_)) {
