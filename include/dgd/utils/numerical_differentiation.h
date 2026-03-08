@@ -45,9 +45,11 @@ class NumericalDifferentiator {
   /**
    * @brief Constructs a numerical differentiator object.
    *
-   * @param step_size Step size for finite difference calculations.
+   * @param step_size          Step size for finite difference calculations.
+   * @param adaptive_step_size Whether to use adaptive step size scaling.
    */
-  explicit NumericalDifferentiator(Real step_size = kSqrtEps);
+  explicit NumericalDifferentiator(Real step_size = kSqrtEps,
+                                   bool adaptive_step_size = true);
 
   /// @brief Returns the scaled step size for a given x.
   Real ScaledStepSize(Real x) const;
@@ -99,11 +101,14 @@ class NumericalDifferentiator {
   void set_step_size(Real step_size);
 
  private:
-  Real h_; /**< Step size. */
+  Real h_;                  /**< Step size. */
+  bool adaptive_step_size_; /**< Adaptive step size scaling. */
 };
 
-inline NumericalDifferentiator::NumericalDifferentiator(Real step_size) {
+inline NumericalDifferentiator::NumericalDifferentiator(
+    Real step_size, bool adaptive_step_size) {
   set_step_size(step_size);
+  adaptive_step_size_ = adaptive_step_size;
 }
 
 inline Real NumericalDifferentiator::ScaledStepSize(Real x) const {
@@ -112,7 +117,7 @@ inline Real NumericalDifferentiator::ScaledStepSize(Real x) const {
 
 inline Real NumericalDifferentiator::Derivative(RealFunctionType f,
                                                 Real x) const {
-  const Real h = ScaledStepSize(x);
+  const Real h = adaptive_step_size_ ? ScaledStepSize(x) : h_;
   return (f(x + h) - f(x - h)) / (Real(2.0) * h);
 }
 
@@ -135,7 +140,7 @@ inline void NumericalDifferentiator::Gradient(VectorFunctionType f,
   VecXr xp = x;
   for (int i = 0; i < n; ++i) {
     const Real xi = x(i);
-    const Real h = ScaledStepSize(xi);
+    const Real h = adaptive_step_size_ ? ScaledStepSize(xi) : h_;
 
     xp(i) = xi + h;
     const Real fp = f(xp);
@@ -171,7 +176,7 @@ inline void NumericalDifferentiator::Jacobian(VectorValuedFunctionType f,
   VecXr yp(m), ym(m);
   for (int i = 0; i < n; ++i) {
     const Real xi = x(i);
-    const Real h = ScaledStepSize(xi);
+    const Real h = adaptive_step_size_ ? ScaledStepSize(xi) : h_;
 
     xn(i) += h;
     f(xn, yp);
@@ -204,7 +209,11 @@ inline void NumericalDifferentiator::Hessian(VectorFunctionType f,
 
   // Precompute step sizes for each coordinate.
   VecXr h(n);
-  for (int i = 0; i < n; ++i) h(i) = ScaledStepSize(x(i));
+  if (adaptive_step_size_) {
+    for (int i = 0; i < n; ++i) h(i) = ScaledStepSize(x(i));
+  } else {
+    h.setConstant(h_);
+  }
 
   // Compute diagonal terms.
   const Real fx = f(x);
