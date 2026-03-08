@@ -124,7 +124,8 @@ struct PolytopeTestData {
   std::vector<LocalGeometryTestCase<3>> test_cases;
   std::vector<Matr<3, 3>> s;
   std::vector<Vec3r> bc;
-  std::vector<SupportFunctionHint<3>> sfh;
+  // std::vector<SupportFunctionHint<3>> sfh;
+  std::vector<Vec3i> idx;
   Real inradius;
 };
 
@@ -195,7 +196,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  Three distinct simplex points; bc1, bc2, bc3 > 0.
   data.s.emplace_back((Matr<3, 3>() << v[0], v[2], v[3]).finished());
   data.bc.emplace_back(Real(0.3), Real(0.3), Real(0.4));
-  data.sfh.push_back({ez, 4});
+  // data.sfh.push_back({ez, 4});
+  data.idx.emplace_back(0, 2, 3);
   data.test_cases.push_back({ez,
                              data.s.back() * data.bc.back(),
                              {Vec3r::Zero(), aff_dim},
@@ -209,7 +211,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc((i + 1) % 3) = Real(0.7);
     bc((i + 2) % 3) = Real(0.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({ez, 5});
+    // data.sfh.push_back({ez, 5});
+    data.idx.emplace_back(0, 2, 4);
     data.test_cases.push_back({ez,
                                data.s.back() * data.bc.back(),
                                {Vec3r::Zero(), aff_dim},
@@ -219,7 +222,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  Two distinct simplex points; bc1, bc2, bc3 > 0.
   data.s.emplace_back((Matr<3, 3>() << v[0], v[2], v[0]).finished());
   data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
-  data.sfh.push_back({ez, 4});
+  // data.sfh.push_back({ez, 4});
+  data.idx.emplace_back(0, 2, 0);
   data.test_cases.push_back({ez,
                              data.s.back() * data.bc.back(),
                              {Vec3r::Zero(), aff_dim},
@@ -239,7 +243,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc((i + 1) % 3) = Real(0.6);
     bc((i + 2) % 3) = Real(0.4);
     data.bc.push_back(bc);
-    data.sfh.push_back({ez, 9});
+    // data.sfh.push_back({ez, 9});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     data.test_cases.push_back({ez,
                                data.s.back() * data.bc.back(),
                                {Vec3r::Zero(), aff_dim},
@@ -257,7 +262,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc((i + 1) % 3) = Real(0.55);
     bc((i + 2) % 3) = Real(0.4);
     data.bc.push_back(bc);
-    data.sfh.push_back({-ez, 2});
+    // data.sfh.push_back({-ez, 2});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     data.test_cases.push_back({-ez,
                                data.s.back() * data.bc.back(),
                                {Vec3r::Zero(), aff_dim},
@@ -275,7 +281,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3r bc = Vec3r::Zero();
     bc(i) = Real(1.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({-ez, 6});
+    // data.sfh.push_back({-ez, 6});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     data.test_cases.push_back({-ez,
                                data.s.back() * data.bc.back(),
                                {Vec3r::Zero(), aff_dim},
@@ -292,7 +299,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc(1) = (i == 2) ? Real(0.5) : Real(0.0);
     bc(2) = Real(0.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({ez, 1});
+    // data.sfh.push_back({ez, 1});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     data.test_cases.push_back({ez,
                                data.s.back() * data.bc.back(),
                                {Vec3r::Zero(), aff_dim},
@@ -302,7 +310,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  One distinct simplex point; bc1, bc2, bc3 > 0.
   data.s.emplace_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
   data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
-  data.sfh.push_back({-ez, 4});
+  // data.sfh.push_back({-ez, 4});
+  data.idx.emplace_back(7, 7, 7);
   data.test_cases.push_back({-ez,
                              data.s.back() * data.bc.back(),
                              {Vec3r::Zero(), aff_dim},
@@ -324,7 +333,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc((i + 1) % 3) = Real(0.6);
     bc((i + 2) % 3) = Real(0.4);
     data.bc.push_back(bc);
-    data.sfh.push_back({ez, 9});
+    // data.sfh.push_back({ez, 9});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     Vec3r normal = (n[in(i)] + (i + 1) * ez).normalized();
     data.test_cases.push_back({normal,
                                data.s.back() * data.bc.back(),
@@ -344,7 +354,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc((i + 1) % 3) = Real(0.55);
     bc((i + 2) % 3) = Real(0.4);
     data.bc.push_back(bc);
-    data.sfh.push_back({-ez, 2});
+    // data.sfh.push_back({-ez, 2});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     Vec3r normal = (n[in(i)] - (i + 1) * ez).normalized();
     data.test_cases.push_back({normal,
                                data.s.back() * data.bc.back(),
@@ -366,7 +377,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3r bc = Vec3r::Zero();
     bc(i) = Real(1.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({-ez, 6});
+    // data.sfh.push_back({-ez, 6});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     Vec3r normal = (n[in(i)] - (i + 1) * ez).normalized();
     data.test_cases.push_back({normal,
                                data.s.back() * data.bc.back(),
@@ -386,7 +398,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc(1) = (i == 2) ? Real(0.5) : Real(0.0);
     bc(2) = Real(0.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({ez, 1});
+    // data.sfh.push_back({ez, 1});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     Vec3r normal = (n[in(i)] + (i + 1) * ez).normalized();
     data.test_cases.push_back({normal,
                                data.s.back() * data.bc.back(),
@@ -397,7 +410,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  One distinct simplex point; bc1, bc2, bc3 > 0.
   data.s.emplace_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
   data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
-  data.sfh.push_back({-ez, 4});
+  // data.sfh.push_back({-ez, 4});
+  data.idx.emplace_back(7, 7, 7);
   data.test_cases.push_back({(n[1] - 2 * ez).normalized(),
                              data.s.back() * data.bc.back(),
                              {(v[7] - v[8]).normalized(), aff_dim},
@@ -416,7 +430,8 @@ PolytopeTestData CreatePolytopeTestData() {
     Vec3r bc = Vec3r::Zero();
     bc(i) = Real(1.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({-ez, 6});
+    // data.sfh.push_back({-ez, 6});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     data.test_cases.push_back(
         {(n[in1(i)] + (i + 1) * n[in2(i)] - (2 * i + 1) * ez).normalized(),
          data.s.back() * data.bc.back(),
@@ -435,7 +450,8 @@ PolytopeTestData CreatePolytopeTestData() {
     bc(1) = (i == 2) ? Real(0.5) : Real(0.0);
     bc(2) = Real(0.0);
     data.bc.push_back(bc);
-    data.sfh.push_back({ez, 1});
+    // data.sfh.push_back({ez, 1});
+    data.idx.emplace_back(i1(i), i2(i), i3(i));
     data.test_cases.push_back(
         {(n[in1(i)] + (i + 1) * n[in2(i)] + (2 * i + 1) * ez).normalized(),
          data.s.back() * data.bc.back(),
@@ -446,7 +462,8 @@ PolytopeTestData CreatePolytopeTestData() {
   //  One distinct simplex point; bc1, bc2, bc3 > 0.
   data.s.emplace_back((Matr<3, 3>() << v[7], v[7], v[7]).finished());
   data.bc.emplace_back(Real(0.55), Real(0.3), Real(0.15));
-  data.sfh.push_back({-ez, 4});
+  // data.sfh.push_back({-ez, 4});
+  data.idx.emplace_back(7, 7, 7);
   data.test_cases.push_back({(n[0] + 2 * n[1] - 3 * ez).normalized(),
                              data.s.back() * data.bc.back(),
                              {Vec3r::Zero(), aff_dim},
@@ -518,6 +535,7 @@ TEST(LocalGeometryTest, Polygon) {
   SupportPatchHull<2> sph;
   NormalConeSpan<2> ncs;
   NormalPair<2> zn;
+  std::vector<BasePointHint<2>> hints;
 
   for (int run = 0; run < nruns; ++run) {
     // Generate random polygon.
@@ -564,6 +582,7 @@ TEST(LocalGeometryTest, Polygon) {
                               v + f * (vm - v),
                               {aff_dim},
                               {((i == 0) || (i == nscan - 1)) ? 2 : span_dim}});
+        hints.push_back({Vec2r((Real(1.0) - f), f), Vec2i(idx, idx_m)});
       }
 
       // Case 2: Support patch - vertex, normal cone - cone.
@@ -573,6 +592,7 @@ TEST(LocalGeometryTest, Polygon) {
       for (int i = 1; i < nscan - 1; ++i) {
         Real f = static_cast<Real>(i) / static_cast<Real>(nscan - 1);
         test_cases.push_back({nm + f * (np - nm), v, {aff_dim}, {span_dim}});
+        hints.push_back({Vec2r::UnitX(), Vec2i(idx, -1)});
       }
 
       // Case 3: Support patch - edge 2, normal cone - cone/ray.
@@ -585,10 +605,26 @@ TEST(LocalGeometryTest, Polygon) {
                               v + f * (vp - v),
                               {aff_dim},
                               {((i == 0) || (i == nscan - 1)) ? 2 : span_dim}});
+        hints.push_back({Vec2r((Real(1.0) - f), f), Vec2i(idx, idx_p)});
       }
     }
 
     // Run test cases.
+    for (int i = 0; i < static_cast<int>(test_cases.size()); ++i) {
+      const auto& tc = test_cases[i];
+
+      zn.n = tc.normal;
+      zn.z = tc.base_pt;
+
+      set.ComputeLocalGeometry(zn, sph, ncs, &hints[i]);
+
+      EXPECT_PRED4(AssertSupportPatchHullEQ<2>, sph, tc.sph_true, zn, kTol);
+      EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
+    }
+
+    // Case 4: Test cases without hints.
+    for (auto& tc : test_cases) tc.ncs_true.span_dim = 2;
+
     for (const auto& tc : test_cases) {
       zn.n = tc.normal;
       zn.z = tc.base_pt;
@@ -599,7 +635,7 @@ TEST(LocalGeometryTest, Polygon) {
       EXPECT_PRED4(AssertNormalConeSpanEQ<2>, ncs, tc.ncs_true, zn, kTol);
     }
 
-    // Case 4: Positive margin.
+    // Case 5: Positive margin.
     margin = Real(0.5);
     auto set_m = Polygon(std::move(vert), inradius, margin);
 
@@ -1446,9 +1482,10 @@ TEST(LocalGeometryTest, Mesh) {
     zn.n = tc.normal;
     zn.z = tc.base_pt;
 
-    hint.s = &data.s[i];
-    hint.bc = &data.bc[i];
-    hint.sfh = &data.sfh[i];
+    // hint.s = &data.s[i];
+    hint.bc = data.bc[i];
+    // hint.sfh = &data.sfh[i];
+    hint.idx = data.idx[i];
 
     set.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
@@ -1486,9 +1523,10 @@ TEST(LocalGeometryTest, Mesh) {
     zn.n = tc.normal;
     zn.z = tc.base_pt;
 
-    hint.s = &data.s[i];
-    hint.bc = &data.bc[i];
-    hint.sfh = &data.sfh[i];
+    // hint.s = &data.s[i];
+    hint.bc = data.bc[i];
+    // hint.sfh = &data.sfh[i];
+    hint.idx = data.idx[i];
 
     set_m.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
@@ -1527,9 +1565,10 @@ TEST(LocalGeometryTest, Polytope) {
     zn.n = tc.normal;
     zn.z = tc.base_pt;
 
-    hint.s = &data.s[i];
-    hint.bc = &data.bc[i];
-    hint.sfh = &data.sfh[i];
+    // hint.s = &data.s[i];
+    hint.bc = data.bc[i];
+    // hint.sfh = &data.sfh[i];
+    hint.idx = data.idx[i];
 
     set.ComputeLocalGeometry(zn, sph, ncs, &hint);
 
@@ -1566,9 +1605,10 @@ TEST(LocalGeometryTest, Polytope) {
     zn.n = tc.normal;
     zn.z = tc.base_pt;
 
-    hint.s = &data.s[i];
-    hint.bc = &data.bc[i];
-    hint.sfh = &data.sfh[i];
+    // hint.s = &data.s[i];
+    hint.bc = data.bc[i];
+    // hint.sfh = &data.sfh[i];
+    hint.idx = data.idx[i];
 
     set_m.ComputeLocalGeometry(zn, sph, ncs, &hint);
 

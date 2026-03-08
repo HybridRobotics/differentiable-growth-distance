@@ -180,7 +180,7 @@ inline Real Rng::Random(const std::array<Real, 2>& range) {
 }
 
 inline int Rng::CoinFlip(Real prob) {
-  return (Random(Real(0.0), Real(1.0)) < prob ? 1 : 0);
+  return (Random(Real(0.0), Real(1.0)) < prob);
 }
 
 inline int Rng::RandomInt(int low, int high) {
@@ -231,7 +231,7 @@ inline Transformr<dim> Rng::RandomTransform(const Vecr<dim>& low,
   Transformr<dim> tf;
   Linear(tf) = RandomRotation<dim>();
   for (int i = 0; i < dim; ++i) tf(i, dim) = Random(low(i), high(i));
-  tf.template bottomLeftCorner<1, dim>() = Vecr<dim>::Zero();
+  tf.template bottomLeftCorner<1, dim>().setZero();
   tf(dim, dim) = Real(1.0);
   return tf;
 }
