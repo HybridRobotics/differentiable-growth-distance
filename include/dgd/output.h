@@ -96,8 +96,23 @@ struct Output {
    */
   Vecr<dim> normal = Vecr<dim>::Zero();
 
-  /// @brief (internal) support function hints.
+  /**
+   * @name (internal) support function hints
+   * @brief Support function hints for the convex sets.
+   */
+  ///@{
   SupportFunctionHint<dim> hint1_{}, hint2_{};
+  ///@}
+
+  /**
+   * @name Convex set simplex vertex indices
+   * @brief Index hints for the simplex vertices of the convex sets
+   * (corresponding to s1 and s2).
+   */
+  ///@{
+  Veci<dim> idx_s1 = Veci<dim>::Constant(-1);
+  Veci<dim> idx_s2 = Veci<dim>::Constant(-1);
+  ///@}
 
   /**
    * @name Primal optimal solutions
@@ -130,8 +145,13 @@ struct Output {
    */
   Real growth_dist_lb = Real(0.0);
 
-  /// @brief (internal) convex set inradii.
+  /**
+   * @name (internal) convex set inradii
+   * @brief Inradii of the convex sets at their center points.
+   */
+  ///@{
   Real r1_ = kEps, r2_ = kEps;
+  ///@}
 
   // (test) primal infeasibility error.
   // Real prim_infeas_err = kInf;

@@ -43,7 +43,7 @@ inline void InitializeSimplex(Matr<2, 2>& s, Vec2r& n, Real r, Output<2>& out) {
   s.col(0) = Vec2r(-r, Real(0.0));
   s.col(1) = Vec2r(r, Real(0.0));
   n = Vec2r::UnitY();
-  out.bc = Vec2r::Constant(Real(0.5));
+  out.bc.setConstant(Real(0.5));
 }
 
 /**
@@ -56,6 +56,8 @@ inline void InitializeSetSimplices(const MinkowskiDiffProp<2>& mdp,
   out.s1.col(0) = -out.s1.col(1);
   out.s2.col(0) = out.r2_ * mdp.rot2.transpose().col(0);
   out.s2.col(1) = -out.s2.col(0);
+  out.idx_s1.setConstant(-1);
+  out.idx_s2.setConstant(-1);
 }
 
 /*
@@ -72,6 +74,8 @@ inline Real UpdateSimplex(const Vec2r& sp, const Vec2r& sp1, const Vec2r& sp2,
   s.col(idx) = sp;
   out.s1.col(idx) = sp1;
   out.s2.col(idx) = sp2;
+  out.idx_s1(idx) = out.hint1_.idx_ws;
+  out.idx_s2(idx) = out.hint2_.idx_ws;
   if (idxn) *idxn = idx;
 
   out.bc = Vec2r(s(0, 1), -s(0, 0));
@@ -125,6 +129,7 @@ template <bool detect_collision>
 inline Real PrimalWarmStart(const MinkowskiDiffProp<2>& mdp, Matr<2, 2>& s,
                             Vec2r& n, Output<2>& out) {
   const Matr<2, 2> s1 = out.s1, s2 = out.s2;
+  const Vec2i idx_s1 = out.idx_s1, idx_s2 = out.idx_s2;
   Vec2r sp;
   Real lb = Real(0.0);
 
@@ -136,6 +141,8 @@ inline Real PrimalWarmStart(const MinkowskiDiffProp<2>& mdp, Matr<2, 2>& s,
     if (out.bc(i) > SolverSettings::kEpsMinBc) {
       sp.noalias() = mdp.rot1 * s1.col(i) - mdp.rot2 * s2.col(i);
       if (n.dot(sp - s.col(0)) > Real(0.0)) {
+        out.hint1_.idx_ws = idx_s1(i);
+        out.hint2_.idx_ws = idx_s2(i);
         lb = UpdateSimplex(sp, s1.col(i), s2.col(i), s, out);
         UpdateNormalCuttingPlane(s, n);
       }
