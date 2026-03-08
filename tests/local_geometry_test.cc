@@ -559,6 +559,7 @@ TEST(LocalGeometryTest, Polygon) {
     EXPECT_TRUE(set.IsPolytopic());
 
     test_cases.clear();
+    hints.clear();
     for (int ns = 0; ns < nvsamples; ++ns) {
       // Pick a random vertex and its neighbors.
       int idx = rng.RandomInt(0, nvert - 1);
