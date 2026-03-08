@@ -21,6 +21,7 @@ add_executable(${DGD_LIB}_test
   "${PROJECT_SOURCE_DIR}/tests/kkt_nullspace_test.cc"
   "${PROJECT_SOURCE_DIR}/tests/local_geometry_test.cc"
   "${PROJECT_SOURCE_DIR}/tests/mesh_loader_test.cc"
+  "${PROJECT_SOURCE_DIR}/tests/projection_derivative_test.cc"
   "${PROJECT_SOURCE_DIR}/tests/support_function_test.cc"
 )
 
