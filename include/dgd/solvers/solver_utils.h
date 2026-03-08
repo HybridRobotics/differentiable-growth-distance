@@ -97,7 +97,9 @@ inline Rotation3r RotationToZAxis(const Vec3r& n) {
 /// @brief Initializes the output for cold start.
 template <int dim, class C1, class C2>
 inline void InitializeOutput(const C1* set1, const C2* set2, Output<dim>& out) {
-  out.hint2_.n_prev = out.hint1_.n_prev = Vecr<dim>::Zero();
+  out.hint2_.n_prev.setZero();
+  out.hint1_.n_prev.setZero();
+  out.hint2_.idx_ws = out.hint1_.idx_ws = -1;
   out.r1_ = set1->inradius();
   out.r2_ = set2->inradius();
   out.normalize_2norm_ = set1->RequireUnitNormal() || set2->RequireUnitNormal();
@@ -107,7 +109,7 @@ inline void InitializeOutput(const C1* set1, const C2* set2, Output<dim>& out) {
 template <int dim>
 inline Real SetZeroOutput(const Transformr<dim>& tf1,
                           const Transformr<dim>& tf2, Output<dim>& out) {
-  out.normal = Vecr<dim>::Zero();
+  out.normal.setZero();
   out.growth_dist_ub = out.growth_dist_lb = Real(0.0);
   out.z1 = Affine(tf1);
   out.z2 = Affine(tf2);
@@ -263,8 +265,8 @@ struct SupportFunctionOutput<dim, 2> {
 /// @brief Sets zero KKT solution set null space.
 template <int dim>
 inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
-  dd.z_nullspace = Matr<dim, dim - 1>::Zero();
-  dd.n_nullspace = Matr<dim, dim>::Zero();
+  dd.z_nullspace.setZero();
+  dd.n_nullspace.setZero();
   dd.z_nullity = 0;
   dd.n_nullity = 0;
   dd.value_differentiable = false;

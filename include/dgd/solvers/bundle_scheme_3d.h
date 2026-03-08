@@ -101,7 +101,7 @@ inline void InitializeSimplex<BcSolverType::Cramer>(
   bsc.s.col(2) = Vec3r(Real(0.0), -r, Real(0.0));
   bsc.n = Vec3r::UnitZ();
   bsc.area = Real(1.5) * r * r;
-  out.bc = Vec3r::Constant(Real(1.0 / 3.0));
+  out.bc.setConstant(Real(1.0 / 3.0));
 }
 
 template <>
@@ -118,7 +118,7 @@ inline void InitializeSimplex<BcSolverType::LU>(
   bsc.area = Real(1.5) * r * r;
   bsc.pr = bsc.pc = 0;
   bsc.pri = bsc.pci = 1;
-  out.bc = Vec3r::Constant(Real(1.0 / 3.0));
+  out.bc.setConstant(Real(1.0 / 3.0));
 }
 
 /**
@@ -135,6 +135,8 @@ inline void InitializeSetSimplices(const MinkowskiDiffProp<3>& mdp,
       out.r2_ * mdp.rot2.transpose() * Vec3r(Real(0.5), Real(-0.5), Real(0.0));
   out.s2.col(2) = out.r2_ * mdp.rot2.transpose().col(1);
   out.s2.col(0) = -(out.s2.col(1) + out.s2.col(2));
+  out.idx_s1.setConstant(-1);
+  out.idx_s2.setConstant(-1);
 }
 
 /*
@@ -326,7 +328,7 @@ Real UpdateOriginCoordinates1D(BundleScheme3Context<BcSolverType::LU>& bsc,
     bsc.s.row(ax).cwiseAbs().minCoeff(&idx);
     bc(idx) = Real(1.0);
     bc(Inc<3>(idx)) = bc(Dec<3>(idx)) = Real(0.0);
-    bsc.e = Matr<3, 3>::Identity().leftCols<2>();
+    bsc.e.setIdentity();
     return bsc.s(2, idx);
   }
 }
@@ -418,6 +420,8 @@ inline Real UpdateSimplex<BcSolverType::Cramer>(
   bsc.s.col(exiting_idx) = sp;
   out.s1.col(exiting_idx) = sp1;
   out.s2.col(exiting_idx) = sp2;
+  out.idx_s1(exiting_idx) = out.hint1_.idx_ws;
+  out.idx_s2(exiting_idx) = out.hint2_.idx_ws;
   if (idxn) *idxn = exiting_idx;
   return UpdateOriginCoordinates(bsc, out.bc);
 }
@@ -445,6 +449,8 @@ inline Real UpdateSimplex<BcSolverType::LU>(
   bsc.s.col(exiting_idx) = sp;
   out.s1.col(exiting_idx) = sp1;
   out.s2.col(exiting_idx) = sp2;
+  out.idx_s1(exiting_idx) = out.hint1_.idx_ws;
+  out.idx_s2(exiting_idx) = out.hint2_.idx_ws;
   if (idxn) *idxn = exiting_idx;
   return UpdateOriginCoordinates(bsc, out.bc);
 }
@@ -542,6 +548,7 @@ template <BcSolverType BST, bool detect_collision>
 inline Real PrimalWarmStart(const MinkowskiDiffProp<3>& mdp,
                             BundleScheme3Context<BST>& bsc, Output<3>& out) {
   const Matr<3, 3> s1 = out.s1, s2 = out.s2;
+  const Vec3i idx_s1 = out.idx_s1, idx_s2 = out.idx_s2;
   Vec3r sp;
   Real lb = Real(0.0);
 
@@ -553,6 +560,8 @@ inline Real PrimalWarmStart(const MinkowskiDiffProp<3>& mdp,
     if (out.bc(i) > SolverSettings::kEpsMinBc) {
       sp.noalias() = mdp.rot1 * s1.col(i) - mdp.rot2 * s2.col(i);
       if (bsc.n.dot(sp - bsc.s.col(0)) > Real(0.0)) {
+        out.hint1_.idx_ws = idx_s1(i);
+        out.hint2_.idx_ws = idx_s2(i);
         lb = UpdateSimplex(sp, s1.col(i), s2.col(i), bsc, out);
         UpdateNormalCuttingPlane(bsc, bsc.n);
       }
