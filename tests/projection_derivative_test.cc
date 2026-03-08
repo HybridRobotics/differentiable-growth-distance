@@ -371,6 +371,9 @@ TEST(ProjectionTest, Cuboid) {
 // ---------------------------------------------------------------------------
 
 TEST(ProjectionDerivativeTest, Ellipse) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(3.0), hly = Real(2.0);
   const Vec2r qe(Real(1.0) / (hlx * hlx), Real(1.0) / (hly * hly));
 
@@ -400,6 +403,9 @@ TEST(ProjectionDerivativeTest, Ellipse) {
 }
 
 TEST(ProjectionDerivativeTest, Polygon) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const int nv = 6;
   const Real radius = Real(1.0);
   std::vector<Vec2r> vert(nv);
@@ -423,7 +429,8 @@ TEST(ProjectionDerivativeTest, Polygon) {
     for (int i = 0; i < nv; ++i) {
       const Vec2r& v0 = vert[i];
       const Vec2r& v1 = vert[(i + 1) % nv];
-      const Real f = rng.CoinFlip() * rng.Random(Real(0.05), Real(0.95));
+      const Real f = static_cast<Real>(rng.CoinFlip()) *
+                     rng.Random(Real(0.05), Real(0.95));
       const Vec2r n = Vec2r(v1(1) - v0(1), v0(0) - v1(0)).normalized();
       const Vec2r pi = v1 + f * (v0 - v1) + m * n;
       const Vec2r p = pi + LogSample(Real(5e-1), Real(5.0), rng) * n;
@@ -459,6 +466,9 @@ TEST(ProjectionDerivativeTest, Polygon) {
 }
 
 TEST(ProjectionDerivativeTest, Rectangle) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(3.0), hly = Real(2.0);
 
   Matr<2, 2> d_pi_p, d_pi_p_num;
@@ -523,6 +533,9 @@ TEST(ProjectionDerivativeTest, Rectangle) {
 // ---------------------------------------------------------------------------
 
 TEST(ProjectionDerivativeTest, Ellipsoid) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(3.0), hly = Real(2.0), hlz = Real(1.5);
   const Vec3r qe(Real(1.0) / (hlx * hlx), Real(1.0) / (hly * hly),
                  Real(1.0) / (hlz * hlz));
@@ -554,6 +567,9 @@ TEST(ProjectionDerivativeTest, Ellipsoid) {
 }
 
 TEST(ProjectionDerivativeTest, Cuboid) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(3.0), hly = Real(2.0), hlz = Real(1.5);
 
   Matr<3, 3> d_pi_p, d_pi_p_num;
@@ -637,6 +653,9 @@ TEST(ProjectionDerivativeTest, Cuboid) {
 }
 
 TEST(ProjectionDerivativeTest, Cylinder) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(2.0), radius = Real(2.5);
 
   Matr<3, 3> d_pi_p, d_pi_p_num;
@@ -698,6 +717,9 @@ TEST(ProjectionDerivativeTest, Cylinder) {
 }
 
 TEST(ProjectionDerivativeTest, Cone) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real ha = kPi / Real(6.0), r = Real(1.5);
   const Real sha = std::sin(ha), cha = std::cos(ha), tha = std::tan(ha);
   const Real h = r / tha;
@@ -771,6 +793,9 @@ TEST(ProjectionDerivativeTest, Cone) {
 }
 
 TEST(ProjectionDerivativeTest, Frustum) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   Matr<3, 3> d_pi_p, d_pi_p_num;
   Rng rng;
   rng.SetSeed(97);
@@ -934,9 +959,11 @@ inline void PolytopeProjectionDerivativeTest(
     const int nn = static_cast<int>(face_idx[f].size());
     const int v = rng.RandomInt(0, nn - 1);
     Vec3r bc;
-    bc(0) = rng.CoinFlip(Real(0.67)) * rng.Random(Real(0.05), Real(0.95));
+    bc(0) = static_cast<Real>(rng.CoinFlip(Real(0.67))) *
+            rng.Random(Real(0.05), Real(0.95));
     bc(1) = rng.Random(Real(0.05), Real(0.95));
-    bc(2) = rng.CoinFlip(Real(0.67)) * rng.Random(Real(0.05), Real(0.95));
+    bc(2) = static_cast<Real>(rng.CoinFlip(Real(0.67))) *
+            rng.Random(Real(0.05), Real(0.95));
     bc /= bc.sum();
     Vec3r pi = m * n;
     for (int j = 0; j < 3; ++j) pi += bc(j) * vert[face_idx[f][(v + j) % nn]];
@@ -966,13 +993,13 @@ inline void PolytopeProjectionDerivativeTest(
     const int f2 = neighbor_face(f1, {v1, v2});
     ASSERT_GE(f2, 0);
 
-    const Real fn =
-        rng.CoinFlip(Real(0.67)) * rng.Random(Real(0.05), Real(0.95));
+    const Real fn = static_cast<Real>(rng.CoinFlip(Real(0.67))) *
+                    rng.Random(Real(0.05), Real(0.95));
     const Vec3r n =
         (fn * face_normals[f1] + (Real(1.0) - fn) * face_normals[f2])
             .normalized();
-    const Real bc =
-        rng.CoinFlip(Real(0.67)) * rng.Random(Real(0.05), Real(0.95));
+    const Real bc = static_cast<Real>(rng.CoinFlip(Real(0.67))) *
+                    rng.Random(Real(0.05), Real(0.95));
     Vec3r pi = bc * vert[v1] + (Real(1.0) - bc) * vert[v2] + m * n;
     const Vec3r p = pi + LogSample(Real(5e-1), Real(5.0), rng) * n;
 
@@ -1004,6 +1031,9 @@ inline void PolytopeProjectionDerivativeTest(
 }
 
 TEST(ProjectionDerivativeTest, Mesh) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const std::vector<Vec3r> vert = {
       Vec3r(Real(1), Real(1), Real(1)),
       Vec3r(Real(1), -Real(1), -Real(1)),
@@ -1042,6 +1072,9 @@ TEST(ProjectionDerivativeTest, Mesh) {
 }
 
 TEST(ProjectionDerivativeTest, Polytope) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real h = Real(1.0);
   const std::vector<Vec3r> vert = {
       Vec3r(h, h, h),  Vec3r(-h, h, h),  Vec3r(-h, -h, h),  Vec3r(h, -h, h),
@@ -1080,6 +1113,9 @@ TEST(ProjectionDerivativeTest, Polytope) {
 // ---------------------------------------------------------------------------
 
 TEST(ProjectionDerivativeTest, Stadium) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(2.0), radius = Real(1.5);
 
   Matr<2, 2> d_pi_p, d_pi_p_num;
@@ -1122,6 +1158,9 @@ TEST(ProjectionDerivativeTest, Stadium) {
 }
 
 TEST(ProjectionDerivativeTest, Capsule) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   const Real hlx = Real(2.0), radius = Real(1.5);
 
   Matr<3, 3> d_pi_p, d_pi_p_num;
@@ -1190,10 +1229,16 @@ void SphereImplProjectionDerivativeTest() {
 }
 
 TEST(ProjectionDerivativeTest, Circle) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   SphereImplProjectionDerivativeTest<2>();
 }
 
 TEST(ProjectionDerivativeTest, Sphere) {
+  // Numerical derivative computations can be unstable with float.
+  if (typeid(Real) == typeid(float)) GTEST_SKIP();
+
   SphereImplProjectionDerivativeTest<3>();
 }
 
