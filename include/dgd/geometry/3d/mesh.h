@@ -31,6 +31,7 @@
 
 #include "dgd/data_types.h"
 #include "dgd/geometry/convex_set.h"
+#include "dgd/geometry/geometry_utils.h"
 
 namespace dgd {
 
@@ -52,7 +53,7 @@ class MeshImpl : public ConvexSet<3> {
  public:
   /**
    * @attention The mesh must contain the origin in its interior, and the
-   * inradius must be accurate.
+   * inradius must be an accurate lower bound.
    *
    * @see MeshLoader::MakeVertexGraph
    * @see MeshLoader::ComputeInradius
@@ -86,13 +87,19 @@ class MeshImpl : public ConvexSet<3> {
 
   bool RequireUnitNormal() const final override;
 
+  void ComputeLocalGeometryImpl(const NormalPair<3>& zn,
+                                SupportPatchHull<3>& sph,
+                                NormalConeSpan<3>& ncs,
+                                bool check_margin = true,
+                                BasePointHint<3>* hint = nullptr) const;
+
   void ComputeLocalGeometry(
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* hint = nullptr) const final override;
+      BasePointHint<3>* hint = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* hint = nullptr) const final override;
+      BasePointHint<3>* hint = nullptr) const final override;
 
   bool IsPolytopic() const final override;
 
@@ -127,7 +134,7 @@ template <HillClimbingType HCT>
 inline MeshImpl<HCT>::MeshImpl(std::vector<Vec3r> vert, std::vector<int> graph,
                                Real inradius, Real margin, Real thresh,
                                int guess_level, const std::string& name)
-    : ConvexSet<3>(margin + Real(0.99) * inradius),
+    : ConvexSet<3>(margin + inradius),
       vert_(std::move(vert)),
       graph_(std::move(graph)),
       margin_(margin),
@@ -265,82 +272,52 @@ inline bool MeshImpl<HCT>::RequireUnitNormal() const {
 }
 
 template <HillClimbingType HCT>
-inline void MeshImpl<HCT>::ComputeLocalGeometry(
+inline void MeshImpl<HCT>::ComputeLocalGeometryImpl(
     const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-    const BasePointHint<3>* hint) const {
-  // See the implementation in the Polytope class for reference.
-  Vec3r e_perp;
-  Real sv_e;
+    bool check_margin, BasePointHint<3>* hint) const {
+  const int ns = (hint) ? detail::MergeIndices(*hint, eps_p_) : -1;
+  Vec3r e_perp = Vec3r::Zero();
+  Real sv_e = Real(0.0);
   bool check_edge = false;
 
-  auto set_edge = [&](int i, int j) -> void {
-    const Matr<3, 3>& s = (*hint->s);
-    e_perp = (s.col(j) - s.col(i)).cross(zn.n).normalized();
-    sv_e = e_perp.dot(s.col(i));
-    check_edge = true;
-  };
-
   // Compute the normal cone span.
-  if (!IsPolytopic()) {
-    ncs.span_dim = 1;  // Normal cone is a ray.
+  if (check_margin && !IsPolytopic()) {
+    // Normal cone is a ray.
+    ncs.span_dim = 1;
+  } else if (ns < 1) {
+    ncs.span_dim = 3;  // Over-approximation.
   } else {
-    Vec3i sidx;
-    int ns;
-    if ((!hint) || ((ns = hint->ComputeSimplexIndices(sidx)) < 0)) {
-      ncs.span_dim = 3;  // Over-approximation.
-    } else {
-      const Vec3r& bc = (*hint->bc);
-      if (ns == 1) {  // Unique simplex point (base point must be a vertex).
-        ncs.span_dim = 3;  // Normal cone is a 3D cone.
-      } else if (ns == 2) {
-        // Two unique simplex points (base point can be on a face/edge/vertex).
-        const Real bc1 = bc.dot(sidx.cast<Real>());
-        if ((bc1 <= eps_p_) || (bc1 >= Real(1.0) - eps_p_)) {
-          ncs.span_dim = 3;  // Normal cone is a 3D cone.
-        } else {
-          set_edge(0, 2 - sidx(1));
-        }
-      } else {  // Three unique simplex points.
-        const Real eps = Real(0.5) * eps_p_;
-        // Check all face/edge/vertex combinations.
-        if (bc(0) <= eps) {
-          if ((bc(1) <= eps) || (bc(2) <= eps)) {
-            ncs.span_dim = 3;
-          } else {
-            set_edge(1, 2);
-          }
-        } else if (bc(1) <= eps) {
-          if (bc(2) <= eps) {
-            ncs.span_dim = 3;
-          } else {
-            set_edge(0, 2);
-          }
-        } else if (bc(2) <= eps) {
-          set_edge(0, 1);
-        } else {
-          ncs.span_dim = 1;
-        }
-      }
+    ncs.span_dim = 4 - ns;
+    if (ns == 2) {
+      const Vec3r& v1 = vert_[hint->idx(0)];
+      e_perp = (v1 - vert_[hint->idx(1)]).cross(zn.n).normalized();
+      sv_e = e_perp.dot(v1);
+      check_edge = true;
     }
   }
 
-  // Compute the support function value and vertex index.
-  int idx = (hint && hint->sfh) ? hint->sfh->idx_ws : 0;
-  int nidx = -1, pidx = -1;
-  Real s = Real(0.0), sv = zn.n.dot(vert_[idx]);
-  // Hill-climbing.
-  do {
-    pidx = idx;
-    for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
-         ++i) {
-      s = zn.n.dot(vert_[nidx]);
-      if (s > sv) {
-        idx = nidx;
-        sv = s;
-        if constexpr (HCT == HillClimbingType::Greedy) break;
+  Real sv = Real(0.0);
+  int idx = 0, nidx = -1, pidx = -1;
+  if (ns > 0) {
+    idx = hint->idx(0);
+    sv = zn.n.dot(vert_[idx]);
+  } else {
+    Real s = Real(0.0);
+    sv = zn.n.dot(vert_[idx]);
+    // Hill-climbing.
+    do {
+      pidx = idx;
+      for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
+           ++i) {
+        s = zn.n.dot(vert_[nidx]);
+        if (s > sv) {
+          idx = nidx;
+          sv = s;
+          if constexpr (HCT == HillClimbingType::Greedy) break;
+        }
       }
-    }
-  } while (idx != pidx);
+    } while (idx != pidx);
+  }
 
   // Compute the support patch affine hull using adjacency graph.
   sph.aff_dim = 0;
@@ -409,17 +386,25 @@ inline void MeshImpl<HCT>::ComputeLocalGeometry(
 }
 
 template <HillClimbingType HCT>
-inline bool MeshImpl<HCT>::ProjectionDerivative(
-    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-    const BasePointHint<3>* hint) const {
+inline void MeshImpl<HCT>::ComputeLocalGeometry(const NormalPair<3>& zn,
+                                                SupportPatchHull<3>& sph,
+                                                NormalConeSpan<3>& ncs,
+                                                BasePointHint<3>* hint) const {
+  ComputeLocalGeometryImpl(zn, sph, ncs, true, hint);
+}
+
+template <HillClimbingType HCT>
+inline bool MeshImpl<HCT>::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
+                                                Matr<3, 3>& d_pi_p,
+                                                BasePointHint<3>* hint) const {
   NormalPair<3> zn;
-  zn.z = pi;
   const Real dist = (p - pi).norm();
   zn.n = (p - pi) / dist;
+  zn.z = pi - margin_ * zn.n;  // Unused.
 
   SupportPatchHull<3> sph;
   NormalConeSpan<3> ncs;
-  ComputeLocalGeometry(zn, sph, ncs, hint);
+  ComputeLocalGeometryImpl(zn, sph, ncs, false, hint);
 
   if (sph.aff_dim + ncs.span_dim > 3) return false;
 
@@ -429,7 +414,7 @@ inline bool MeshImpl<HCT>::ProjectionDerivative(
     d_pi_p.diagonal().array() += Real(1.0);
   } else {
     // Projection lies on a vertex/edge.
-    const Real s = margin_ / dist;
+    const Real s = margin_ / (dist + margin_);
     d_pi_p.noalias() = -s * (zn.n * zn.n.transpose());
     d_pi_p.diagonal().array() += s;
     if (sph.aff_dim == 1) {

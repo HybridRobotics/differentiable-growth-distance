@@ -53,11 +53,11 @@ class Ellipsoid : public ConvexSet<3> {
   void ComputeLocalGeometry(
       const NormalPair<3>& /*zn*/, SupportPatchHull<3>& sph,
       NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
@@ -113,16 +113,17 @@ inline bool Ellipsoid::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
 }
 
-inline void Ellipsoid::ComputeLocalGeometry(
-    const NormalPair<3>& /*zn*/, SupportPatchHull<3>& sph,
-    NormalConeSpan<3>& ncs, const BasePointHint<3>* /*hint*/) const {
+inline void Ellipsoid::ComputeLocalGeometry(const NormalPair<3>& /*zn*/,
+                                            SupportPatchHull<3>& sph,
+                                            NormalConeSpan<3>& ncs,
+                                            BasePointHint<3>* /*hint*/) const {
   sph.aff_dim = 0;
   ncs.span_dim = 1;
 }
 
-inline bool Ellipsoid::ProjectionDerivative(
-    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-    const BasePointHint<3>* /*hint*/) const {
+inline bool Ellipsoid::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
+                                            Matr<3, 3>& d_pi_p,
+                                            BasePointHint<3>* /*hint*/) const {
   const Vec3r v = p - pi;
   const Real dist = v.norm();
   const Vec3r n = v / dist;

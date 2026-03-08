@@ -58,11 +58,11 @@ class Cylinder : public ConvexSet<3> {
 
   void ComputeLocalGeometry(
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
@@ -119,9 +119,10 @@ inline bool Cylinder::RequireUnitNormal() const {
   return (margin_ > Real(0.0));
 }
 
-inline void Cylinder::ComputeLocalGeometry(
-    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-    const BasePointHint<3>* /*hint*/) const {
+inline void Cylinder::ComputeLocalGeometry(const NormalPair<3>& zn,
+                                           SupportPatchHull<3>& sph,
+                                           NormalConeSpan<3>& ncs,
+                                           BasePointHint<3>* /*hint*/) const {
   if (std::abs(zn.n(0)) <= eps_d_) {
     // Support patch is a line segment.
     sph.aff_dim = 1;
@@ -148,9 +149,9 @@ inline void Cylinder::ComputeLocalGeometry(
   }
 }
 
-inline bool Cylinder::ProjectionDerivative(
-    const Vec3r& p, const Vec3r& pi, Matr<3, 3>& d_pi_p,
-    const BasePointHint<3>* /*hint*/) const {
+inline bool Cylinder::ProjectionDerivative(const Vec3r& p, const Vec3r& pi,
+                                           Matr<3, 3>& d_pi_p,
+                                           BasePointHint<3>* /*hint*/) const {
   const Real dx = std::abs(p(0)) - hlx_;
   const Real r = p.tail<2>().norm();
 

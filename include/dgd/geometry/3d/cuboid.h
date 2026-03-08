@@ -52,11 +52,11 @@ class Cuboid : public ConvexSet<3> {
 
   void ComputeLocalGeometry(
       const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   bool ProjectionDerivative(
       const Vec3r& p, const Vec3r& /*pi*/, Matr<3, 3>& d_pi_p,
-      const BasePointHint<3>* /*hint*/ = nullptr) const final override;
+      BasePointHint<3>* /*hint*/ = nullptr) const final override;
 
   Real Bounds(Vec3r* min = nullptr, Vec3r* max = nullptr) const final override;
 
@@ -106,9 +106,10 @@ inline Real Cuboid::SupportFunction(const Vec3r& n,
 
 inline bool Cuboid::RequireUnitNormal() const { return (margin_ > Real(0.0)); }
 
-inline void Cuboid::ComputeLocalGeometry(
-    const NormalPair<3>& zn, SupportPatchHull<3>& sph, NormalConeSpan<3>& ncs,
-    const BasePointHint<3>* /*hint*/) const {
+inline void Cuboid::ComputeLocalGeometry(const NormalPair<3>& zn,
+                                         SupportPatchHull<3>& sph,
+                                         NormalConeSpan<3>& ncs,
+                                         BasePointHint<3>* /*hint*/) const {
   sph.aff_dim = 0;
   // Check if the support patch contains each axis as a direction.
   if (std::abs(zn.n(0)) <= eps_d_) {
@@ -148,9 +149,9 @@ inline void Cuboid::ComputeLocalGeometry(
   }
 }
 
-inline bool Cuboid::ProjectionDerivative(
-    const Vec3r& p, const Vec3r& /*pi*/, Matr<3, 3>& d_pi_p,
-    const BasePointHint<3>* /*hint*/) const {
+inline bool Cuboid::ProjectionDerivative(const Vec3r& p, const Vec3r& /*pi*/,
+                                         Matr<3, 3>& d_pi_p,
+                                         BasePointHint<3>* /*hint*/) const {
   const Vec3r d(std::abs(p(0)) - hlx_, std::abs(p(1)) - hly_,
                 std::abs(p(2)) - hlz_);
 

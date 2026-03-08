@@ -52,7 +52,7 @@ inline Real GrowthDistanceHalfspaceTpl(
   const Vecr<dim> p21 = Affine(tf2) - Affine(tf1);
   const Real cdist = -p21.dot(Linear(tf2).col(dim - 1));
   if (cdist < settings.min_center_dist) {
-    out.normal = Vecr<dim>::Zero();
+    out.normal.setZero();
     out.growth_dist_ub = out.growth_dist_lb = Real(0.0);
     out.z1 = Affine(tf1);
     out.status = SolutionStatus::CoincidentCenters;
@@ -133,14 +133,10 @@ inline int ComputeKktNullspaceHalfspaceTpl(const C1* set1,
   zn.z.noalias() = InverseTransformPoint(tf1, out->z1);
   zn.n.noalias() = -Linear(tf1).transpose() * Linear(tf2).col(dim - 1);
 
-  BasePointHint<dim> hint;
-  // Note: out->s1 and out->bc are not set.
-  hint.sfh = &out->hint1_;
-
   SupportPatchHull<dim> sph;
   NormalConeSpan<dim> ncs;
 
-  set1->ComputeLocalGeometry(zn, sph, ncs, &hint);
+  set1->ComputeLocalGeometry(zn, sph, ncs);
 
   // Compute primal solution set null space.
   if constexpr (dim == 2) {
