@@ -28,6 +28,7 @@ using dgd::test::UniformCirclePoints;
 using dgd::test::UniformSpherePoints;
 using dgd::test::VectorNear;
 
+const Real kProjTol = Real(5.0) * kEps;
 const Real kStepSize = std::pow(kEps, Real(0.25));
 const Real kRelTol = Real(1.0) + std::pow(kEps, Real(0.75));
 const Real kDistTol = std::pow(kEps, Real(0.75));
@@ -49,6 +50,12 @@ inline Real WitnessTolerance(Real d, Real p) {
 
 inline Real LogSample(Real low, Real high, Rng& rng) {
   return std::exp2(rng.Random(std::log2(low), std::log2(high)));
+}
+
+template <int dim>
+Real ProjNullspaceError(const Matr<dim, dim>& d_pi_p, const Vecr<dim>& p,
+                        const Vecr<dim>& pi) {
+  return (d_pi_p * (p - pi).normalized()).norm();
 }
 
 // ---------------------------------------------------------------------------
@@ -377,7 +384,7 @@ TEST(ProjectionDerivativeTest, Ellipse) {
   const Real hlx = Real(3.0), hly = Real(2.0);
   const Vec2r qe(Real(1.0) / (hlx * hlx), Real(1.0) / (hly * hly));
 
-  const auto dirs = UniformCirclePoints(16);
+  const auto dirs = UniformCirclePoints(32);
 
   Rng rng;
   rng.SetSeed(31);
@@ -397,6 +404,7 @@ TEST(ProjectionDerivativeTest, Ellipse) {
           ComputeProjectionDerivative(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
 
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
     }
   }
@@ -446,6 +454,7 @@ TEST(ProjectionDerivativeTest, Polygon) {
         continue;
       }
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
     }
 
@@ -460,6 +469,7 @@ TEST(ProjectionDerivativeTest, Polygon) {
       const bool diff =
           ComputeProjectionDerivative<2>(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
     }
   }
@@ -490,6 +500,7 @@ TEST(ProjectionDerivativeTest, Rectangle) {
         const bool diff =
             ComputeProjectionDerivative<2>(&set, p, pi, d_pi_p, d_pi_p_num);
         ASSERT_TRUE(diff);
+        ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
         EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
       }
     }
@@ -504,6 +515,7 @@ TEST(ProjectionDerivativeTest, Rectangle) {
         const bool diff =
             ComputeProjectionDerivative<2>(&set, p, pi, d_pi_p, d_pi_p_num);
         ASSERT_TRUE(diff);
+        ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
         EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
       }
     }
@@ -521,6 +533,7 @@ TEST(ProjectionDerivativeTest, Rectangle) {
           const bool diff =
               ComputeProjectionDerivative<2>(&set, p, pi, d_pi_p, d_pi_p_num);
           ASSERT_TRUE(diff);
+          ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
           EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
         }
       }
@@ -561,6 +574,7 @@ TEST(ProjectionDerivativeTest, Ellipsoid) {
           ComputeProjectionDerivative(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
 
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
   }
@@ -597,6 +611,7 @@ TEST(ProjectionDerivativeTest, Cuboid) {
           const bool diff =
               ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
           ASSERT_TRUE(diff);
+          ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
           EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
         }
       }
@@ -622,6 +637,7 @@ TEST(ProjectionDerivativeTest, Cuboid) {
             const bool diff =
                 ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
             ASSERT_TRUE(diff);
+            ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
             EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
           }
         }
@@ -644,6 +660,7 @@ TEST(ProjectionDerivativeTest, Cuboid) {
             const bool diff =
                 ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
             ASSERT_TRUE(diff);
+            ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
             EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
           }
         }
@@ -678,6 +695,7 @@ TEST(ProjectionDerivativeTest, Cylinder) {
       const bool diff =
           ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
 
@@ -692,6 +710,7 @@ TEST(ProjectionDerivativeTest, Cylinder) {
         const bool diff =
             ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
         ASSERT_TRUE(diff);
+        ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
         EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
       }
     }
@@ -710,6 +729,7 @@ TEST(ProjectionDerivativeTest, Cylinder) {
         const bool diff =
             ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
         ASSERT_TRUE(diff);
+        ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
         EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
       }
     }
@@ -741,12 +761,13 @@ TEST(ProjectionDerivativeTest, Cone) {
     for (const auto& u : sdirs) {
       if (u(2) <= tha * u.head<2>().norm() + Real(0.05)) continue;
 
-      const Vec3r pi(Real(0.0), Real(0.0), h - rho + m);
+      const Vec3r pi = (h - rho) * Vec3r::UnitZ() + m * u;
       const Vec3r p = pi + LogSample(Real(5e-1), Real(5.0), rng) * u;
 
       const bool diff =
           ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
 
@@ -761,6 +782,7 @@ TEST(ProjectionDerivativeTest, Cone) {
       const bool diff =
           ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
 
@@ -774,6 +796,7 @@ TEST(ProjectionDerivativeTest, Cone) {
       const bool diff =
           ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
       if (!diff) continue;
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
 
@@ -787,6 +810,7 @@ TEST(ProjectionDerivativeTest, Cone) {
       const bool diff =
           ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
   }
@@ -833,6 +857,7 @@ TEST(ProjectionDerivativeTest, Frustum) {
           const bool diff =
               ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
           ASSERT_TRUE(diff);
+          ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
           EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess)
               << "Frustum lateral, rb=" << rb << " rt=" << rt << " m=" << m;
         }
@@ -849,6 +874,7 @@ TEST(ProjectionDerivativeTest, Frustum) {
           const bool diff =
               ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
           ASSERT_TRUE(diff);
+          ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
           EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess)
               << "Frustum disk, rb=" << rb << " rt=" << rt << " m=" << m;
         }
@@ -868,6 +894,7 @@ TEST(ProjectionDerivativeTest, Frustum) {
           const bool diff =
               ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
           ASSERT_TRUE(diff);
+          ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
           EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess)
               << "Frustum vertex, rb=" << rb << " rt=" << rt << " m=" << m;
         }
@@ -888,6 +915,7 @@ TEST(ProjectionDerivativeTest, Frustum) {
           const bool diff =
               ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
           ASSERT_TRUE(diff);
+          ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
           EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess)
               << "Frustum edge, rb=" << rb << " rt=" << rt << " m=" << m;
         }
@@ -980,6 +1008,7 @@ inline void PolytopeProjectionDerivativeTest(
       continue;
     }
     ASSERT_TRUE(diff);
+    ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
     EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
   }
 
@@ -1013,6 +1042,7 @@ inline void PolytopeProjectionDerivativeTest(
       continue;
     }
     ASSERT_TRUE(diff);
+    ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
     EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
   }
 
@@ -1026,6 +1056,7 @@ inline void PolytopeProjectionDerivativeTest(
     const bool diff =
         ComputeProjectionDerivative<3>(set, p, pi, d_pi_p, d_pi_p_num);
     ASSERT_TRUE(diff);
+    ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
     EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
   }
 }
@@ -1138,6 +1169,7 @@ TEST(ProjectionDerivativeTest, Stadium) {
         const bool diff =
             ComputeProjectionDerivative(&set, p, pi, d_pi_p, d_pi_p_num);
         ASSERT_TRUE(diff);
+        ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
         EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
       }
     }
@@ -1152,6 +1184,7 @@ TEST(ProjectionDerivativeTest, Stadium) {
       const bool diff =
           ComputeProjectionDerivative(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<2>, d_pi_p, d_pi_p_num, kTolHess);
     }
   }
@@ -1183,6 +1216,7 @@ TEST(ProjectionDerivativeTest, Capsule) {
       const bool diff =
           ComputeProjectionDerivative<3>(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
 
@@ -1198,6 +1232,7 @@ TEST(ProjectionDerivativeTest, Capsule) {
       const bool diff =
           ComputeProjectionDerivative(&set, p, pi, d_pi_p, d_pi_p_num);
       ASSERT_TRUE(diff);
+      ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
       EXPECT_PRED3(MatrixNear<3>, d_pi_p, d_pi_p_num, kTolHess);
     }
   }
@@ -1224,6 +1259,7 @@ void SphereImplProjectionDerivativeTest() {
     const bool diff =
         ComputeProjectionDerivative<dim>(&set, p, pi, d_pi_p, d_pi_p_num);
     ASSERT_TRUE(diff);
+    ASSERT_LE(ProjNullspaceError(d_pi_p, p, pi), kProjTol);
     EXPECT_PRED3(MatrixNear<dim>, d_pi_p, d_pi_p_num, kTolHess);
   }
 }

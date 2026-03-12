@@ -20,7 +20,7 @@ using dgd::test::IsOrthonormalBasis;
 using dgd::test::kTol;
 
 // ---------------------------------------------------------------------------
-// Assertion predicates for KKT nullspace analysis
+// Assertion predicates for KKT null space analysis
 // ---------------------------------------------------------------------------
 
 template <int dim>
@@ -42,7 +42,7 @@ bool AssertDualBasis(const Matr<dim, dim>& basis, const Vecr<dim>& normal,
 }
 
 // ---------------------------------------------------------------------------
-// 2D KKT nullspace tests
+// 2D KKT null space tests
 // ---------------------------------------------------------------------------
 
 TEST(KktNullspaceTest, VertexVertex2D) {
@@ -194,7 +194,7 @@ TEST(KktNullspaceTest, EdgeHalfspace2D) {
 }
 
 // ---------------------------------------------------------------------------
-// 3D KKT nullspace tests
+// 3D KKT null space tests
 // ---------------------------------------------------------------------------
 
 TEST(KktNullspaceTest, VertexVertex3D) {
