@@ -247,10 +247,14 @@ template <HillClimbingType HCT>
 inline Real MeshImpl<HCT>::SupportFunction(const Vec3r& n,
                                            SupportFunctionDerivatives<3>& deriv,
                                            SupportFunctionHint<3>* hint) const {
-  const Real sv = SupportFunction(n, deriv.sp, hint);
+  SupportFunctionHint<3>
+      hint_tmp;  // Note: hint passed to function can be null.
+  if (hint) hint_tmp = *hint;
+  const Real sv = SupportFunction(n, deriv.sp, &hint_tmp);
+  if (hint) *hint = hint_tmp;
 
   deriv.differentiable = true;
-  const int idx = hint->idx_ws;
+  const int idx = hint_tmp.idx_ws;
   int nidx = -1;
   for (int i = *(vert_edgeadr_ + idx); (nidx = *(edge_localid_ + i)) > -1;
        ++i) {
