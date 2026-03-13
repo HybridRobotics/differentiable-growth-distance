@@ -80,6 +80,9 @@ struct Settings {
    */
   Real nullspace_tol = kSqrtEps;
 
+  /// @brief Tolerance for the primal and dual solution derivative computation.
+  Real jac_tol = kSqrtEps;
+
   /// @brief Maximum number of solver iterations.
   int max_iter = 100;
 

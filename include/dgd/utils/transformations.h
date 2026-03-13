@@ -29,16 +29,25 @@
 namespace dgd {
 
 /**
+ * @name Hat operators
  * @brief Returns the skew-symmetric matrix of a 3D vector.
  *
  * @param  v 3D vector.
  * @return Skew-symmetric matrix.
  */
-inline Rotation3r Hat(const Vec3r& v) {
-  Rotation3r rot;
-  rot << 0, -v(2), v(1), v(2), 0, -v(0), -v(1), v(0), 0;
+///@{
+inline Rotation2r Hat(Real v) {
+  Rotation2r rot;
+  rot << Real(0.0), -v, v, Real(0.0);
   return rot;
 }
+
+inline Rotation3r Hat(const Vec3r& v) {
+  Rotation3r rot;
+  rot << Real(0.0), -v(2), v(1), v(2), Real(0.0), -v(0), -v(1), v(0), Real(0.0);
+  return rot;
+}
+///@}
 
 /**
  * @brief Returns a rotation matrix using the body ZYX Euler angles.
@@ -107,7 +116,44 @@ inline Vecr<dim> InverseTransformPoint(const Transformr<dim>& tf,
 }
 
 /**
- * @name Velocity computation functions
+ * @name Angular velocity transformation functions
+ * @brief Transforms an angular velocity vector from the local frame to the
+ * world frame.
+ *
+ * @param  tf Rigid body transformation.
+ * @param  w  Angular velocity in the local frame.
+ * @return Angular velocity in the world frame.
+ */
+///@{
+inline Real TransformAngVel(const Transform2r& /*tf*/, Real w) { return w; }
+
+inline Vec3r TransformAngVel(const Transform3r& tf, const Vec3r& w) {
+  return Linear(tf) * w;
+}
+///@}
+
+/**
+ * @name Rotational velocity computation functions
+ * @brief Returns the velocity of a point given angular velocity.
+ *
+ * @note The angular velocity, point, and the velocity are expressed in the same
+ * frame of reference.
+ *
+ * @param  ang_vel Angular velocity.
+ * @param  pt      Point.
+ * @return Velocity of the point.
+ */
+///@{
+inline Vec2r RotationalVelocity(Real ang_vel, const Vec2r& pt) {
+  return ang_vel * Vec2r(-pt(1), pt(0));
+}
+
+inline Vec3r RotationalVelocity(const Vec3r& ang_vel, const Vec3r& pt) {
+  return ang_vel.cross(pt);
+}
+///@}
+
+/**
  * @brief Returns the velocity of a point on a rigid body given its twist.
  *
  * @note The twist, point, and the velocity are expressed in the same frame of
@@ -117,15 +163,10 @@ inline Vecr<dim> InverseTransformPoint(const Transformr<dim>& tf,
  * @param  pt Point on the rigid body.
  * @return Velocity of the point.
  */
-///@{
-inline Vec2r VelocityAtPoint(const Twist2r& tw, const Vec2r& pt) {
-  return Linear(tw) + Angular(tw) * Vec2r(-pt(1), pt(0));
+template <int dim>
+inline Vecr<dim> VelocityAtPoint(const Twistr<dim>& tw, const Vecr<dim>& pt) {
+  return Linear(tw) + RotationalVelocity(Angular(tw), pt);
 }
-
-inline Vec3r VelocityAtPoint(const Twist3r& tw, const Vec3r& pt) {
-  return Linear(tw) + Angular(tw).cross(pt);
-}
-///@}
 
 /**
  * @name Dual twist computation functions

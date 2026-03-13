@@ -20,6 +20,7 @@
 #ifndef DGD_OUTPUT_H_
 #define DGD_OUTPUT_H_
 
+#include <Eigen/LU>
 #include <string>
 #ifdef DGD_EXTRACT_METRICS
 #include <vector>
@@ -92,7 +93,7 @@ struct Output {
    *
    * @note The normal vector is in the world frame of reference and is
    * pointed towards the second set (with respect to the first set). The normal
-   * vector need not have unit 2-norm.
+   * vector has unit 2-norm.
    */
   Vecr<dim> normal = Vecr<dim>::Zero();
 
@@ -208,6 +209,22 @@ struct DirectionalDerivative {
    * @see n_nullity
    */
   Matr<dim, dim> n_nullspace = Matr<dim, dim>::Zero();
+
+  /**
+   * @name (internal) projection map derivatives
+   * @brief Derivatives of the convex set projection maps in the world frame of
+   * reference.
+   */
+  ///@{
+  Matr<dim, dim> d_pi1_ = Matr<dim, dim>::Zero();
+  Matr<dim, dim> d_pi2_ = Matr<dim, dim>::Zero();
+  ///@}
+
+  /**
+   * @brief (internal) decomposition object for the optimal solution
+   * derivatives.
+   */
+  Eigen::PartialPivLU<Matr<dim, dim>> lu_;
 
   /// @brief Derivative of the optimal normal vector (dual optimal solution).
   Vecr<dim> d_normal = Vecr<dim>::Zero();

@@ -35,6 +35,10 @@ namespace dgd {
 
 namespace detail {
 
+/*
+ * Math utility functions.
+ */
+
 /// @brief Helper struct that is false for any solver type.
 template <SolverType S>
 struct always_false : std::false_type {};
@@ -94,6 +98,87 @@ inline Rotation3r RotationToZAxis(const Vec3r& n) {
   }
 }
 
+/**
+ * @brief Sets the symmetric matrix such that a given vector lies in its null
+ * space.
+ *
+ * @param n Vector (with unit 2-norm).
+ * @param S Symmetric matrix.
+ */
+template <int dim>
+inline void AlignSymmetricMatrix(const Vecr<dim>& n, Matr<dim, dim>& S) {
+  const Vecr<dim> w = S * n;
+  S.noalias() -= w * n.transpose();
+  S.noalias() -= n * w.transpose();
+  S.noalias() += n.dot(w) * (n * n.transpose());
+}
+
+/**
+ * @brief Computes the velocity of a point on a rigid body given its twist.
+ *
+ * @note The twist frame of reference is given by twist_frame.
+ *
+ * @param  state Kinematic state of the rigid body.
+ * @param  pt    Point on the rigid body in the world frame.
+ * @return Velocity of the point in the world frame.
+ */
+template <TwistFrame twist_frame, int dim>
+inline Vecr<dim> VelocityAtPoint(const KinematicState<dim>& state,
+                                 const Vecr<dim>& pt) {
+  if constexpr (twist_frame == TwistFrame::Spatial) {
+    return dgd::VelocityAtPoint(state.tw, pt);
+  } else if constexpr (twist_frame == TwistFrame::Hybrid) {
+    return dgd::VelocityAtPoint<dim>(state.tw, pt - Affine(state.tf));
+  } else {  // Body
+    return Linear(state.tf) *
+           dgd::VelocityAtPoint(state.tw, InverseTransformPoint(state.tf, pt));
+  }
+}
+
+/**
+ * @brief Computes the velocity of a vector on a rigid body given its twist.
+ *
+ * @note The twist frame of reference is given by twist_frame.
+ *
+ * @param  state Kinematic state of the rigid body.
+ * @param  v     Vector on the rigid body in the world frame.
+ * @return Velocity of the vector in the world frame.
+ */
+template <TwistFrame twist_frame, int dim>
+inline Vecr<dim> VelocityOfVector(const KinematicState<dim>& state,
+                                  const Vecr<dim>& v) {
+  if constexpr (twist_frame == TwistFrame::Body) {
+    return RotationalVelocity(TransformAngVel(state.tf, Angular(state.tw)), v);
+  } else {  // Spatial or Hybrid
+    return RotationalVelocity(Angular(state.tw), v);
+  }
+}
+
+/**
+ * @brief Computes the dual twist on a rigid body given a dual velocity at a
+ * point.
+ *
+ * @param  f  Dual velocity at the point in the world frame.
+ * @param  pt Point on the rigid body in the world frame.
+ * @return Dual twist on the rigid body in the twist_frame frame.
+ */
+template <TwistFrame twist_frame, int dim>
+inline Twistr<dim> DualTwistAtPoint([[maybe_unused]] const Transformr<dim>& tf,
+                                    const Vecr<dim>& f, const Vecr<dim>& pt) {
+  if constexpr (twist_frame == TwistFrame::Spatial) {
+    return dgd::DualTwistAtPoint(f, pt);
+  } else if constexpr (twist_frame == TwistFrame::Hybrid) {
+    return dgd::DualTwistAtPoint(f, pt - Affine(tf));
+  } else {  // Body
+    return dgd::DualTwistAtPoint(Linear(tf).transpose() * f,
+                                 InverseTransformPoint(tf, pt));
+  }
+}
+
+/*
+ * Output helper functions.
+ */
+
 /// @brief Initializes the output for cold start.
 template <int dim, class C1, class C2>
 inline void InitializeOutput(const C1* set1, const C2* set2, Output<dim>& out) {
@@ -126,6 +211,43 @@ inline Real SetInfOutput(Output<dim>& out) {
   return Real(0.0);
 }
 
+/// @brief Sets zero KKT solution set null space.
+template <int dim>
+inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
+  dd.z_nullspace.setZero();
+  dd.n_nullspace.setZero();
+  dd.z_nullity = 0;
+  dd.n_nullity = 0;
+  dd.value_differentiable = false;
+  return 0;
+}
+
+/// @brief Sets zero optimal solution directional derivatives.
+template <int dim>
+inline void SetZeroSolutionDerivative(DirectionalDerivative<dim>& dd) {
+  dd.d_normal.setZero();
+  dd.d_z1.setZero();
+  dd.d_z2.setZero();
+  dd.d_gd = Real(0.0);
+}
+
+/// @brief Sets zero optimal solution Jacobians.
+template <int dim>
+inline void SetZeroSolutionJacobian(TotalDerivative<dim>& td) {
+  td.d_normal_tf1.setZero();
+  td.d_normal_tf2.setZero();
+  td.d_z1_tf1.setZero();
+  td.d_z1_tf2.setZero();
+  td.d_z2_tf1.setZero();
+  td.d_z2_tf2.setZero();
+  td.d_gd_tf1.setZero();
+  td.d_gd_tf2.setZero();
+}
+
+/*
+ * Growth distance algorithm helper functions.
+ */
+
 /// @brief Normalizes the normal vector.
 template <int dim>
 inline void NormalizeNormal(Vecr<dim>& n, bool normalize_2norm) {
@@ -151,6 +273,7 @@ template <int dim>
 inline Real ComputeDualSolution(const Rotationr<dim>& rot, Real cdist, Real ub,
                                 Output<dim>& out) {
   out.normal = rot.transpose() * out.normal;
+  out.normal.normalize();
   return out.growth_dist_lb = cdist / ub;
 }
 
@@ -261,60 +384,6 @@ struct SupportFunctionOutput<dim, 2> {
   const Vecr<dim>& sp1() const { return deriv1.sp; }
   const Vecr<dim>& sp2() const { return deriv2.sp; }
 };
-
-/// @brief Sets zero KKT solution set null space.
-template <int dim>
-inline int SetZeroKktNullspace(DirectionalDerivative<dim>& dd) {
-  dd.z_nullspace.setZero();
-  dd.n_nullspace.setZero();
-  dd.z_nullity = 0;
-  dd.n_nullity = 0;
-  dd.value_differentiable = false;
-  return 0;
-}
-
-/**
- * @brief Computes the velocity of a point on a rigid body given its twist.
- *
- * @note The twist frame of reference is given by twist_frame.
- *
- * @param  state Kinematic state of the rigid body.
- * @param  pt    Point on the rigid body in the world frame.
- * @return Velocity of the point in the world frame.
- */
-template <TwistFrame twist_frame, int dim>
-inline Vecr<dim> ComputeVelocity(const KinematicState<dim>& state,
-                                 const Vecr<dim>& pt) {
-  if constexpr (twist_frame == TwistFrame::Spatial) {
-    return VelocityAtPoint(state.tw, pt);
-  } else if constexpr (twist_frame == TwistFrame::Hybrid) {
-    return VelocityAtPoint(state.tw, pt - Affine(state.tf));
-  } else {  // Body
-    return Linear(state.tf) *
-           VelocityAtPoint(state.tw, InverseTransformPoint(state.tf, pt));
-  }
-}
-
-/**
- * @brief Computes the dual twist on a rigid body given a dual velocity at a
- * point.
- *
- * @param  f  Dual velocity at the point in the world frame.
- * @param  pt Point on the rigid body in the world frame.
- * @return Dual twist on the rigid body in the twist_frame frame.
- */
-template <TwistFrame twist_frame, int dim>
-inline Twistr<dim> ComputeDualTwist([[maybe_unused]] const Transformr<dim>& tf,
-                                    const Vecr<dim>& f, const Vecr<dim>& pt) {
-  if constexpr (twist_frame == TwistFrame::Spatial) {
-    return DualTwistAtPoint(f, pt);
-  } else if constexpr (twist_frame == TwistFrame::Hybrid) {
-    return DualTwistAtPoint(f, pt - Affine(tf));
-  } else {  // Body
-    return DualTwistAtPoint(Linear(tf).transpose() * f,
-                            InverseTransformPoint(tf, pt));
-  }
-}
 
 }  // namespace detail
 
