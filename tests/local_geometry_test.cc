@@ -482,7 +482,7 @@ PolytopeTestData CreatePolytopeTestData() {
 // 2D local geometry tests
 // ---------------------------------------------------------------------------
 
-TEST(LocalGeometryTest, Ellipse) {
+TEST(ComputeLocalGeometryTest, Ellipse) {
   const Real hlx = Real(3.0), hly = Real(2.0), margin = Real(0.0);
   auto set = Ellipse(hlx, hly, margin);
 
@@ -518,7 +518,7 @@ TEST(LocalGeometryTest, Ellipse) {
   }
 }
 
-TEST(LocalGeometryTest, Polygon) {
+TEST(ComputeLocalGeometryTest, Polygon) {
   Rng rng;
   rng.SetSeed();
   const int npts_max = 100;
@@ -660,7 +660,7 @@ TEST(LocalGeometryTest, Polygon) {
   }
 }
 
-TEST(LocalGeometryTest, Rectangle) {
+TEST(ComputeLocalGeometryTest, Rectangle) {
   Real hlx = Real(3.0), hly = Real(2.0), margin = Real(0.0);
   auto set = Rectangle(hlx, hly, margin);
 
@@ -761,7 +761,7 @@ TEST(LocalGeometryTest, Rectangle) {
 // 3D local geometry tests
 // ---------------------------------------------------------------------------
 
-TEST(LocalGeometryTest, Cone) {
+TEST(ComputeLocalGeometryTest, Cone) {
   Real ha = kPi / Real(6.0), radius = Real(1.0), margin = Real(0.0);
   Real tha = std::tan(ha);
   Real height = radius / tha;
@@ -928,7 +928,7 @@ TEST(LocalGeometryTest, Cone) {
   }
 }
 
-TEST(LocalGeometryTest, Cuboid) {
+TEST(ComputeLocalGeometryTest, Cuboid) {
   Real hlx = Real(3.0), hly = Real(2.0), hlz = Real(1.5), margin = Real(0.0);
   auto set = Cuboid(hlx, hly, hlz, margin);
 
@@ -1096,7 +1096,7 @@ TEST(LocalGeometryTest, Cuboid) {
   }
 }
 
-TEST(LocalGeometryTest, Cylinder) {
+TEST(ComputeLocalGeometryTest, Cylinder) {
   Real hlx = Real(2.0), radius = Real(2.5), margin = Real(0.0);
   auto set = Cylinder(hlx, radius, margin);
 
@@ -1241,7 +1241,7 @@ TEST(LocalGeometryTest, Cylinder) {
   }
 }
 
-TEST(LocalGeometryTest, Ellipsoid) {
+TEST(ComputeLocalGeometryTest, Ellipsoid) {
   Real hlx = Real(3.0), hly = Real(2.0), hlz = Real(1.5), margin = Real(0.1);
   auto set = Ellipsoid(hlx, hly, hlz, margin);
 
@@ -1278,7 +1278,7 @@ TEST(LocalGeometryTest, Ellipsoid) {
   }
 }
 
-TEST(LocalGeometryTest, Frustum) {
+TEST(ComputeLocalGeometryTest, Frustum) {
   // Frustum types:
   //  t = 0: rb > 0, rt > 0,
   //  t = 1: rb > 0, rt = 0,
@@ -1459,7 +1459,7 @@ TEST(LocalGeometryTest, Frustum) {
   }
 }
 
-TEST(LocalGeometryTest, Mesh) {
+TEST(ComputeLocalGeometryTest, Mesh) {
   auto data = CreatePolytopeTestData();
 
   ASSERT_EQ(data.vertices.size(), 12);
@@ -1547,7 +1547,7 @@ TEST(LocalGeometryTest, Mesh) {
   }
 }
 
-TEST(LocalGeometryTest, Polytope) {
+TEST(ComputeLocalGeometryTest, Polytope) {
   auto data = CreatePolytopeTestData();
 
   Real margin = Real(0.0);
@@ -1730,9 +1730,9 @@ void CapsuleImplLocalGeometryTest() {
   }
 }
 
-TEST(LocalGeometryTest, Stadium) { CapsuleImplLocalGeometryTest<2>(); }
+TEST(ComputeLocalGeometryTest, Stadium) { CapsuleImplLocalGeometryTest<2>(); }
 
-TEST(LocalGeometryTest, Capsule) { CapsuleImplLocalGeometryTest<3>(); }
+TEST(ComputeLocalGeometryTest, Capsule) { CapsuleImplLocalGeometryTest<3>(); }
 
 template <int dim>
 void SphereImplLocalGeometryTest() {
@@ -1808,8 +1808,8 @@ void SphereImplLocalGeometryTest() {
   }
 }
 
-TEST(LocalGeometryTest, Circle) { SphereImplLocalGeometryTest<2>(); }
+TEST(ComputeLocalGeometryTest, Circle) { SphereImplLocalGeometryTest<2>(); }
 
-TEST(LocalGeometryTest, Sphere) { SphereImplLocalGeometryTest<3>(); }
+TEST(ComputeLocalGeometryTest, Sphere) { SphereImplLocalGeometryTest<3>(); }
 
 }  // namespace
