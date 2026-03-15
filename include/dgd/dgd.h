@@ -58,7 +58,7 @@ Real GrowthDistance(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
 /**
  * @brief Growth distance algorithm for a compact convex set and a half-space.
  *
- * @attention out.s1, out.s2, out.bc, and out.z2 are not set.
+ * @attention out.s2 and out.idx_s2 are not set.
  *
  * @note CoincidentCenters status is returned if the center of the convex set
  * lies in the half-space.
@@ -139,7 +139,7 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * @brief Collision detection algorithm for a compact convex set and a
  * half-space.
  *
- * @attention out.s1, out.s2, out.bc, and out.z2 are not set.
+ * @attention out.s2 and out.idx_s2 are not set.
  *
  * @note CoincidentCenters status is returned if the center of the convex set
  * lies in the half-space.
@@ -172,13 +172,16 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * dual optimal solutions (not including positive scaling of the optimal normal
  * vector).
  *
+ * @attention The solution is stored in bundle.dir_derivative, which must point
+ * to a valid DirectionalDerivative object.
+ *
  * @note The flag value_differentiable indicates whether the growth distance
  * function is differentiable with respect to the rigid body transformations.
  *
- * @param[in]     set1,set2  Compact convex sets.
- * @param[in]     tf1,tf2    Rigid body transformations for the sets.
- * @param[in]     settings   Settings.
- * @param[in,out] bundle     Output bundle.
+ * @param[in]     set1,set2 Compact convex sets.
+ * @param[in]     tf1,tf2   Rigid body transformations for the sets.
+ * @param[in]     settings  Settings.
+ * @param[in,out] bundle    Output bundle.
  * @return        KKT solution set nullity; 0 if the solution is not optimal.
  */
 template <int dim>
@@ -195,14 +198,17 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * dual optimal solutions (not including positive scaling of the optimal normal
  * vector).
  *
+ * @attention The solution is stored in bundle.dir_derivative, which must point
+ * to a valid DirectionalDerivative object.
+ *
  * @note The flag value_differentiable indicates whether the growth distance
  * function is differentiable with respect to the rigid body transformations.
  *
- * @param[in]     set1       Compact convex set.
- * @param[in]     set2       Half-space.
- * @param[in]     tf1,tf2    Rigid body transformations for the sets.
- * @param[in]     settings   Settings.
- * @param[in,out] bundle     Output bundle.
+ * @param[in]     set1     Compact convex set.
+ * @param[in]     set2     Half-space.
+ * @param[in]     tf1,tf2  Rigid body transformations for the sets.
+ * @param[in]     settings Settings.
+ * @param[in,out] bundle   Output bundle.
  * @return        KKT solution set nullity; 0 if the solution is not optimal.
  */
 template <int dim>
@@ -219,12 +225,14 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
  * @brief Derivative of the growth distance function for 2D and 3D convex sets
  * (including half-spaces) with respect to rigid body motions.
  *
- * @attention bundle.output must contain a valid optimal solution from a prior
- * call to GrowthDistance with the same set pair and rigid body transforms. If
- * the solution status is not Optimal, the derivative is set to zero.
- *
  * @attention The derivative depends on the twist frame of reference specified
  * in settings.twist_frame (Spatial, Hybrid, or Body).
+ *
+ * @note The growth distance derivative is also stored in bundle.dir_derivative,
+ * if provided.
+ *
+ * @note Use ComputeKktNullspace to determine the differentiability of the
+ * growth distance.
  *
  * @param[in]     state1,state2 Kinematic states for the sets.
  * @param[in]     settings      Settings.
@@ -240,19 +248,130 @@ Real GdDerivative(const KinematicState<dim>& state1,
  * @brief Gradient of the growth distance function for 2D and 3D convex sets
  * (including half-spaces) with respect to rigid body motions.
  *
- * @attention bundle.output must contain a valid optimal solution from a prior
- * call to GrowthDistance with the same set pair and rigid body transforms. If
- * the solution status is not Optimal, the gradient is set to zero.
+ * @attention The gradient depends on the twist frame of reference specified
+ * in settings.twist_frame (Spatial, Hybrid, or Body).
+ *
+ * @attention The solution is stored in bundle.total_derivative, which must
+ * point to a valid TotalDerivative object.
+ *
+ * @note Use ComputeKktNullspace to determine the differentiability of the
+ * growth distance.
+ *
+ * @param[in]     tf1,tf2  Rigid body transformations for the sets.
+ * @param[in]     settings Settings.
+ * @param[in,out] bundle   Output bundle.
+ */
+template <int dim>
+void GdGradient(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
+                const Settings& settings, const OutputBundle<dim>& bundle);
+
+/*
+ * Growth distance optimal solution derivative algorithm.
+ */
+
+/**
+ * @brief Factorizes the KKT system for the growth distance optimal solution
+ * derivatives for 2D and 3D compact convex sets.
+ *
+ * @attention This function should be called before GdSolutionDerivative or
+ * GdJacobian. After the factorization is computed, solution derivatives can be
+ * computed for multiple twists without resolving the KKT system.
+ *
+ * @attention The solution is stored in bundle.dir_derivative, which must point
+ * to a valid DirectionalDerivative object.
+ *
+ * @note The flag differentiable indicates whether the growth distance optimal
+ * solution is differentiable with respect to the rigid body transformations.
+ * If the optimal solution is differentiable, so is the optimal value (the
+ * growth distance).
+ *
+ * @param[in]     set1,set2 Compact convex sets.
+ * @param[in]     tf1,tf2   Rigid body transformations for the sets.
+ * @param[in]     settings  Settings.
+ * @param[in,out] bundle    Output bundle.
+ * @return        Differentiability of the growth distance optimal solution.
+ */
+template <int dim>
+bool FactorizeKktSystem(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle);
+
+/**
+ * @brief Factorizes the KKT system for the growth distance optimal solution
+ * derivatives for a compact convex set and a half-space.
+ *
+ * @attention This function should be called before GdSolutionDerivative or
+ * GdJacobian. After the factorization is computed, solution derivatives can be
+ * computed for multiple twists without resolving the KKT system.
+ *
+ * @attention The solution is stored in bundle.dir_derivative, which must point
+ * to a valid DirectionalDerivative object.
+ *
+ * @note The flag differentiable indicates whether the growth distance optimal
+ * solution is differentiable with respect to the rigid body transformations.
+ * If the optimal solution is differentiable, so is the optimal value (the
+ * growth distance).
+ *
+ * @param[in]     set1      Compact convex set.
+ * @param[in]     set2      Half-space.
+ * @param[in]     tf1,tf2   Rigid body transformations for the sets.
+ * @param[in]     settings  Settings.
+ * @param[in,out] bundle    Output bundle.
+ * @return        Differentiability of the growth distance optimal solution.
+ */
+template <int dim>
+bool FactorizeKktSystem(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const Halfspace<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle);
+
+/**
+ * @brief Derivative of the growth distance optimal solution for 2D and 3D
+ * convex sets (including half-spaces) with respect to rigid body motions.
+ *
+ * @attention The derivative depends on the twist frame of reference specified
+ * in settings.twist_frame (Spatial, Hybrid, or Body).
+ *
+ * @attention The FactorizeKktSystem function must be called before this
+ * function.
+ *
+ * @attention The solution is stored in bundle.dir_derivative, which must point
+ * to a valid DirectionalDerivative object.
+ *
+ * @see FactorizeKktSystem
+ * @see GdDerivative
+ *
+ * @param[in]     state1,state2 Kinematic states for the sets.
+ * @param[in]     settings      Settings.
+ * @param[in,out] bundle        Output bundle.
+ */
+template <int dim>
+void GdSolutionDerivative(const KinematicState<dim>& state1,
+                          const KinematicState<dim>& state2,
+                          const Settings& settings,
+                          const OutputBundle<dim>& bundle);
+
+/**
+ * @brief Jacobian of the growth distance optimal solution for 2D and 3D convex
+ * sets (including half-spaces) with respect to rigid body motions.
  *
  * @attention The gradient depends on the twist frame of reference specified
  * in settings.twist_frame (Spatial, Hybrid, or Body).
  *
- * @param[in]     tf1,tf2   Rigid body transformations for the sets.
- * @param[in]     settings  Settings.
- * @param[in,out] bundle    Output bundle.
+ * @attention The FactorizeKktSystem function must be called before this
+ * function.
+ *
+ * @attention The solution is stored in bundle.total_derivative. Both
+ * bundle.dir_derivative and bundle.total_derivative must point to valid
+ * objects.
+ *
+ * @param[in]     tf1,tf2  Rigid body transformations for the sets.
+ * @param[in]     settings Settings.
+ * @param[in,out] bundle   Output bundle.
  */
 template <int dim>
-void GdGradient(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
+void GdJacobian(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
                 const Settings& settings, const OutputBundle<dim>& bundle);
 
 }  // namespace dgd

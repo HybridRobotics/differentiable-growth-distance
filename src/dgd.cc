@@ -28,7 +28,7 @@
 #include "dgd/settings.h"
 #include "dgd/solvers/bundle_scheme_impl.h"
 #include "dgd/solvers/derivative_impl.h"
-#include "dgd/solvers/dgd_halfspace_impl.h"
+#include "dgd/solvers/gd_halfspace_impl.h"
 
 namespace dgd {
 
@@ -133,6 +133,40 @@ void GdGradient(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
 }
 
 /*
+ * Growth distance optimal solution derivative algorithm.
+ */
+
+template <int dim>
+bool FactorizeKktSystem(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle) {
+  return FactorizeKktSystemTpl(set1, tf1, set2, tf2, settings, bundle);
+}
+
+template <int dim>
+bool FactorizeKktSystem(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                        const Halfspace<dim>* set2, const Transformr<dim>& tf2,
+                        const Settings& settings,
+                        const OutputBundle<dim>& bundle) {
+  return FactorizeKktSystemHalfspaceTpl(set1, tf1, set2, tf2, settings, bundle);
+}
+
+template <int dim>
+void GdSolutionDerivative(const KinematicState<dim>& state1,
+                          const KinematicState<dim>& state2,
+                          const Settings& settings,
+                          const OutputBundle<dim>& bundle) {
+  GdSolutionDerivativeTpl(state1, state2, settings, bundle);
+}
+
+template <int dim>
+void GdJacobian(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
+                const Settings& settings, const OutputBundle<dim>& bundle) {
+  GdJacobianTpl(tf1, tf2, settings, bundle);
+}
+
+/*
  * Explicit instantiations.
  */
 
@@ -200,6 +234,32 @@ template Real GdDerivative(const KinematicState<3>&, const KinematicState<3>&,
 template void GdGradient(const Transformr<2>&, const Transformr<2>&,
                          const Settings&, const OutputBundle<2>&);
 template void GdGradient(const Transformr<3>&, const Transformr<3>&,
+                         const Settings&, const OutputBundle<3>&);
+
+template bool FactorizeKktSystem(const ConvexSet<2>*, const Transformr<2>&,
+                                 const ConvexSet<2>*, const Transformr<2>&,
+                                 const Settings&, const OutputBundle<2>&);
+template bool FactorizeKktSystem(const ConvexSet<3>*, const Transformr<3>&,
+                                 const ConvexSet<3>*, const Transformr<3>&,
+                                 const Settings&, const OutputBundle<3>&);
+
+template bool FactorizeKktSystem(const ConvexSet<2>*, const Transformr<2>&,
+                                 const Halfspace<2>*, const Transformr<2>&,
+                                 const Settings&, const OutputBundle<2>&);
+template bool FactorizeKktSystem(const ConvexSet<3>*, const Transformr<3>&,
+                                 const Halfspace<3>*, const Transformr<3>&,
+                                 const Settings&, const OutputBundle<3>&);
+
+template void GdSolutionDerivative(const KinematicState<2>&,
+                                   const KinematicState<2>&, const Settings&,
+                                   const OutputBundle<2>&);
+template void GdSolutionDerivative(const KinematicState<3>&,
+                                   const KinematicState<3>&, const Settings&,
+                                   const OutputBundle<3>&);
+
+template void GdJacobian(const Transformr<2>&, const Transformr<2>&,
+                         const Settings&, const OutputBundle<2>&);
+template void GdJacobian(const Transformr<3>&, const Transformr<3>&,
                          const Settings&, const OutputBundle<3>&);
 
 }  // namespace dgd

@@ -260,6 +260,9 @@ struct DirectionalDerivative {
 
   /// @brief Differentiability of the growth distance optimal solution.
   bool differentiable = false;
+
+  /// @brief (internal) indicates whether the second convex set is a half-space.
+  bool is_halfspace_ = false;
 };
 
 /**
