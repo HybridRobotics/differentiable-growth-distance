@@ -6,6 +6,8 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -14,6 +16,7 @@
 #include "dgd/geometry/geometry_3d.h"
 #include "dgd/graham_scan.h"
 #include "dgd/mesh_loader.h"
+#include "dgd/output.h"
 #include "dgd/settings.h"
 #include "dgd/utils/random.h"
 
@@ -50,6 +53,13 @@ bool MatrixNear(const Matr<dim, dim>& m1, const Matr<dim, dim>& m2, Real tol) {
   return (m1 - m2).template lpNorm<Eigen::Infinity>() < tol;
 }
 
+/// Returns true if ||m1 - m2||_inf < tol.
+template <int dim>
+bool JacobianNear(const Matr<dim, SeDim<dim>()>& m1,
+                  const Matr<dim, SeDim<dim>()>& m2, Real tol) {
+  return (m1 - m2).template lpNorm<Eigen::Infinity>() < tol;
+}
+
 // ---------------------------------------------------------------------------
 // Math utilities
 // ---------------------------------------------------------------------------
@@ -78,7 +88,7 @@ Transformr<dim> IntegrateTransform(const Transformr<dim>& tf,
   // Convert twist to hybrid frame.
   Twistr<dim> tw_h = tw;
   if (twist_frame == TwistFrame::Spatial) {
-    Linear(tw_h) = VelocityAtPoint(tw, Affine(tf));
+    Linear(tw_h) = VelocityAtPoint<dim>(tw, Affine(tf));
     Angular(tw_h) = Angular(tw);
   } else if (twist_frame == TwistFrame::Body) {
     Linear(tw_h) = Linear(tf) * Linear(tw);
@@ -110,6 +120,66 @@ Transformr<dim> IntegrateTransform(const Transformr<dim>& tf,
   Affine(tf_new) = Affine(tf) + Linear(tw_h);
 
   return tf_new;
+}
+
+// ---------------------------------------------------------------------------
+// Printing utilities
+// ---------------------------------------------------------------------------
+
+/// Prints a formatted vector.
+template <typename T, int dim>
+inline void PrintVector(const Vec<T, dim>& v) {
+  for (int i = 0; i < dim - 1; ++i) std::cout << v(i) << ", ";
+  std::cout << v(dim - 1) << std::endl;
+}
+
+/// Prints a formatted matrix.
+template <int dim, bool csv = true>
+inline void PrintMatrix(const Matr<dim, dim>& m) {
+  const std::string prefix = csv ? "  " : "  (";
+  const std::string suffix = csv ? "," : ")";
+  for (int i = 0; i < dim; ++i) {
+    std::cout << prefix;
+    for (int j = 0; j < dim - 1; ++j) std::cout << m(i, j) << ", ";
+    std::cout << m(i, dim - 1) << suffix << std::endl;
+  }
+}
+
+/// Prints the growth distance problem setup.
+template <int dim>
+void PrintSetup(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
+                const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
+                const Output<dim>& out) {
+  std::cout << "--- Solution Output ---" << std::endl;
+  constexpr int max_precision = std::numeric_limits<dgd::Real>::max_digits10;
+  std::cout << std::fixed << std::setprecision(max_precision);
+  std::cout << "Transform 1:" << std::endl;
+  PrintMatrix(tf1);
+  std::cout << "Transform 2:" << std::endl;
+  PrintMatrix(tf2);
+  std::cout << "Set 1: ";
+  set1->PrintInfo();
+  std::cout << "Set 2: ";
+  set2->PrintInfo();
+  std::cout << "Output: " << std::endl
+            << "  Status: " << SolutionStatusName(out.status) << std::endl
+            << "  GD (lower): " << out.growth_dist_lb << std::endl
+            << "  GD (upper): " << out.growth_dist_ub << std::endl
+            << "  #Iter: " << out.iter << std::endl;
+  std::cout << "  bc: ";
+  PrintVector(out.bc);
+  std::cout << "  Idx (s1): ";
+  PrintVector(out.idx_s1);
+  std::cout << "  z1: ";
+  PrintVector(out.z1);
+  std::cout << "  Idx (s2): ";
+  PrintVector(out.idx_s2);
+  std::cout << "  z2: ";
+  PrintVector(out.z2);
+  std::cout << "  normal: ";
+  PrintVector(out.normal);
+  std::cout.unsetf(std::ios_base::fixed);
+  std::cout << std::setprecision(6);
 }
 
 // ---------------------------------------------------------------------------
@@ -163,18 +233,17 @@ using ConvexSetPtr = std::unique_ptr<ConvexSet<dim>>;
 /// Creates a pair of convex sets for testing.
 template <int dim>
 void MakeConvexSetPair(ConvexSetPtr<dim>& set1, ConvexSetPtr<dim>& set2,
-                       Real margin1, Real margin2);
+                       Real margin1, Real margin2, int npts = 200);
 
 /// Ellipse–Polygon pair specialization.
 template <>
 inline void MakeConvexSetPair<2>(ConvexSetPtr<2>& set1, ConvexSetPtr<2>& set2,
-                                 Real margin1, Real margin2) {
+                                 Real margin1, Real margin2, int npts) {
   const Real hlx = Real(3.0), hly = Real(2.0);
   set1 = std::make_unique<Ellipse>(hlx, hly, margin1);
 
   Rng rng;
   rng.SetSeed(42);
-  const int npts = 50;
   const Real len = Real(2.0);
   std::vector<Vec2r> pts, vert;
   for (int i = 0; i < npts; ++i) {
@@ -191,14 +260,13 @@ inline void MakeConvexSetPair<2>(ConvexSetPtr<2>& set1, ConvexSetPtr<2>& set2,
 /// Cone–Mesh pair specialization.
 template <>
 inline void MakeConvexSetPair<3>(ConvexSetPtr<3>& set1, ConvexSetPtr<3>& set2,
-                                 Real margin1, Real margin2) {
+                                 Real margin1, Real margin2, int npts) {
   const Real ha = kPi / Real(6.0), radius = Real(1.0);
   const Real height = radius / std::tan(ha);
   set1 = std::make_unique<Cone>(radius, height, margin1);
 
   Rng rng;
   rng.SetSeed(42);
-  const int npts = 200;
   const Real len = Real(2.0);
   MeshLoader ml{};
   std::vector<Vec3r> pts, vert;
