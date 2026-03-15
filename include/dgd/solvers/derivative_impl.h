@@ -386,7 +386,7 @@ inline bool FactorizeKktSystemTpl(const C1* set1, const Transformr<dim>& tf1,
   if (A.determinant() < settings.jac_tol) return (dd->differentiable = false);
   dd->lu_.compute(A);
   dd->is_halfspace_ = false;
-  return true;
+  return (dd->differentiable = true);
 }
 
 /**
@@ -437,7 +437,7 @@ inline bool FactorizeKktSystemHalfspaceTpl(const C1* set1,
   if (A.determinant() < settings.jac_tol) return (dd->differentiable = false);
   dd->lu_.compute(A);
   dd->is_halfspace_ = true;
-  return true;
+  return (dd->differentiable = true);
 }
 
 namespace detail {
@@ -588,8 +588,11 @@ inline void GdSolutionDerivativeTpl(const KinematicState<dim>& state1,
   const auto& out = bundle.output;
   const auto& dd = bundle.dir_derivative;
 
-  if ((!out) || (!dd) || (!dd->differentiable)) {
+  if ((!out) || (!dd)) return;
+
+  if (!dd->differentiable) {
     detail::SetZeroSolutionDerivative(*dd);
+    return;
   }
 
   // Initialize the solver.
@@ -681,8 +684,11 @@ inline void GdJacobianTpl(const Transformr<dim>& tf1,
   const auto& dd = bundle.dir_derivative;
   const auto& td = bundle.total_derivative;
 
-  if ((!out) || (!dd) || (!td) || (!dd->differentiable)) {
-    detail::SetZeroSolutionDerivative(*dd);
+  if ((!out) || (!dd) || (!td)) return;
+
+  if (!dd->differentiable) {
+    detail::SetZeroSolutionJacobian(*td);
+    return;
   }
 
   detail::SolutionDerivativeSolver<dim> sds(*out, *dd);

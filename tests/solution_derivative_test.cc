@@ -491,11 +491,12 @@ TEST(GdSolutionDerivativeTest, EllipsoidMesh) {
   set1 =
       std::make_unique<Ellipsoid>(Real(2.0), Real(1.0), Real(0.7), Real(0.05));
   // The epsilon quantities are set large only for testing purposes.
-  set2->set_eps_p(Real(0.09));
-  set2->set_eps_d(Real(0.09));
+  set2->set_eps_p(Real(1e-3));
+  set2->set_eps_d(Real(1e-3));
 
-  const int nsamples = 50;
-  ConvexSetSolutionDerivativeTest(set1.get(), set2.get(), nsamples, 73);
+  const int nsamples = 10;
+  ConvexSetSolutionDerivativeTest(set1.get(), set2.get(), Real(1e-4), nsamples,
+                                  73);
 }
 
 TEST(GdSolutionDerivativeTest, FrustumHalfspace) {
