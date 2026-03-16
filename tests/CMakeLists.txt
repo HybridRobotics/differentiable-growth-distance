@@ -32,10 +32,18 @@ target_link_libraries(${DGD_LIB}_test
     GTest::gtest_main
 )
 
-target_compile_options(${DGD_LIB}_test
-  PRIVATE
-    -Wall -Wextra -Werror -Wconversion -Wpedantic -Wnon-virtual-dtor -Wsuggest-override
-)
+# Platform-specific compiler flags for warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(${DGD_LIB}_test
+    PRIVATE
+      -Wall -Wextra -Werror -Wconversion -Wpedantic -Wnon-virtual-dtor -Wsuggest-override
+  )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  target_compile_options(${DGD_LIB}_test
+    PRIVATE
+      /W4 /WX /permissive-
+  )
+endif()
 
 
 include(GoogleTest)
