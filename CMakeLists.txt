@@ -6,6 +6,13 @@ project(
   DESCRIPTION "Differentiable growth distance algorithm for convex sets"
 )
 
+# Default to Release when no build type is specified.
+# Explicit -DCMAKE_BUILD_TYPE=Debug always takes precedence.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "No build type specified; defaulting to Release")
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+endif()
+
 
 message(STATUS "C++ compiler: ${CMAKE_CXX_COMPILER_ID}")
 ## User flags
@@ -84,11 +91,12 @@ if(DGD_INSTALL_LIBS AND CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT DGD_USE_32BI
 endif()
 
 
-# Tests, bechmarks, and documentation
+# Tests, bechmarks, documentation, and Python bindings
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   option(DGD_BUILD_TESTS      "Build tests" ON)
   option(DGD_BUILD_BENCHMARKS "Build benchmarks (only for Release config with double precision)" OFF)
   option(DGD_BUILD_DOCS       "Build documentation" OFF)
+  option(DGD_BUILD_PYTHON     "Build Python bindings (requires pybind11)" OFF)
 
   include(FetchContent)
 
@@ -109,6 +117,10 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     else()
       message(STATUS "Doxygen not found; not building docs")
     endif()
+  endif()
+
+  if(DGD_BUILD_PYTHON)
+    add_subdirectory(python)
   endif()
 
 endif()

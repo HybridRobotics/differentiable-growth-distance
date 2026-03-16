@@ -30,25 +30,40 @@ set_target_properties(${DGD_LIB} PROPERTIES CXX_EXTENSIONS OFF)
 
 # Note: -ffast-math (-fno-math-errno, -Ofast) breaks IEEE compliance
 #       and enables -ffinite-math-only.
+
+# Platform-specific compiler flags for warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(${DGD_LIB}
+    PRIVATE
+      -Wall -Wextra -Werror -Wconversion -Wpedantic -fdiagnostics-color=always
+  )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  target_compile_options(${DGD_LIB}
+    PRIVATE
+      /W4 /WX /permissive-
+  )
+endif()
+
+# Platform-specific optimization and debug flags
 target_compile_options(${DGD_LIB}
   PRIVATE
-    -Wall -Wextra -Werror -Wconversion -Wpedantic -fdiagnostics-color=always
-    $<$<CONFIG:Debug>:-O0 -g>
-    $<$<CONFIG:Release>:-O3 -DNDEBUG>
-    # $<$<CONFIG:Release>:-funroll-loops -march=native -flto>
+    $<$<CONFIG:Debug>:$<IF:$<CXX_COMPILER_ID:MSVC>,/Od /Zi,-O0 -g>>
+    $<$<CONFIG:Release>:$<IF:$<CXX_COMPILER_ID:MSVC>,/O2 /DNDEBUG,-O3 -DNDEBUG>>
 )
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-  set_target_properties(${DGD_LIB} PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+
+# Interprocedural optimization for Release builds
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set_property(TARGET ${DGD_LIB} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
 
 # Preprocessor definitions
-if (DGD_USE_32BIT_FLOAT)
+if(DGD_USE_32BIT_FLOAT)
   target_compile_definitions(${DGD_LIB} PUBLIC DGD_USE_32BIT_FLOAT)
 endif()
-if (DGD_VERBOSE_ITERATION)
+if(DGD_VERBOSE_ITERATION)
   target_compile_definitions(${DGD_LIB} PUBLIC DGD_VERBOSE_ITERATION)
 endif()
-if (DGD_EXTRACT_METRICS)
+if(DGD_EXTRACT_METRICS)
   target_compile_definitions(${DGD_LIB} PUBLIC DGD_EXTRACT_METRICS)
 endif()

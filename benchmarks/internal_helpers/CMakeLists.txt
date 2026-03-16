@@ -17,10 +17,18 @@ target_link_libraries(${DGD_LIB}_bench
 
 # Compiler flags
 target_compile_features(${DGD_LIB}_bench PUBLIC cxx_std_17)
+set_target_properties(${DGD_LIB}_bench PROPERTIES CXX_EXTENSIONS OFF)
 
-target_compile_options(${DGD_LIB}_bench
-  PRIVATE
-    -Wall -Wextra -Werror -Wconversion -Wpedantic
-    -O3 -DNDEBUG
-    # -funroll-loops -march=native -flto
-)
+# Platform-specific compiler flags for warnings and optimizations
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(${DGD_LIB}_bench
+    PRIVATE
+      -Wall -Wextra -Werror -Wconversion -Wpedantic
+      -O3 -DNDEBUG
+  )
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+  target_compile_options(${DGD_LIB}_bench
+    PRIVATE
+      /W4 /WX /O2 /DNDEBUG /permissive-
+  )
+endif()
