@@ -9,24 +9,38 @@ from ._dgd_core import (  # noqa: F401
     INF,
     PI,
     SQRT_EPS,
-    # Output
+    BasePointHint2,
+    BasePointHint3,
+    # Geometry base classes
+    ConvexSet2,
+    ConvexSet3,
     DirectionalDerivative2,
     DirectionalDerivative3,
     # Types
     KinematicState2,
     KinematicState3,
     MeshLoader,
+    NormalConeSpan2,
+    NormalConeSpan3,
+    NormalPair2,
+    NormalPair3,
     Output2,
     Output3,
     # Settings
     Settings,
+    # Output
     SolutionStatus,
+    # Geometry base helpers
+    SupportFunctionHint2,
+    SupportFunctionHint3,
+    SupportPatchHull2,
+    SupportPatchHull3,
     TotalDerivative2,
     TotalDerivative3,
     TwistFrame,
     WarmStartType,
-    # Utilities
     compute_polygon_inradius,
+    # Utilities
     graham_scan,
 )
 
@@ -39,20 +53,34 @@ __all__ = [
     # Types
     "KinematicState2",
     "KinematicState3",
+    # Geometry base helpers
+    "SupportFunctionHint2",
+    "SupportFunctionHint3",
+    "NormalPair2",
+    "NormalPair3",
+    "SupportPatchHull2",
+    "SupportPatchHull3",
+    "NormalConeSpan2",
+    "NormalConeSpan3",
+    "BasePointHint2",
+    "BasePointHint3",
+    # Geometry base classes
+    "ConvexSet2",
+    "ConvexSet3",
     # Settings
     "Settings",
     "TwistFrame",
     "WarmStartType",
     # Output
-    "DirectionalDerivative2",
-    "DirectionalDerivative3",
+    "SolutionStatus",
     "Output2",
     "Output3",
-    "SolutionStatus",
+    "DirectionalDerivative2",
+    "DirectionalDerivative3",
     "TotalDerivative2",
     "TotalDerivative3",
     # Utilities
-    "compute_polygon_inradius",
     "graham_scan",
+    "compute_polygon_inradius",
     "MeshLoader",
 ]
