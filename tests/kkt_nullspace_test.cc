@@ -56,7 +56,6 @@ TEST(ComputeKktNullspaceTest, VertexVertex2D) {
   Settings settings;
   Output<2> out;
   DirectionalDerivative<2> dd;
-  TotalDerivative<2> td;
   Real gd = GrowthDistance(&rect1, tf1, &rect2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);

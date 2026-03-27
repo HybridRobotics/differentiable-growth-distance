@@ -110,7 +110,6 @@ void ConvexSetSolutionDerivativeTest(const ConvexSet<dim>* set1,
   settings.jac_tol = jac_tol;
   Output<dim> out;
   DirectionalDerivative<dim> dd;
-  TotalDerivative<dim> td;
   Vecr<dim> d_normal_num, d_z1_num, d_z2_num;
   Real d_gd, d_gd_num;
   int skipped_samples = 0;
@@ -271,7 +270,6 @@ TEST(GdSolutionDerivativeTest, EllipseHalfspace) {
   settings.rel_tol = kRelTol;
   Output<2> out;
   DirectionalDerivative<2> dd;
-  TotalDerivative<2> td;
   Rng rng;
   rng.SetSeed(23);
 
@@ -509,7 +507,6 @@ TEST(GdSolutionDerivativeTest, FrustumHalfspace) {
   settings.rel_tol = kRelTol;
   Output<3> out;
   DirectionalDerivative<3> dd;
-  TotalDerivative<3> td;
   Rng rng;
   rng.SetSeed(23);
 
