@@ -25,43 +25,14 @@
 #include <pybind11/eigen.h>
 #include <pybind11/pybind11.h>
 
-#include <sstream>
-
+#include "binding_helpers.h"
 #include "dgd/data_types.h"
 
 namespace py = pybind11;
 using namespace dgd;
 
-namespace {
-
-template <int dim>
-inline std::string VectorToLiteral(const Vecr<dim>& v) {
-  std::ostringstream oss;
-  oss << "[" << v(0);
-  for (int i = 1; i < dim; ++i) {
-    oss << ", " << v(i);
-  }
-  oss << "]";
-  return oss.str();
-}
-
-template <int row, int col>
-inline std::string MatrixToLiteral(const Matr<row, col>& m) {
-  std::ostringstream oss;
-  oss << "[";
-  for (int i = 0; i < row; ++i) {
-    if (i > 0) oss << ", ";
-    oss << "[" << m(i, 0);
-    for (int j = 1; j < col; ++j) {
-      oss << ", " << m(i, j);
-    }
-    oss << "]";
-  }
-  oss << "]";
-  return oss.str();
-}
-
-}  // namespace
+using pybind_helpers::MatrixToLiteral;
+using pybind_helpers::VectorToLiteral;
 
 void bind_types(py::module_& m) {
   // ------------------------------------------------------------------
@@ -73,7 +44,7 @@ void bind_types(py::module_& m) {
   m.attr("PI") = kPi;
 
   // ------------------------------------------------------------------
-  // KinematicState<2>
+  // KinematicState
   // ------------------------------------------------------------------
   py::class_<KinematicState<2>>(m, "KinematicState2",
                                 R"doc(
@@ -108,9 +79,6 @@ tw : numpy.ndarray, shape (3,)
                ", tw=" + VectorToLiteral(s.tw) + ")";
       });
 
-  // ------------------------------------------------------------------
-  // KinematicState<3>
-  // ------------------------------------------------------------------
   py::class_<KinematicState<3>>(m, "KinematicState3",
                                 R"doc(
 Kinematic state of a 3D rigid body.

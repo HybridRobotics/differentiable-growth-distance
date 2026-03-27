@@ -27,7 +27,13 @@
 namespace py = pybind11;
 using namespace dgd;
 
+void bind_geometry_concrete(py::module_& m);
+
 namespace {
+
+// ------------------------------------------------------------------
+// Geometry helper structs
+// ------------------------------------------------------------------
 
 template <int dim>
 void bind_convex_set_helpers(py::module_& m) {
@@ -77,6 +83,10 @@ void bind_convex_set_helpers(py::module_& m) {
                           "Basis for the normal cone span (excluding n).");
   }
 }
+
+// ------------------------------------------------------------------
+// ConvexSet
+// ------------------------------------------------------------------
 
 template <int dim>
 void bind_convex_set(py::module_& m) {
@@ -177,4 +187,6 @@ void bind_geometry(py::module_& m) {
 
   bind_convex_set<2>(m);
   bind_convex_set<3>(m);
+
+  bind_geometry_concrete(m);
 }
