@@ -1,0 +1,22 @@
+# Built extension module (architecture/version-tagged .so)
+dgd/_dgd_core*.so
+
+# Local build and packaging artefacts
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.nox/
+.tox/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment folders
+venv/
+env/
+.venv/

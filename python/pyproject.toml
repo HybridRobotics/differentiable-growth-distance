@@ -1,0 +1,92 @@
+[build-system]
+requires = ["scikit-build-core>=0.9,<1"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "dgd"
+version = "0.9.0"
+description = "Differentiable growth distance algorithm for convex sets"
+authors = [
+  { name = "Akshay Thirugnanam", email = "akshay_t@berkeley.edu" },
+]
+license = { text = "Apache-2.0" }
+readme = "README.md"
+requires-python = ">=3.8"
+keywords = [
+  "convex-geometry",
+  "collision-detection",
+  "growth-distance",
+  "differentiable-optimization",
+  "pybind11",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: Apache Software License",
+  "Operating System :: OS Independent",
+  "Programming Language :: C++",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.8",
+  "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+test = ["pytest>=7", "numpy"]
+dev = [
+  "build>=1",
+  "pytest>=7",
+  "numpy",
+  "ruff>=0.6",
+  "pre-commit>=3.7",
+  "black>=24.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/HybridRobotics/differentiable-growth-distance"
+Repository = "https://github.com/HybridRobotics/differentiable-growth-distance"
+Issues = "https://github.com/HybridRobotics/differentiable-growth-distance/issues"
+
+[tool.scikit-build]
+# Source root is the repository root.
+cmake.source-dir = ".."
+cmake.build-type = "Release"
+cmake.args = [
+  "-DDGD_BUILD_PYTHON=ON",
+  "-DDGD_BUILD_TESTS=OFF",
+  "-DDGD_INSTALL_LIBS=OFF",
+]
+wheel.packages = ["dgd"]
+sdist.include = [
+  "README.md",
+  "python/CMakeLists.txt",
+  "python/dgd/__init__.py",
+  "python/src/*.cc",
+  "python/src/*.h",
+  "include/**/*.h",
+  "src/**/*.cc",
+  "cmake/**/*.cmake",
+  "CMakeLists.txt",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+minversion = "7.0"
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = ["D100", "D104"]
+
+[tool.black]
+line-length = 88
+target-version = ["py38"]
