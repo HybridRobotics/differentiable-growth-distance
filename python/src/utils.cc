@@ -21,60 +21,26 @@
 #include <pybind11/pybind11.h>
 
 #include <stdexcept>
-#include <vector>
 
+#include "binding_helpers.h"
 #include "dgd/graham_scan.h"
 #include "dgd/mesh_loader.h"
 
 namespace py = pybind11;
 using namespace dgd;
 
-namespace {
-
-template <int dim>
-using MatXdr = Eigen::Matrix<Real, Eigen::Dynamic, dim, Eigen::RowMajor>;
-using MatX2r = MatXdr<2>;
-using MatX3r = MatXdr<3>;
-
-template <int dim>
-std::vector<Vecr<dim>> MatXToVec(const MatXdr<dim>& points) {
-  std::vector<Vecr<dim>> out(points.rows());
-  for (int i = 0; i < points.rows(); ++i) {
-    out[i] = points.row(i).transpose();
-  }
-  return out;
-}
-
-template <int dim>
-MatXdr<dim> VecToMatX(const std::vector<Vecr<dim>>& points) {
-  MatXdr<dim> out(static_cast<int>(points.size()), dim);
-  for (int i = 0; i < out.rows(); ++i) {
-    out.row(i) = points[i].transpose();
-  }
-  return out;
-}
-
-std::vector<Real> VecXrToVecr(const VecXr& values) {
-  std::vector<Real> out(values.size());
-  for (int i = 0; i < values.size(); ++i) out[i] = values(i);
-  return out;
-}
-
-VecXr VecrToVecXr(const std::vector<Real>& values) {
-  VecXr out(static_cast<int>(values.size()));
-  for (int i = 0; i < out.size(); ++i) out(i) = values[i];
-  return out;
-}
-
-Eigen::VectorXi VeciToVecXi(const std::vector<int>& values) {
-  Eigen::VectorXi out(static_cast<int>(values.size()));
-  for (int i = 0; i < out.size(); ++i) out(i) = values[i];
-  return out;
-}
-
-}  // namespace
+using pybind_helpers::MatX2r;
+using pybind_helpers::MatX3r;
+using pybind_helpers::MatXToVec;
+using pybind_helpers::VeciToVecXi;
+using pybind_helpers::VecrToVecXr;
+using pybind_helpers::VecToMatX;
+using pybind_helpers::VecXrToVecr;
 
 void bind_utils(py::module_& m) {
+  // ------------------------------------------------------------------
+  // Graham scan function
+  // ------------------------------------------------------------------
   m.def(
       "graham_scan",
       [](const MatX2r& points) {
@@ -98,6 +64,9 @@ numpy.ndarray, shape (m, 2)
 		Convex hull vertices in CCW order with collinear duplicates removed.
 )doc");
 
+  // ------------------------------------------------------------------
+  // Polygon inradius function
+  // ------------------------------------------------------------------
   m.def(
       "compute_polygon_inradius",
       [](const MatX2r& vertices, const Vec2r& interior_point) {
@@ -121,6 +90,9 @@ float
 		Inradius at the interior point (negative if the point is outside).
 )doc");
 
+  // ------------------------------------------------------------------
+  // MeshLoader
+  // ------------------------------------------------------------------
   py::class_<MeshLoader>(m, "MeshLoader",
                          R"doc(
 Loads 3D meshes and computes convex-hull graph representations.

@@ -4,21 +4,29 @@ This package exposes pybind11 bindings compiled into ``dgd._dgd_core``.
 """
 
 from ._dgd_core import (  # noqa: F401
-    # Constants
     EPS,
     INF,
     PI,
     SQRT_EPS,
     BasePointHint2,
     BasePointHint3,
-    # Geometry base classes
+    Capsule,
+    Circle,
+    Cone,
     ConvexSet2,
     ConvexSet3,
+    Cuboid,
+    Cylinder,
     DirectionalDerivative2,
     DirectionalDerivative3,
-    # Types
+    Ellipse,
+    Ellipsoid,
+    Frustum,
+    Halfspace2,
+    Halfspace3,
     KinematicState2,
     KinematicState3,
+    Mesh,
     MeshLoader,
     NormalConeSpan2,
     NormalConeSpan3,
@@ -26,11 +34,13 @@ from ._dgd_core import (  # noqa: F401
     NormalPair3,
     Output2,
     Output3,
-    # Settings
+    Polygon,
+    Polytope,
+    Rectangle,
     Settings,
-    # Output
     SolutionStatus,
-    # Geometry base helpers
+    Sphere,
+    Stadium,
     SupportFunctionHint2,
     SupportFunctionHint3,
     SupportPatchHull2,
@@ -40,7 +50,6 @@ from ._dgd_core import (  # noqa: F401
     TwistFrame,
     WarmStartType,
     compute_polygon_inradius,
-    # Utilities
     graham_scan,
 )
 
@@ -67,10 +76,29 @@ __all__ = [
     # Geometry base classes
     "ConvexSet2",
     "ConvexSet3",
+    # Halfspace classes
+    "Halfspace2",
+    "Halfspace3",
+    # 2D concrete geometry classes
+    "Ellipse",
+    "Polygon",
+    "Rectangle",
+    "Stadium",
+    "Circle",
+    # 3D concrete geometry classes
+    "Cone",
+    "Cuboid",
+    "Cylinder",
+    "Ellipsoid",
+    "Frustum",
+    "Mesh",
+    "Polytope",
+    "Capsule",
+    "Sphere",
     # Settings
-    "Settings",
-    "TwistFrame",
     "WarmStartType",
+    "TwistFrame",
+    "Settings",
     # Output
     "SolutionStatus",
     "Output2",

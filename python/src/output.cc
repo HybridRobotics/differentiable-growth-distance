@@ -50,7 +50,7 @@ IllConditionedInputs : input sets are ill-conditioned (inradii too small).
              "Ill-conditioned input sets.");
 
   // ------------------------------------------------------------------
-  // Output<2> / Output2
+  // Output
   // ------------------------------------------------------------------
   py::class_<Output<2>>(m, "Output2",
                         R"doc(
@@ -99,9 +99,6 @@ status : SolutionStatus
                      "Number of solver iterations taken.")
       .def_readwrite("status", &Output<2>::status, "Solution status.");
 
-  // ------------------------------------------------------------------
-  // Output<3> / Output3
-  // ------------------------------------------------------------------
   py::class_<Output<3>>(m, "Output3",
                         R"doc(
 Growth distance algorithm output for 3D convex sets.
@@ -149,7 +146,7 @@ status : SolutionStatus
       .def_readwrite("status", &Output<3>::status, "Solution status.");
 
   // ------------------------------------------------------------------
-  // DirectionalDerivative<2> / DirectionalDerivative2
+  // DirectionalDerivative
   // ------------------------------------------------------------------
   py::class_<DirectionalDerivative<2>>(m, "DirectionalDerivative2",
                                        R"doc(
@@ -201,9 +198,6 @@ differentiable : bool
                      &DirectionalDerivative<2>::differentiable,
                      "Whether the full solution is differentiable.");
 
-  // ------------------------------------------------------------------
-  // DirectionalDerivative<3> / DirectionalDerivative3
-  // ------------------------------------------------------------------
   py::class_<DirectionalDerivative<3>>(m, "DirectionalDerivative3",
                                        R"doc(
 Directional (Gateaux) derivatives of the growth distance for 3D sets.
@@ -255,7 +249,7 @@ differentiable : bool
                      "Whether the full solution is differentiable.");
 
   // ------------------------------------------------------------------
-  // TotalDerivative<2> / TotalDerivative2
+  // TotalDerivative
   // ------------------------------------------------------------------
   py::class_<TotalDerivative<2>>(m, "TotalDerivative2",
                                  R"doc(
@@ -292,9 +286,6 @@ d_gd_tf1, d_gd_tf2 : numpy.ndarray, shape (3,)
       .def_readwrite("d_gd_tf2", &TotalDerivative<2>::d_gd_tf2,
                      "Gradient of growth distance w.r.t. motion of set 2.");
 
-  // ------------------------------------------------------------------
-  // TotalDerivative<3> / TotalDerivative3
-  // ------------------------------------------------------------------
   py::class_<TotalDerivative<3>>(m, "TotalDerivative3",
                                  R"doc(
 Total (Frechet) derivatives of the growth distance for 3-D sets.

@@ -21,6 +21,7 @@ pybind11_add_module(_dgd_core OPT_SIZE THIN_LTO
   "${CMAKE_CURRENT_SOURCE_DIR}/src/settings.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/output.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/geometry.cc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/geometry_concrete.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/algorithms.cc"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/utils.cc"
 )
