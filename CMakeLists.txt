@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(
   DifferentiableGrowthDistance
-  VERSION 1.0.0
+  VERSION 0.9.0
   DESCRIPTION "Differentiable growth distance algorithm for convex sets"
 )
 
@@ -23,6 +23,11 @@ include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(Eigen3 5.0 REQUIRED)
+# Prefer shared Qhull to avoid non-PIC static archive link failures for
+# Python extension modules.
+if(NOT DEFINED PCL_QHULL_REQUIRED_TYPE)
+  set(PCL_QHULL_REQUIRED_TYPE "SHARED")
+endif()
 find_package(Qhull REQUIRED)
 
 

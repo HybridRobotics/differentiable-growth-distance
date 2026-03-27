@@ -101,18 +101,18 @@ bool DetectCollision(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
 template <int dim>
 int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings,
-                        const OutputBundle<dim>& bundle) {
-  return ComputeKktNullspaceTpl(set1, tf1, set2, tf2, settings, bundle);
+                        const Settings& settings, const Output<dim>& out,
+                        DirectionalDerivative<dim>& dd) {
+  return ComputeKktNullspaceTpl(set1, tf1, set2, tf2, settings, out, dd);
 }
 
 template <int dim>
 int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const Halfspace<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings,
-                        const OutputBundle<dim>& bundle) {
-  return ComputeKktNullspaceHalfspaceTpl(set1, tf1, set2, tf2, settings,
-                                         bundle);
+                        const Settings& settings, const Output<dim>& out,
+                        DirectionalDerivative<dim>& dd) {
+  return ComputeKktNullspaceHalfspaceTpl(set1, tf1, set2, tf2, settings, out,
+                                         dd);
 }
 
 /*
@@ -122,14 +122,15 @@ int ComputeKktNullspace(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
 template <int dim>
 Real GdDerivative(const KinematicState<dim>& state1,
                   const KinematicState<dim>& state2, const Settings& settings,
-                  const OutputBundle<dim>& bundle) {
-  return GdDerivativeTpl(state1, state2, settings, bundle);
+                  const Output<dim>& out, DirectionalDerivative<dim>* dd) {
+  return GdDerivativeTpl(state1, state2, settings, out, dd);
 }
 
 template <int dim>
 void GdGradient(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
-                const Settings& settings, const OutputBundle<dim>& bundle) {
-  GdGradientTpl(tf1, tf2, settings, bundle);
+                const Settings& settings, const Output<dim>& out,
+                TotalDerivative<dim>& td) {
+  GdGradientTpl(tf1, tf2, settings, out, td);
 }
 
 /*
@@ -139,31 +140,34 @@ void GdGradient(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
 template <int dim>
 bool FactorizeKktSystem(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const ConvexSet<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings,
-                        const OutputBundle<dim>& bundle) {
-  return FactorizeKktSystemTpl(set1, tf1, set2, tf2, settings, bundle);
+                        const Settings& settings, const Output<dim>& out,
+                        DirectionalDerivative<dim>& dd) {
+  return FactorizeKktSystemTpl(set1, tf1, set2, tf2, settings, out, dd);
 }
 
 template <int dim>
 bool FactorizeKktSystem(const ConvexSet<dim>* set1, const Transformr<dim>& tf1,
                         const Halfspace<dim>* set2, const Transformr<dim>& tf2,
-                        const Settings& settings,
-                        const OutputBundle<dim>& bundle) {
-  return FactorizeKktSystemHalfspaceTpl(set1, tf1, set2, tf2, settings, bundle);
+                        const Settings& settings, const Output<dim>& out,
+                        DirectionalDerivative<dim>& dd) {
+  return FactorizeKktSystemHalfspaceTpl(set1, tf1, set2, tf2, settings, out,
+                                        dd);
 }
 
 template <int dim>
 void GdSolutionDerivative(const KinematicState<dim>& state1,
                           const KinematicState<dim>& state2,
-                          const Settings& settings,
-                          const OutputBundle<dim>& bundle) {
-  GdSolutionDerivativeTpl(state1, state2, settings, bundle);
+                          const Settings& settings, const Output<dim>& out,
+                          DirectionalDerivative<dim>& dd) {
+  GdSolutionDerivativeTpl(state1, state2, settings, out, dd);
 }
 
 template <int dim>
 void GdJacobian(const Transformr<dim>& tf1, const Transformr<dim>& tf2,
-                const Settings& settings, const OutputBundle<dim>& bundle) {
-  GdJacobianTpl(tf1, tf2, settings, bundle);
+                const Settings& settings, const Output<dim>& out,
+                const DirectionalDerivative<dim>& dd,
+                TotalDerivative<dim>& td) {
+  GdJacobianTpl(tf1, tf2, settings, out, dd, td);
 }
 
 /*
@@ -214,52 +218,66 @@ template bool DetectCollision(const ConvexSet<3>*, const Transformr<3>&,
 
 template int ComputeKktNullspace(const ConvexSet<2>*, const Transformr<2>&,
                                  const ConvexSet<2>*, const Transformr<2>&,
-                                 const Settings&, const OutputBundle<2>&);
+                                 const Settings&, const Output<2>&,
+                                 DirectionalDerivative<2>&);
 template int ComputeKktNullspace(const ConvexSet<3>*, const Transformr<3>&,
                                  const ConvexSet<3>*, const Transformr<3>&,
-                                 const Settings&, const OutputBundle<3>&);
+                                 const Settings&, const Output<3>&,
+                                 DirectionalDerivative<3>&);
 
 template int ComputeKktNullspace(const ConvexSet<2>*, const Transformr<2>&,
                                  const Halfspace<2>*, const Transformr<2>&,
-                                 const Settings&, const OutputBundle<2>&);
+                                 const Settings&, const Output<2>&,
+                                 DirectionalDerivative<2>&);
 template int ComputeKktNullspace(const ConvexSet<3>*, const Transformr<3>&,
                                  const Halfspace<3>*, const Transformr<3>&,
-                                 const Settings&, const OutputBundle<3>&);
+                                 const Settings&, const Output<3>&,
+                                 DirectionalDerivative<3>&);
 
 template Real GdDerivative(const KinematicState<2>&, const KinematicState<2>&,
-                           const Settings&, const OutputBundle<2>&);
+                           const Settings&, const Output<2>&,
+                           DirectionalDerivative<2>*);
 template Real GdDerivative(const KinematicState<3>&, const KinematicState<3>&,
-                           const Settings&, const OutputBundle<3>&);
+                           const Settings&, const Output<3>&,
+                           DirectionalDerivative<3>*);
 
 template void GdGradient(const Transformr<2>&, const Transformr<2>&,
-                         const Settings&, const OutputBundle<2>&);
+                         const Settings&, const Output<2>&,
+                         TotalDerivative<2>&);
 template void GdGradient(const Transformr<3>&, const Transformr<3>&,
-                         const Settings&, const OutputBundle<3>&);
+                         const Settings&, const Output<3>&,
+                         TotalDerivative<3>&);
 
 template bool FactorizeKktSystem(const ConvexSet<2>*, const Transformr<2>&,
                                  const ConvexSet<2>*, const Transformr<2>&,
-                                 const Settings&, const OutputBundle<2>&);
+                                 const Settings&, const Output<2>&,
+                                 DirectionalDerivative<2>&);
 template bool FactorizeKktSystem(const ConvexSet<3>*, const Transformr<3>&,
                                  const ConvexSet<3>*, const Transformr<3>&,
-                                 const Settings&, const OutputBundle<3>&);
+                                 const Settings&, const Output<3>&,
+                                 DirectionalDerivative<3>&);
 
 template bool FactorizeKktSystem(const ConvexSet<2>*, const Transformr<2>&,
                                  const Halfspace<2>*, const Transformr<2>&,
-                                 const Settings&, const OutputBundle<2>&);
+                                 const Settings&, const Output<2>&,
+                                 DirectionalDerivative<2>&);
 template bool FactorizeKktSystem(const ConvexSet<3>*, const Transformr<3>&,
                                  const Halfspace<3>*, const Transformr<3>&,
-                                 const Settings&, const OutputBundle<3>&);
+                                 const Settings&, const Output<3>&,
+                                 DirectionalDerivative<3>&);
 
 template void GdSolutionDerivative(const KinematicState<2>&,
                                    const KinematicState<2>&, const Settings&,
-                                   const OutputBundle<2>&);
+                                   const Output<2>&, DirectionalDerivative<2>&);
 template void GdSolutionDerivative(const KinematicState<3>&,
                                    const KinematicState<3>&, const Settings&,
-                                   const OutputBundle<3>&);
+                                   const Output<3>&, DirectionalDerivative<3>&);
 
 template void GdJacobian(const Transformr<2>&, const Transformr<2>&,
-                         const Settings&, const OutputBundle<2>&);
+                         const Settings&, const Output<2>&,
+                         const DirectionalDerivative<2>&, TotalDerivative<2>&);
 template void GdJacobian(const Transformr<3>&, const Transformr<3>&,
-                         const Settings&, const OutputBundle<3>&);
+                         const Settings&, const Output<3>&,
+                         const DirectionalDerivative<3>&, TotalDerivative<3>&);
 
 }  // namespace dgd

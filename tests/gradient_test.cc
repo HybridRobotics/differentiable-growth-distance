@@ -78,8 +78,6 @@ TEST(GdGradientTest, CircleCircle) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(42);
 
@@ -87,10 +85,10 @@ TEST(GdGradientTest, CircleCircle) {
     settings.twist_frame = twist_frame;
 
     GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
-    ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, bundle);
+    ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, out, dd);
     ASSERT_TRUE(dd.value_differentiable);
 
-    GdGradient(tf1, tf2, settings, bundle);
+    GdGradient(tf1, tf2, settings, out, td);
 
     auto gd_func = [&](const Transform2r& t1, const Transform2r& t2) -> Real {
       Output<2> tmp_out;
@@ -115,7 +113,7 @@ TEST(GdGradientTest, CircleCircle) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(state1, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, out, &dd);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -139,8 +137,6 @@ TEST(GdGradientTest, EllipsePolygon) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(42);
 
@@ -152,10 +148,10 @@ TEST(GdGradientTest, EllipsePolygon) {
       const auto tf2 = rng.RandomTransform<2>(-2.0, 2.0);
 
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
-      ComputeKktNullspace(set1.get(), tf1, set2.get(), tf2, settings, bundle);
+      ComputeKktNullspace(set1.get(), tf1, set2.get(), tf2, settings, out, dd);
       if (!dd.value_differentiable) continue;
 
-      GdGradient(tf1, tf2, settings, bundle);
+      GdGradient(tf1, tf2, settings, out, td);
 
       auto gd_func = [&](const Transform2r& t1, const Transform2r& t2) -> Real {
         Output<2> tmp_out;
@@ -179,7 +175,7 @@ TEST(GdGradientTest, EllipsePolygon) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(state1, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, out, &dd);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -208,8 +204,6 @@ TEST(GdGradientTest, SphereCuboid) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(42);
 
@@ -217,10 +211,10 @@ TEST(GdGradientTest, SphereCuboid) {
     settings.twist_frame = twist_frame;
 
     GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
-    ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, bundle);
+    ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, out, dd);
     ASSERT_TRUE(dd.value_differentiable);
 
-    GdGradient(tf1, tf2, settings, bundle);
+    GdGradient(tf1, tf2, settings, out, td);
 
     auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
       Output<3> tmp_out;
@@ -245,7 +239,7 @@ TEST(GdGradientTest, SphereCuboid) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(state1, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, out, &dd);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -269,8 +263,6 @@ TEST(GdGradientTest, ConeMesh) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(42);
 
@@ -282,10 +274,10 @@ TEST(GdGradientTest, ConeMesh) {
       const auto tf2 = rng.RandomTransform<3>(-2.0, 2.0);
 
       GrowthDistance(set1.get(), tf1, set2.get(), tf2, settings, out);
-      ComputeKktNullspace(set1.get(), tf1, set2.get(), tf2, settings, bundle);
+      ComputeKktNullspace(set1.get(), tf1, set2.get(), tf2, settings, out, dd);
       if (!dd.value_differentiable) continue;
 
-      GdGradient(tf1, tf2, settings, bundle);
+      GdGradient(tf1, tf2, settings, out, td);
 
       auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
         Output<3> tmp_out;
@@ -309,7 +301,7 @@ TEST(GdGradientTest, ConeMesh) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(state1, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, out, &dd);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
@@ -334,8 +326,6 @@ TEST(GdGradientTest, FrustumHalfspace) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(42);
 
@@ -348,10 +338,10 @@ TEST(GdGradientTest, FrustumHalfspace) {
       const auto tf1 = rng.RandomTransform<3>(-2.0, 2.0);
 
       GrowthDistance(&set1, tf1, &set2, tf2, settings, out);
-      ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, bundle);
+      ComputeKktNullspace(&set1, tf1, &set2, tf2, settings, out, dd);
       if (!dd.value_differentiable) continue;
 
-      GdGradient(tf1, tf2, settings, bundle);
+      GdGradient(tf1, tf2, settings, out, td);
 
       auto gd_func = [&](const Transform3r& t1, const Transform3r& t2) -> Real {
         Output<3> tmp_out;
@@ -374,7 +364,7 @@ TEST(GdGradientTest, FrustumHalfspace) {
         state2.tw(j) = rng.Random(-1.0, 1.0);
       }
 
-      GdDerivative(state1, state2, settings, bundle);
+      GdDerivative(state1, state2, settings, out, &dd);
 
       const Real d_gd_num =
           td.d_gd_tf1.dot(state1.tw) + td.d_gd_tf2.dot(state2.tw);
