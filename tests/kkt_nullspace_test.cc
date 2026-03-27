@@ -57,14 +57,12 @@ TEST(ComputeKktNullspaceTest, VertexVertex2D) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&rect1, tf1, &rect2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&rect1, tf1, &rect2, tf2, settings, bundle);
+      ComputeKktNullspace(&rect1, tf1, &rect2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 2);
   EXPECT_EQ(kkt_nullity, 2);
@@ -87,14 +85,12 @@ TEST(ComputeKktNullspaceTest, EdgeEdge2D) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&rect1, tf1, &rect2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&rect1, tf1, &rect2, tf2, settings, bundle);
+      ComputeKktNullspace(&rect1, tf1, &rect2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 1);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 2);
@@ -117,14 +113,12 @@ TEST(ComputeKktNullspaceTest, CircleCircle2D) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&circ1, tf1, &circ2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&circ1, tf1, &circ2, tf2, settings, bundle);
+      ComputeKktNullspace(&circ1, tf1, &circ2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 1);
@@ -147,13 +141,12 @@ TEST(ComputeKktNullspaceTest, VertexHalfspace2D) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&circ, tf1, &hs, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
-  int kkt_nullity = ComputeKktNullspace(&circ, tf1, &hs, tf2, settings, bundle);
+  int kkt_nullity =
+      ComputeKktNullspace(&circ, tf1, &hs, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 1);
@@ -176,13 +169,12 @@ TEST(ComputeKktNullspaceTest, EdgeHalfspace2D) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&rect, tf1, &hs, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
-  int kkt_nullity = ComputeKktNullspace(&rect, tf1, &hs, tf2, settings, bundle);
+  int kkt_nullity =
+      ComputeKktNullspace(&rect, tf1, &hs, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 1);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 2);
@@ -209,14 +201,12 @@ TEST(ComputeKktNullspaceTest, VertexVertex3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cube1, tf1, &cube2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 3);
   EXPECT_EQ(kkt_nullity, 3);
@@ -239,14 +229,12 @@ TEST(ComputeKktNullspaceTest, FaceFace3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cube1, tf1, &cube2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 2);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 3);
@@ -269,14 +257,12 @@ TEST(ComputeKktNullspaceTest, FaceEdge3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cube, tf1, &cyl, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&cube, tf1, &cyl, tf2, settings, bundle);
+      ComputeKktNullspace(&cube, tf1, &cyl, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 1);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 2);
@@ -300,13 +286,11 @@ TEST(ComputeKktNullspaceTest, EdgeEdgeParallel3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cube1, tf1, &cube2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
-  ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+  ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
   EXPECT_GE(dd.z_nullity, 1);
   EXPECT_EQ(dd.n_nullity, 2);
 
@@ -330,14 +314,12 @@ TEST(ComputeKktNullspaceTest, EdgeEdgeNonParallel3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cube1, tf1, &cube2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 1);
@@ -360,14 +342,12 @@ TEST(ComputeKktNullspaceTest, SphereSphere3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&sph1, tf1, &sph2, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&sph1, tf1, &sph2, tf2, settings, bundle);
+      ComputeKktNullspace(&sph1, tf1, &sph2, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 1);
@@ -390,14 +370,12 @@ TEST(ComputeKktNullspaceTest, VertexFace3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&sph, tf1, &cube, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
   int kkt_nullity =
-      ComputeKktNullspace(&sph, tf1, &cube, tf2, settings, bundle);
+      ComputeKktNullspace(&sph, tf1, &cube, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 1);
@@ -420,13 +398,11 @@ TEST(ComputeKktNullspaceTest, VertexHalfspace3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&sph, tf1, &hs, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
-  int kkt_nullity = ComputeKktNullspace(&sph, tf1, &hs, tf2, settings, bundle);
+  int kkt_nullity = ComputeKktNullspace(&sph, tf1, &hs, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 1);
@@ -449,13 +425,11 @@ TEST(ComputeKktNullspaceTest, EdgeHalfspace3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cyl, tf1, &hs, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
-  int kkt_nullity = ComputeKktNullspace(&cyl, tf1, &hs, tf2, settings, bundle);
+  int kkt_nullity = ComputeKktNullspace(&cyl, tf1, &hs, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 1);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_LE(kkt_nullity, 2);
@@ -478,13 +452,12 @@ TEST(ComputeKktNullspaceTest, FaceHalfspace3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Real gd = GrowthDistance(&cube, tf1, &hs, tf2, settings, out);
   EXPECT_GT(gd, 0.0);
   EXPECT_EQ(out.status, SolutionStatus::Optimal);
 
-  int kkt_nullity = ComputeKktNullspace(&cube, tf1, &hs, tf2, settings, bundle);
+  int kkt_nullity =
+      ComputeKktNullspace(&cube, tf1, &hs, tf2, settings, out, dd);
   EXPECT_EQ(dd.z_nullity, 2);
   EXPECT_EQ(dd.n_nullity, 1);
   EXPECT_EQ(kkt_nullity, 3);
@@ -507,24 +480,24 @@ TEST(ComputeKktNullspaceTest, NonOptimalStatus3D) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   GrowthDistance(&cube1, tf1, &cube2, tf2, settings, out);
 
   out.status = SolutionStatus::CoincidentCenters;
   int kkt_nullity =
-      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
 
   EXPECT_EQ(dd.z_nullity, 0);
   EXPECT_EQ(dd.n_nullity, 0);
   EXPECT_EQ(kkt_nullity, 0);
 
   out.status = SolutionStatus::IllConditionedInputs;
-  kkt_nullity = ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+  kkt_nullity =
+      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
   EXPECT_EQ(kkt_nullity, 0);
 
   out.status = SolutionStatus::MaxIterReached;
-  kkt_nullity = ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, bundle);
+  kkt_nullity =
+      ComputeKktNullspace(&cube1, tf1, &cube2, tf2, settings, out, dd);
   EXPECT_EQ(kkt_nullity, 0);
 }
 

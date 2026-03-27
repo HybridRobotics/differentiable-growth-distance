@@ -111,8 +111,6 @@ void ConvexSetSolutionDerivativeTest(const ConvexSet<dim>* set1,
   Output<dim> out;
   DirectionalDerivative<dim> dd;
   TotalDerivative<dim> td;
-  OutputBundle<dim> bundle{&out, &dd, &td};
-
   Vecr<dim> d_normal_num, d_z1_num, d_z2_num;
   Real d_gd, d_gd_num;
   int skipped_samples = 0;
@@ -140,14 +138,14 @@ void ConvexSetSolutionDerivativeTest(const ConvexSet<dim>* set1,
       }
 
       const bool diff = FactorizeKktSystem(set1, state1.tf, set2, state2.tf,
-                                           settings, bundle);
+                                           settings, out, dd);
       if (!diff) {
         ++skipped_samples;
         continue;
       }
 
-      d_gd = GdDerivative(state1, state2, settings, bundle);
-      GdSolutionDerivative(state1, state2, settings, bundle);
+      d_gd = GdDerivative(state1, state2, settings, out, &dd);
+      GdSolutionDerivative(state1, state2, settings, out, dd);
       EXPECT_NEAR(dd.d_gd, d_gd, kTol);
 
       d_gd_num =
@@ -198,8 +196,6 @@ TEST(GdSolutionDerivativeTest, CircleCircle) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   GrowthDistance(&set1, state1.tf, &set2, state2.tf, settings, out);
   ASSERT_EQ(out.status, SolutionStatus::Optimal);
   EXPECT_NEAR(out.growth_dist_ub, gd_true, kTol);
@@ -211,10 +207,10 @@ TEST(GdSolutionDerivativeTest, CircleCircle) {
     settings.twist_frame = twist_frame;
 
     const bool diff = FactorizeKktSystem(&set1, state1.tf, &set2, state2.tf,
-                                         settings, bundle);
+                                         settings, out, dd);
     ASSERT_TRUE(diff);
 
-    GdJacobian(state1.tf, state2.tf, settings, bundle);
+    GdJacobian(state1.tf, state2.tf, settings, out, dd, td);
 
     if (twist_frame == TwistFrame::Hybrid) {
       EXPECT_NEAR(td.d_gd_tf1(0), -Real(1.0) / (r1 + r2), kTolGrad);
@@ -227,8 +223,8 @@ TEST(GdSolutionDerivativeTest, CircleCircle) {
         state2.tw(j) = rng.Random(-Real(1.0), Real(1.0));
       }
 
-      const Real d_gd = GdDerivative(state1, state2, settings, bundle);
-      GdSolutionDerivative(state1, state2, settings, bundle);
+      const Real d_gd = GdDerivative(state1, state2, settings, out, &dd);
+      GdSolutionDerivative(state1, state2, settings, out, dd);
       EXPECT_NEAR(dd.d_gd, d_gd, kTol);
     }
   }
@@ -276,8 +272,6 @@ TEST(GdSolutionDerivativeTest, EllipseHalfspace) {
   Output<2> out;
   DirectionalDerivative<2> dd;
   TotalDerivative<2> td;
-  OutputBundle<2> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(23);
 
@@ -300,11 +294,11 @@ TEST(GdSolutionDerivativeTest, EllipseHalfspace) {
       if (out.status == SolutionStatus::CoincidentCenters) continue;
 
       const bool diff = FactorizeKktSystem(&set1, state1.tf, &set2, state2.tf,
-                                           settings, bundle);
+                                           settings, out, dd);
       ASSERT_TRUE(diff);
 
-      d_gd = GdDerivative(state1, state2, settings, bundle);
-      GdSolutionDerivative(state1, state2, settings, bundle);
+      d_gd = GdDerivative(state1, state2, settings, out, &dd);
+      GdSolutionDerivative(state1, state2, settings, out, dd);
       EXPECT_NEAR(dd.d_gd, d_gd, kTol);
 
       d_gd_num =
@@ -342,8 +336,6 @@ TEST(GdSolutionDerivativeTest, SphereSphere) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   GrowthDistance(&set1, state1.tf, &set2, state2.tf, settings, out);
   ASSERT_EQ(out.status, SolutionStatus::Optimal);
   EXPECT_NEAR(out.growth_dist_ub, gd_true, kTol);
@@ -355,10 +347,10 @@ TEST(GdSolutionDerivativeTest, SphereSphere) {
     settings.twist_frame = twist_frame;
 
     const bool diff = FactorizeKktSystem(&set1, state1.tf, &set2, state2.tf,
-                                         settings, bundle);
+                                         settings, out, dd);
     ASSERT_TRUE(diff);
 
-    GdJacobian(state1.tf, state2.tf, settings, bundle);
+    GdJacobian(state1.tf, state2.tf, settings, out, dd, td);
 
     if (twist_frame == TwistFrame::Hybrid) {
       EXPECT_NEAR(td.d_gd_tf1(0), -Real(1.0) / (r1 + r2), kTolGrad);
@@ -371,8 +363,8 @@ TEST(GdSolutionDerivativeTest, SphereSphere) {
         state2.tw(j) = rng.Random(-Real(1.0), Real(1.0));
       }
 
-      const Real d_gd = GdDerivative(state1, state2, settings, bundle);
-      GdSolutionDerivative(state1, state2, settings, bundle);
+      const Real d_gd = GdDerivative(state1, state2, settings, out, &dd);
+      GdSolutionDerivative(state1, state2, settings, out, dd);
       EXPECT_NEAR(dd.d_gd, d_gd, kTol);
     }
   }
@@ -431,8 +423,6 @@ TEST(GdSolutionDerivativeTest, CylinderCylinder) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   GrowthDistance(&set1, state1.tf, &set2, state2.tf, settings, out);
   ASSERT_EQ(out.status, SolutionStatus::Optimal);
   EXPECT_NEAR(out.growth_dist_ub, gd_true, kTol);
@@ -441,9 +431,9 @@ TEST(GdSolutionDerivativeTest, CylinderCylinder) {
   EXPECT_PRED3(VectorNear<3>, out.normal, normal_true, kTol);
 
   const bool diff =
-      FactorizeKktSystem(&set1, state1.tf, &set2, state2.tf, settings, bundle);
+      FactorizeKktSystem(&set1, state1.tf, &set2, state2.tf, settings, out, dd);
   ASSERT_TRUE(diff);
-  GdJacobian(state1.tf, state2.tf, settings, bundle);
+  GdJacobian(state1.tf, state2.tf, settings, out, dd, td);
 
   EXPECT_PRED3(VectorNear<6>, td.d_gd_tf1, d_gd_tf1_true, kTolGrad);
   EXPECT_PRED3(VectorNear<6>, td.d_gd_tf2, d_gd_tf2_true, kTolGrad);
@@ -520,8 +510,6 @@ TEST(GdSolutionDerivativeTest, FrustumHalfspace) {
   Output<3> out;
   DirectionalDerivative<3> dd;
   TotalDerivative<3> td;
-  OutputBundle<3> bundle{&out, &dd, &td};
-
   Rng rng;
   rng.SetSeed(23);
 
@@ -544,11 +532,11 @@ TEST(GdSolutionDerivativeTest, FrustumHalfspace) {
       if (out.status == SolutionStatus::CoincidentCenters) continue;
 
       const bool diff = FactorizeKktSystem(&set1, state1.tf, &set2, state2.tf,
-                                           settings, bundle);
+                                           settings, out, dd);
       if (!diff) continue;
 
-      d_gd = GdDerivative(state1, state2, settings, bundle);
-      GdSolutionDerivative(state1, state2, settings, bundle);
+      d_gd = GdDerivative(state1, state2, settings, out, &dd);
+      GdSolutionDerivative(state1, state2, settings, out, dd);
       EXPECT_NEAR(dd.d_gd, d_gd, kTol);
 
       d_gd_num =

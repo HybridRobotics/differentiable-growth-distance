@@ -314,41 +314,14 @@ struct TotalDerivative {
   ///@}
 };
 
-/**
- * @brief Output bundle for the differentiable growth distance algorithm.
- *
- * @note The allocation and lifetime of the structs pointed to by the member
- * pointers must be managed by the user.
- *
- * @note The output pointer should always point to a valid Output struct.
- *
- * @note The total derivatives require the directional derivative outputs.
- * If total_derivative is set, dir_derivative should also be set.
- *
- * @tparam dim Dimension of the convex sets.
- */
-template <int dim>
-struct OutputBundle {
-  /// @brief Growth distance algorithm output (should always be set).
-  Output<dim>* output = nullptr;
-
-  /**
-   * @brief Directional derivatives of the growth distance optimal value and
-   * solution.
-   */
-  DirectionalDerivative<dim>* dir_derivative = nullptr;
-
-  /**
-   * @brief Total derivatives of the growth distance optimal value and solution.
-   */
-  TotalDerivative<dim>* total_derivative = nullptr;
-};
-
 using Output2 = Output<2>;
 using Output3 = Output<3>;
 
-using OutputBundle2 = OutputBundle<2>;
-using OutputBundle3 = OutputBundle<3>;
+using DirectionalDerivative2 = DirectionalDerivative<2>;
+using DirectionalDerivative3 = DirectionalDerivative<3>;
+
+using TotalDerivative2 = TotalDerivative<2>;
+using TotalDerivative3 = TotalDerivative<3>;
 
 /// @brief Returns the solution status name.
 inline std::string SolutionStatusName(SolutionStatus status) {
