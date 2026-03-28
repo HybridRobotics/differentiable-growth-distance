@@ -49,8 +49,18 @@ from ._dgd_core import (  # noqa: F401
     TotalDerivative3,
     TwistFrame,
     WarmStartType,
+    compute_kkt_nullspace,
     compute_polygon_inradius,
+    detect_collision,
+    factorize_kkt_system,
+    gd_derivative,
+    gd_gradient,
+    gd_jacobian,
+    gd_solution_derivative,
     graham_scan,
+    growth_distance,
+    growth_distance_cp,
+    growth_distance_trn,
 )
 
 __all__ = [
@@ -107,6 +117,17 @@ __all__ = [
     "DirectionalDerivative3",
     "TotalDerivative2",
     "TotalDerivative3",
+    # Algorithms
+    "growth_distance",
+    "growth_distance_cp",
+    "growth_distance_trn",
+    "detect_collision",
+    "compute_kkt_nullspace",
+    "gd_derivative",
+    "gd_gradient",
+    "factorize_kkt_system",
+    "gd_solution_derivative",
+    "gd_jacobian",
     # Utilities
     "graham_scan",
     "compute_polygon_inradius",
