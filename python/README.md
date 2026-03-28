@@ -6,6 +6,7 @@ The bindings are implemented with `pybind11` and packaged with `scikit-build-cor
 The recommended workflow is an editable install from the repository's `python/`
 directory so `import dgd` works without setting `PYTHONPATH`.
 
+
 ## Requirements
 
 - Python 3.8+
@@ -13,10 +14,13 @@ directory so `import dgd` works without setting `PYTHONPATH`.
 - C++17 compiler
 - NumPy
 
-## Development install
+
+## Installation
+
+### Development install
 
 This is the primary workflow for local development.
-From the repository root:
+From the repository root, run:
 
 ```bash
 pip install --no-build-isolation -e python/[test]
@@ -25,7 +29,7 @@ pip install --no-build-isolation -e python/[test]
 After installation, `import dgd` works from any directory as long as the active
 virtual environment or conda environment is the same one used for installation.
 
-## Manual CMake build
+### Manual CMake build
 
 This workflow is mainly useful for debugging the extension build directly.
 It does not install the package into the Python environment.
@@ -39,9 +43,9 @@ export PYTHONPATH=/path/to/repo/python:$PYTHONPATH
 Use `PYTHONPATH` only with this manual workflow. It is not needed after an editable
 install or wheel install.
 
-## Building a wheel
+### Building a wheel
 
-From the repository root:
+From the repository root, run:
 
 ```bash
 pip install build
@@ -49,6 +53,7 @@ python -m build python/ --wheel
 ```
 
 The generated wheel can then be installed with `pip install dist/dgd-*.whl`.
+
 
 ## Running the tests
 
@@ -64,6 +69,7 @@ cd python
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 pytest
 ```
 
+
 ## Style checks
 
 The project uses Ruff to enforce PEP 8 and Google-style Python docstrings.
@@ -72,6 +78,7 @@ The project uses Ruff to enforce PEP 8 and Google-style Python docstrings.
 cd python
 ruff check .
 ```
+
 
 ## Pre-commit hooks
 
@@ -86,10 +93,27 @@ pre-commit install
 pre-commit run --all-files
 ```
 
+
+## Type stubs and IDE support
+
+The package includes PEP 484 type stubs (`_dgd_core.pyi`) for full IDE autocompletion
+and type-checking support.
+
+### Regenerating stubs
+
+To regenerate the stubs, run:
+
+```bash
+cd python
+pip install pybind11-stubgen
+python generate_stubs.py
+```
+
+
 ## Package layout
 
 - `dgd/`: Python package and compiled extension module
 - `src/`: pybind11 binding translation units
-- `tests/`: Python-side smoke tests for the bindings surface
-- `CMakeLists.txt`: extension build definition used by both direct CMake and scikit-build
+- `tests/`: Python tests for the bindings
+- `CMakeLists.txt`: build definition used by both CMake and scikit-build
 - `pyproject.toml`: packaging metadata and build backend configuration
