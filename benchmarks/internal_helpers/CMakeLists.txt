@@ -23,12 +23,12 @@ set_target_properties(${DGD_LIB}_bench PROPERTIES CXX_EXTENSIONS OFF)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   target_compile_options(${DGD_LIB}_bench
     PRIVATE
-      -Wall -Wextra -Werror -Wconversion -Wpedantic
-      -O3 -DNDEBUG
+      -Wall;-Wextra;-Werror;-Wconversion;-Wpedantic
+      -O3;-DNDEBUG
   )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   target_compile_options(${DGD_LIB}_bench
     PRIVATE
-      /W4 /WX /O2 /DNDEBUG /permissive-
+      /W4;/WX;/O2;/DNDEBUG;/permissive-
   )
 endif()

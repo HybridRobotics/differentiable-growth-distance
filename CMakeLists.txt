@@ -8,9 +8,11 @@ project(
 
 # Default to Release when no build type is specified.
 # Explicit -DCMAKE_BUILD_TYPE=Debug always takes precedence.
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "No build type specified; defaulting to Release")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+if (PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+  if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    message(STATUS "No build type specified; defaulting to Release")
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
+  endif()
 endif()
 
 
@@ -92,7 +94,7 @@ endif()
 
 
 # Tests, bechmarks, documentation, and Python bindings
-if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+if(PROJECT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
   option(DGD_BUILD_TESTS      "Build tests" ON)
   option(DGD_BUILD_BENCHMARKS "Build benchmarks (only for Release config with double precision)" OFF)
   option(DGD_BUILD_DOCS       "Build documentation" OFF)
