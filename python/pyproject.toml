@@ -40,7 +40,10 @@ dev = [
   "ruff>=0.6",
   "pre-commit>=3.7",
   "black>=24.10",
+  "pybind11-stubgen>=2",
 ]
+
+typing = ["pybind11-stubgen>=2"]
 
 [project.urls]
 Homepage = "https://github.com/HybridRobotics/differentiable-growth-distance"
@@ -61,6 +64,7 @@ sdist.include = [
   "README.md",
   "python/CMakeLists.txt",
   "python/dgd/__init__.py",
+  "python/dgd/_dgd_core.pyi",
   "python/src/*.cc",
   "python/src/*.h",
   "include/**/*.h",
