@@ -35,26 +35,24 @@ set_target_properties(${DGD_LIB} PROPERTIES CXX_EXTENSIONS OFF)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   target_compile_options(${DGD_LIB}
     PRIVATE
-      -Wall -Wextra -Werror -Wconversion -Wpedantic -fdiagnostics-color=always
+      -Wall;-Wextra;-Werror;-Wconversion;-Wpedantic;-fdiagnostics-color=always
   )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   target_compile_options(${DGD_LIB}
     PRIVATE
-      /W4 /WX /permissive-
+      /W4;/WX;/permissive-
   )
 endif()
 
 # Platform-specific optimization and debug flags
 target_compile_options(${DGD_LIB}
   PRIVATE
-    $<$<CONFIG:Debug>:$<IF:$<CXX_COMPILER_ID:MSVC>,/Od /Zi,-O0 -g>>
-    $<$<CONFIG:Release>:$<IF:$<CXX_COMPILER_ID:MSVC>,/O2 /DNDEBUG,-O3 -DNDEBUG>>
+    $<$<CONFIG:Debug>:$<IF:$<CXX_COMPILER_ID:MSVC>,/Od;/Zi,-O0;-g>>
+    $<$<CONFIG:Release>:$<IF:$<CXX_COMPILER_ID:MSVC>,/O2;/DNDEBUG,-O3;-DNDEBUG>>
 )
 
 # Interprocedural optimization for Release builds
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-  set_property(TARGET ${DGD_LIB} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
-endif()
+set_property(TARGET ${DGD_LIB} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 
 
 # Preprocessor definitions

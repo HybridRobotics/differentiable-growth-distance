@@ -11,13 +11,13 @@ target_compile_features(mesh_load_test PUBLIC cxx_std_17)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   target_compile_options(mesh_load_test
     PRIVATE
-      -Wall -Wextra -Werror -Wconversion -Wpedantic
-      -O3 -DNDEBUG
+      -Wall;-Wextra;-Werror;-Wconversion;-Wpedantic
+      -O3;-DNDEBUG
   )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   target_compile_options(mesh_load_test
     PRIVATE
-      /W4 /WX /O2 /DNDEBUG /permissive-
+      /W4;/WX;/O2;/DNDEBUG;/permissive-
   )
 endif()
 
@@ -32,12 +32,12 @@ target_compile_features(${DGD_LIB}_growth_distance_bm PUBLIC cxx_std_17)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   target_compile_options(${DGD_LIB}_growth_distance_bm
     PRIVATE
-      -Wall -Wextra -Werror -Wconversion -Wpedantic
-      -O3 -DNDEBUG
+      -Wall;-Wextra;-Werror;-Wconversion;-Wpedantic
+      -O3;-DNDEBUG
   )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   target_compile_options(${DGD_LIB}_growth_distance_bm
     PRIVATE
-      /W4 /WX /O2 /DNDEBUG /permissive-
+      /W4;/WX;/O2;/DNDEBUG;/permissive-
   )
 endif()
