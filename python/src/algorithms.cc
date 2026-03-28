@@ -21,6 +21,7 @@
 #include <pybind11/pybind11.h>
 
 #include "dgd/dgd.h"
+#include "dgd/error_metrics.h"
 
 namespace py = pybind11;
 using namespace dgd;
@@ -216,11 +217,49 @@ void bind_algorithms_dim(py::module_& m) {
       ("Jacobian of growth distance optimal solution for " + suffix + "D " +
        "convex sets.")
           .c_str());
+
+  m.def(
+      "compute_solution_error",
+      [](const ConvexSet<dim>& set1, const Transformr<dim>& tf1,
+         const ConvexSet<dim>& set2, const Transformr<dim>& tf2,
+         const Output<dim>& out) {
+        return ComputeSolutionError(&set1, tf1, &set2, tf2, out);
+      },
+      py::arg("set1"), py::arg("tf1"), py::arg("set2"), py::arg("tf2"),
+      py::arg("out"),
+      ("Computes primal-dual error metrics for ConvexSet" + suffix +
+       " x ConvexSet" + suffix + ".")
+          .c_str());
+
+  m.def(
+      "assert_collision_status",
+      [](const ConvexSet<dim>& set1, const Transformr<dim>& tf1,
+         const ConvexSet<dim>& set2, const Transformr<dim>& tf2,
+         const Output<dim>& out, bool collision, Real max_prim_infeas_err) {
+        return AssertCollisionStatus(&set1, tf1, &set2, tf2, out, collision,
+                                     max_prim_infeas_err);
+      },
+      py::arg("set1"), py::arg("tf1"), py::arg("set2"), py::arg("tf2"),
+      py::arg("out"), py::arg("collision"),
+      py::arg("max_prim_infeas_err") = kSqrtEps,
+      ("Asserts collision status for ConvexSet" + suffix + " x ConvexSet" +
+       suffix + ".")
+          .c_str());
 }
 
 }  // namespace
 
 void bind_algorithms(py::module_& m) {
+  py::class_<SolutionError>(m, "SolutionError",
+                            "Growth distance error metrics.")
+      .def(py::init<>())
+      .def_readwrite("prim_dual_gap", &SolutionError::prim_dual_gap,
+                     "Relative primal-dual gap.")
+      .def_readwrite("prim_infeas_err", &SolutionError::prim_infeas_err,
+                     "Normalized primal infeasibility error.")
+      .def_readwrite("dual_infeas_err", &SolutionError::dual_infeas_err,
+                     "Dual infeasibility error.");
+
   bind_algorithms_dim<2>(m);
   bind_algorithms_dim<3>(m);
 }
