@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, ci-fix ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
@@ -23,6 +23,11 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeigen3-dev libqhull-dev
 
       - name: Install build dependencies
         run: |
@@ -52,6 +57,11 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeigen3-dev libqhull-dev
+
       - name: Install build tools
         run: |
           python -m pip install --upgrade pip
@@ -63,7 +73,7 @@ jobs:
           python -m build
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: python-packages
           path: python/dist/
@@ -83,8 +93,13 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libqhull-dev
+
       - name: Download wheel artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: python-packages
           path: dist/
@@ -100,6 +115,7 @@ jobs:
           python -m venv test_env
           source test_env/bin/activate
           pip install --upgrade pip
+          pip install pytest
           WHEEL=$(ls "${{ github.workspace }}"/dist/dgd-*.whl)
           pip install "$WHEEL"
 
@@ -199,7 +215,7 @@ jobs:
             --txt build-cov/coverage.txt
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cpp-coverage-report
           path: |
