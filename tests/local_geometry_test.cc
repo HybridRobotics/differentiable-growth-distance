@@ -1716,6 +1716,9 @@ void CapsuleImplLocalGeometryTest() {
   for (int i = 0; i < static_cast<int>(normals.size()); ++i) {
     test_cases[i].base_pt = base_pts[i];
     test_cases[i].ncs_true.span_dim = (i < 4) ? dim : dim - 1;
+    if constexpr (dim == 3) {
+      if (i >= 4) test_cases[i].ncs_true.basis = Vecr<dim>::UnitY();
+    }
   }
 
   // Run test cases.

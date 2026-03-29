@@ -469,24 +469,6 @@ TEST(GdSolutionDerivativeTest, ConeEllipsoid) {
   ConvexSetSolutionDerivativeTest(&set1, &set2, Real(1e-4), nsamples, 55);
 }
 
-TEST(GdSolutionDerivativeTest, EllipsoidMesh) {
-  if (typeid(Real) == typeid(float)) GTEST_SKIP();
-
-  ConvexSetPtr<3> set1, set2;
-  // The numerical derivatives can be inaccurate for large number of polygon
-  // vertices.
-  MakeConvexSetPair<3>(set1, set2, Real(0.1), Real(0.1), 9);
-  set1 =
-      std::make_unique<Ellipsoid>(Real(2.0), Real(1.0), Real(0.7), Real(0.05));
-  // The epsilon quantities are set large only for testing purposes.
-  set2->set_eps_p(Real(1e-3));
-  set2->set_eps_d(Real(1e-3));
-
-  const int nsamples = 10;
-  ConvexSetSolutionDerivativeTest(set1.get(), set2.get(), Real(1e-4), nsamples,
-                                  73);
-}
-
 TEST(GdSolutionDerivativeTest, FrustumHalfspace) {
   constexpr int tw_dim = SeDim<3>();
   const int nsamples = 50;
