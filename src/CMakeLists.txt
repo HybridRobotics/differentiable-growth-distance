@@ -51,6 +51,12 @@ target_compile_options(${DGD_LIB}
     $<$<CONFIG:Release>:$<IF:$<CXX_COMPILER_ID:MSVC>,/O2;/DNDEBUG,-O3;-DNDEBUG>>
 )
 
+# Coverage instrumentation for C++ targets.
+if(DGD_ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(${DGD_LIB} PRIVATE --coverage)
+  target_link_options(${DGD_LIB} PRIVATE --coverage)
+endif()
+
 # Interprocedural optimization for Release builds
 set_property(TARGET ${DGD_LIB} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 

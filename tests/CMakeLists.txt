@@ -32,17 +32,28 @@ target_link_libraries(${DGD_LIB}_test
     GTest::gtest_main
 )
 
+# Absolute path for test fixtures, so cwd does not affect file IO.
+target_compile_definitions(${DGD_LIB}_test
+  PRIVATE
+    DGD_TEST_DATA_DIR="${PROJECT_SOURCE_DIR}/tests"
+)
+
 # Platform-specific compiler flags for warnings
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
   target_compile_options(${DGD_LIB}_test
     PRIVATE
-      -Wall -Wextra -Werror -Wconversion -Wpedantic -Wnon-virtual-dtor -Wsuggest-override
+      -Wall;-Wextra;-Werror;-Wconversion;-Wpedantic;-Wnon-virtual-dtor;-Wsuggest-override
   )
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   target_compile_options(${DGD_LIB}_test
     PRIVATE
-      /W4 /WX /permissive-
+      /W4;/WX;/permissive-
   )
+endif()
+
+if(DGD_ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
+  target_compile_options(${DGD_LIB}_test PRIVATE --coverage)
+  target_link_options(${DGD_LIB}_test PRIVATE --coverage)
 endif()
 
 

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cmath>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -14,6 +15,24 @@ namespace {
 using namespace dgd;
 
 const Real kTol = kSqrtEps;
+
+std::string ResolveCubeObjPath() {
+  namespace fs = std::filesystem;
+
+#ifdef DGD_TEST_DATA_DIR
+  const fs::path configured = fs::path(DGD_TEST_DATA_DIR) / "cube.obj";
+  if (fs::exists(configured)) return configured.string();
+#endif
+
+  // Fallbacks.
+  const fs::path local = fs::path("tests") / "cube.obj";
+  if (fs::exists(local)) return local.string();
+
+  const fs::path parent = fs::path("..") / "tests" / "cube.obj";
+  if (fs::exists(parent)) return parent.string();
+
+  return local.string();
+}
 
 TEST(MeshLoaderTest, StringParse) {
   std::string obj =
@@ -58,9 +77,11 @@ TEST(MeshLoaderTest, StringParse) {
 }
 
 TEST(MeshLoaderTest, InputFile) {
-  std::string file = "../tests/cube.obj";
+  std::string file = ResolveCubeObjPath();
 
   MeshLoader ml{};
+  ASSERT_TRUE(std::filesystem::exists(file))
+      << "Missing test fixture: " << file;
   ml.LoadObj(file);
 
   const int nvert = 8, nface = 12;
