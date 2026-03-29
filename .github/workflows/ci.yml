@@ -1,0 +1,236 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test-editable-install:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    name: Test Python ${{ matrix.python-version }} (editable install)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install scikit-build-core cmake ninja
+
+      - name: Install package (editable install with test dependencies)
+        run: |
+          cd python
+          pip install --no-build-isolation -e ".[test]"
+
+      - name: Run pytest
+        run: |
+          cd python
+          pytest tests/ -v
+
+  build-wheel:
+    runs-on: ubuntu-latest
+    name: Build wheel distribution
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+
+      - name: Build wheel and sdist
+        run: |
+          cd python
+          python -m build
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: python-packages
+          path: python/dist/
+          retention-days: 1
+
+  test-wheel:
+    runs-on: ubuntu-latest
+    needs: build-wheel
+    name: Test wheel installation
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Download wheel artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: python-packages
+          path: dist/
+
+      - name: List downloaded files
+        run: ls -lh dist/
+
+      - name: Install from wheel in clean environment
+        run: |
+          # Create a temporary directory for the clean install
+          mkdir -p /tmp/wheel-test
+          cd /tmp/wheel-test
+          python -m venv test_env
+          source test_env/bin/activate
+          pip install --upgrade pip
+          pip install "${{ github.workspace }}/dist/dgd-*.whl"
+
+      - name: Test wheel imports all symbols
+        run: |
+          source /tmp/wheel-test/test_env/bin/activate
+          python -c "
+import dgd
+import inspect
+
+# Check all public exports declared by the package are present.
+expected_symbols = getattr(dgd, '__all__', None)
+if not isinstance(expected_symbols, list):
+    print("ERROR: dgd.__all__ is missing or not a list")
+    exit(1)
+
+missing = [s for s in expected_symbols if not hasattr(dgd, s)]
+if missing:
+    print(f'ERROR: Missing symbols: {missing}')
+    exit(1)
+print(f'  All {len(expected_symbols)} expected symbols found in dgd package')
+
+# Verify stub file is accessible
+stub_path = inspect.getfile(dgd._dgd_core)
+print(f'  Module loaded from: {stub_path}')
+"
+      - name: Run basic functionality test
+        run: |
+          source /tmp/wheel-test/test_env/bin/activate
+          cd ${{ github.workspace }}/python
+          python -m pytest tests/test_types.py -v --tb=short
+
+  cpp-build-test:
+    runs-on: ubuntu-latest
+    name: Build and test C++ library
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 1
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeigen3-dev libqhull-dev
+
+      - name: Configure CMake (Release + tests)
+        run: |
+          cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DDGD_BUILD_TESTS=ON
+
+      - name: Build C++ targets
+        run: |
+          cmake --build build-ci --parallel
+
+      - name: Run C++ unit tests
+        run: |
+          ctest --test-dir build-ci --output-on-failure
+
+  cpp-coverage:
+    runs-on: ubuntu-latest
+    name: C++ code coverage (core library)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 1
+
+      - name: Install native dependencies and coverage tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libeigen3-dev libqhull-dev gcovr
+
+      - name: Configure CMake (Debug + coverage)
+        run: |
+          cmake -S . -B build-cov -DCMAKE_BUILD_TYPE=Debug -DDGD_BUILD_TESTS=ON -DDGD_ENABLE_COVERAGE=ON
+
+      - name: Build C++ targets
+        run: |
+          cmake --build build-cov --parallel
+
+      - name: Run C++ unit tests
+        run: |
+          ctest --test-dir build-cov --output-on-failure
+
+      - name: Generate coverage reports
+        run: |
+          gcovr \
+            --root "${{ github.workspace }}" \
+            --object-directory build-cov \
+            --filter "${{ github.workspace }}/src" \
+            --filter "${{ github.workspace }}/include" \
+            --exclude ".*/tests/.*" \
+            --exclude ".*/benchmarks/.*" \
+            --exclude ".*/external/.*" \
+            --exclude ".*/build.*/.*" \
+            --cobertura build-cov/coverage.xml \
+            --txt build-cov/coverage.txt
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: cpp-coverage-report
+          path: |
+            build-cov/coverage.xml
+            build-cov/coverage.txt
+          retention-days: 1
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: build-cov/coverage.xml
+          flags: cpp
+          name: cpp-core-coverage
+          fail_ci_if_error: false
+
+  lint:
+    runs-on: ubuntu-latest
+    name: Lint and code quality
+    steps:
+      - uses: actions/checkout@v4
+        with:
+            fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install pre-commit
+        run: |
+          python -m pip install --upgrade pip
+          pip install pre-commit
+
+      - name: Run pre-commit hooks
+        run: |
+          pre-commit run --all-files
+        continue-on-error: true
