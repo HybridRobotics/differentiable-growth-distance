@@ -97,7 +97,7 @@ The codebase is modular, extensible, and leverages modern C++17 features, as wel
 ## Requirements
 
 - C++17 compiler (tested with GCC)
-- [Eigen](https://eigen.tuxfamily.org/) (version 3.4 or later)
+- [Eigen](https://eigen.tuxfamily.org/) (version 3.4 or later, including 5.x)
 - [Qhull](http://www.qhull.org/) (for convex hull operations and adjacency graph computation)
 - CMake (version 3.15 or later)
 
