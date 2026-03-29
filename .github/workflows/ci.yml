@@ -67,10 +67,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install build
 
-      - name: Build wheel and sdist
+      - name: Build wheel
         run: |
           cd python
-          python -m build
+          python -m build --wheel
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
