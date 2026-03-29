@@ -105,26 +105,28 @@ jobs:
       - name: Test wheel imports all symbols
         run: |
           source /tmp/wheel-test/test_env/bin/activate
-          python -c "
-import dgd
-import inspect
+          python <<'PY'
+          import dgd
+          import inspect
 
-# Check all public exports declared by the package are present.
-expected_symbols = getattr(dgd, '__all__', None)
-if not isinstance(expected_symbols, list):
-    print("ERROR: dgd.__all__ is missing or not a list")
-    exit(1)
+          # Check all public exports declared by the package are present.
+          expected_symbols = getattr(dgd, '__all__', None)
+          if not isinstance(expected_symbols, list):
+            print('ERROR: dgd.__all__ is missing or not a list')
+            raise SystemExit(1)
 
-missing = [s for s in expected_symbols if not hasattr(dgd, s)]
-if missing:
-    print(f'ERROR: Missing symbols: {missing}')
-    exit(1)
-print(f'  All {len(expected_symbols)} expected symbols found in dgd package')
+          missing = [s for s in expected_symbols if not hasattr(dgd, s)]
+          if missing:
+            print(f'ERROR: Missing symbols: {missing}')
+            raise SystemExit(1)
 
-# Verify stub file is accessible
-stub_path = inspect.getfile(dgd._dgd_core)
-print(f'  Module loaded from: {stub_path}')
-"
+          print(f'  All {len(expected_symbols)} expected symbols found in dgd package')
+
+          # Verify stub file is accessible
+          stub_path = inspect.getfile(dgd._dgd_core)
+          print(f'  Module loaded from: {stub_path}')
+          PY
+
       - name: Run basic functionality test
         run: |
           source /tmp/wheel-test/test_env/bin/activate
