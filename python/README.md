@@ -41,18 +41,7 @@ export PYTHONPATH=/path/to/repo/python:$PYTHONPATH
 ```
 
 Use `PYTHONPATH` only with this manual workflow. It is not needed after an editable
-install or wheel install.
-
-### Building a wheel
-
-From the repository root, run:
-
-```bash
-pip install build
-python -m build python/ --wheel
-```
-
-The generated wheel can then be installed with `pip install dist/dgd-*.whl`.
+install.
 
 
 ## Running the tests
