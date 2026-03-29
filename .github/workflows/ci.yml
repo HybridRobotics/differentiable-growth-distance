@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop, ci-fix ]
+    branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:
@@ -68,62 +68,6 @@ jobs:
       - name: Run C++ unit tests
         run: |
           ctest --test-dir build-ci --output-on-failure
-
-  cpp-coverage:
-    runs-on: ubuntu-latest
-    name: C++ code coverage (core library)
-    steps:
-      - uses: actions/checkout@v4
-        with:
-            fetch-depth: 1
-
-      - name: Install native dependencies and coverage tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libeigen3-dev libqhull-dev gcovr
-
-      - name: Configure CMake (Debug + coverage)
-        run: |
-          cmake -S . -B build-cov -DCMAKE_BUILD_TYPE=Debug -DDGD_BUILD_TESTS=ON -DDGD_ENABLE_COVERAGE=ON
-
-      - name: Build C++ targets
-        run: |
-          cmake --build build-cov --parallel
-
-      - name: Run C++ unit tests
-        run: |
-          ctest --test-dir build-cov --output-on-failure
-
-      - name: Generate coverage reports
-        run: |
-          gcovr \
-            --root "${{ github.workspace }}" \
-            --object-directory build-cov \
-            --filter "${{ github.workspace }}/src" \
-            --filter "${{ github.workspace }}/include" \
-            --exclude ".*/tests/.*" \
-            --exclude ".*/benchmarks/.*" \
-            --exclude ".*/external/.*" \
-            --exclude ".*/build.*/.*" \
-            --cobertura build-cov/coverage.xml \
-            --txt build-cov/coverage.txt
-
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: cpp-coverage-report
-          path: |
-            build-cov/coverage.xml
-            build-cov/coverage.txt
-          retention-days: 1
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          files: build-cov/coverage.xml
-          flags: cpp
-          name: cpp-core-coverage
-          fail_ci_if_error: false
 
   lint:
     runs-on: ubuntu-latest
