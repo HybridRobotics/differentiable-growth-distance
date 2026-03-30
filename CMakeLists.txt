@@ -32,7 +32,15 @@ option(DGD_INSTALL_LIBS "Install library" ON)
 include(GNUInstallDirs)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-find_package(Eigen3 5.0 REQUIRED)
+find_package(Eigen3 5.0 QUIET)
+if(NOT Eigen3_FOUND)
+  # Fallback to Eigen 3.4+ for compatibility.
+  find_package(Eigen3 3.4 REQUIRED)
+endif()
+if(DEFINED Eigen3_VERSION)
+  message(STATUS "Found Eigen version ${Eigen3_VERSION}")
+endif()
+
 # Prefer shared Qhull to avoid non-PIC static archive link failures for
 # Python extension modules.
 if(NOT DEFINED PCL_QHULL_REQUIRED_TYPE)

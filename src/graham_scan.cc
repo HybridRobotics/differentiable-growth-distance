@@ -19,7 +19,6 @@
 
 #include "dgd/graham_scan.h"
 
-#include <Eigen/Dense>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -32,7 +31,7 @@ namespace dgd {
 namespace {
 
 inline Real Ccw(const Vec2r& u, const Vec2r& v, const Vec2r& w) {
-  return (v - u).cross(w - u);
+  return (v(0) - u(0)) * (w(1) - u(1)) - (v(1) - u(1)) * (w(0) - u(0));
 }
 
 }  // namespace

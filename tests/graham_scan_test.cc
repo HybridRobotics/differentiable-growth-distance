@@ -2,7 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <Eigen/Dense>
 #include <cmath>
 #include <vector>
 
@@ -121,7 +120,7 @@ TEST(GrahamScanTest, CcwOrientation) {
   const Real side_len = 10.0;
 
   auto ccw = [](const Vec2r& u, const Vec2r& v, const Vec2r& w) -> Real {
-    return (v - u).cross(w - u);
+    return (v(0) - u(0)) * (w(1) - u(1)) - (v(1) - u(1)) * (w(0) - u(0));
   };
 
   std::vector<Vec2r> pts(npts), vert;
